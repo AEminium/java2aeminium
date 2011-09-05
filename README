@@ -1,0 +1,13 @@
+Benchmarking suite for the AEminium runtime.
+
+Developed in distinct phases:
+
+* Compiler
+	A java to java compiler that translates regular java (within limitations) to
+	AEminium Tasks and Runtime
+
+* Unit Tester
+	A jUnit project that validates the results of the compiler
+
+* Benchmark
+	An automated benchmarking script that lauches several sets of tests.
