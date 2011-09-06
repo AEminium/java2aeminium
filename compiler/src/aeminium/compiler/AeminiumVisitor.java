@@ -6,16 +6,18 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
@@ -166,7 +168,73 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 
 	private void replaceMain(MethodDeclaration method)
 	{
-		// TODO
+		/* 
+			AeminiumHelper.init();
+			AeminiumHelper.schedule(
+				AeminiumHelper.createNonBlockingTask(new AE_HelloWorld_main_body(args), AeminiumHelper.NO_HINTS),
+				AeminiumHelper.NO_PARENT,
+				AeminiumHelper.NO_DEPS
+			);
+			AeminiumHelper.shutdown();
+		*/
+		AST ast = method.getAST();
+		Block body = ast.newBlock();
+
+		// AeminiumHelper.init();
+		MethodInvocation init = ast.newMethodInvocation();
+		init.setExpression(ast.newSimpleName("AeminiumHelper"));
+		init.setName(ast.newSimpleName("init"));
+
+		body.statements().add(ast.newExpressionStatement(init));
+
+		MethodInvocation schedule = ast.newMethodInvocation();
+		schedule.setExpression(ast.newSimpleName("AeminiumHelper"));
+		schedule.setName(ast.newSimpleName("schedule"));
+
+			// AeminiumHelper.createNonBlockingTask(new AE_HelloWorld_main_body(args), AeminiumHelper.NO_HINTS),
+			MethodInvocation create = ast.newMethodInvocation();
+			create.setExpression(ast.newSimpleName("AeminiumHelper"));
+			create.setName(ast.newSimpleName("createNonBlockingTask"));
+
+			ClassInstanceCreation main_body = ast.newClassInstanceCreation();
+			main_body.setType(ast.newSimpleType(ast.newSimpleName(taskBodyName(method))));
+
+			for (Object param : method.parameters())
+			{
+				SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
+				main_body.arguments().add(ASTNode.copySubtree(ast, parameter.getName()));
+			}
+
+			create.arguments().add(main_body);
+
+			FieldAccess no_hints = ast.newFieldAccess();
+			no_hints.setExpression(ast.newSimpleName("AeminiumHelper"));
+			no_hints.setName(ast.newSimpleName("NO_HINTS"));
+
+			create.arguments().add(no_hints);
+
+		schedule.arguments().add(create);
+
+		FieldAccess no_parent = ast.newFieldAccess();
+		no_parent.setExpression(ast.newSimpleName("AeminiumHelper"));
+		no_parent.setName(ast.newSimpleName("NO_PARENT"));
+		schedule.arguments().add(no_parent);
+
+		FieldAccess no_deps = ast.newFieldAccess();
+		no_deps.setExpression(ast.newSimpleName("AeminiumHelper"));
+		no_deps.setName(ast.newSimpleName("NO_DEPS"));
+		schedule.arguments().add(no_deps);
+		
+		body.statements().add(ast.newExpressionStatement(schedule));
+
+		// AeminiumHelper.shutdown();
+		MethodInvocation shutdown = ast.newMethodInvocation();
+		shutdown.setExpression(ast.newSimpleName("AeminiumHelper"));
+		shutdown.setName(ast.newSimpleName("shutdown"));
+
+		body.statements().add(ast.newExpressionStatement(shutdown));
+
+		method.setBody(body);
 	}
 
 	/**

@@ -80,8 +80,23 @@ public class Compiler
 
 		/* Modify the source */
 		cu.accept(new AeminiumVisitor(this));
+		
+		addAeminiumImports(cu);
 
 		this.saveCU(cu);
+	}
+
+	/**
+	 * Adds the AeminiumHelper to the imports
+	 */
+	public void addAeminiumImports(CompilationUnit cu)
+	{
+		AST ast = cu.getAST();
+
+		ImportDeclaration imp = ast.newImportDeclaration();
+		imp.setName(ast.newName("aeminium.AeminiumHelper"));
+
+		cu.imports().add(imp);
 	}
 
 	/**

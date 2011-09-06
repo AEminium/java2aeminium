@@ -96,7 +96,7 @@
 	</target>
 
 	<target name="precompile.tests" depends="translate.tests">
-		<copy file="${compiler.dist.dir}/AeminiumHelper.java" todir="${benchmark.target.dir}" />
+		<copy file="${compiler.dist.dir}/AeminiumHelper.java" todir="${benchmark.target.dir}/aeminium" />
 		<copy file="${runtime.jar}" todir="${benchmark.lib.dir}" />
 
 		<mkdir dir="${benchmark.build.dir}" />

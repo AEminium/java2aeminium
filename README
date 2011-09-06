@@ -11,3 +11,11 @@ Developed in distinct phases:
 
 * Benchmark
 	An automated benchmarking script that lauches several sets of tests.
+
+TODO:
+	main() function
+	
+	method body:
+		transform "this" to "this._this";
+		transform "return" to "this._ret = ";
+
