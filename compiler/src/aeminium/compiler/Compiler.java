@@ -71,10 +71,19 @@ public class Compiler
 			return;
 		}
 
+		String sourcePath[] = { sourceDir };
+		String classPath[] = System.getProperty("classpath", "").split(";");
+
 		ASTParser parser = ASTParser.newParser(AST.JLS3);
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+
+
 		parser.setSource(source.toCharArray());
+		parser.setEnvironment(classPath, sourcePath, null, true);
 		parser.setResolveBindings(true);
+		parser.setStatementsRecovery(true);
+		parser.setBindingsRecovery(true);
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setUnitName(file.toString().replace(this.sourceDir + "/", ""));
 
 		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
@@ -106,10 +115,24 @@ public class Compiler
 	public void saveCU(CompilationUnit cu)
 	{
 		BufferedWriter writer = null;
+		String path = this.getCUPath(cu);
+
+		/* build directory tree */
+		String[] dirs = path.split("/");
+		String curPath = "";
+
+		for (int i = 0; i < dirs.length - 1; i++)
+		{
+			curPath += dirs[i] + '/';
+
+			File dir = new File(curPath);
+			if (!dir.exists())
+				dir.mkdir();
+		}
 
 		try
 		{
-			writer = new BufferedWriter(new FileWriter(this.getCUPath(cu)));
+			writer = new BufferedWriter(new FileWriter(path));
 			writer.write(cu.toString());
 		} catch (IOException e)
 		{
@@ -119,7 +142,7 @@ public class Compiler
 			try
 			{
 				if ( writer != null)
-					writer.close( );
+					writer.close();
 			} catch ( IOException e)
 			{
 			}

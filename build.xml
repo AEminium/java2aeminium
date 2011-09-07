@@ -44,7 +44,7 @@
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="aeminium.compiler.Compiler"/>
                 <attribute name="Class-Path" value=" ."/>
-                <attribute name="Rsrc-Class-Path" value="./ org.eclipse.osgi_3.5.2.R35x_v20100126.jar org.eclipse.jdt.core_3.5.2.v_981_R35x.jar org.eclipse.equinox.preferences_3.2.301.R35x_v20091117.jar org.eclipse.equinox.common_3.5.1.R35x_v20090807-1100.jar org.eclipse.core.runtime_3.5.0.v20090525.jar org.eclipse.core.resources_3.5.2.R35x_v20091203-1235.jar org.eclipse.core.jobs_3.4.100.v20090429-1800.jar org.eclipse.core.contenttype_3.4.1.R35x_v20090826-0451.jar commons-logging-1.1.1.jar commons-lang-2.5.jar commons-configuration-1.6.jar commons-collections-3.2.1.jar org.eclipse.text_3.5.0.v20100601-1300.jar org.eclipse.jface_3.6.2.M20110210-1200.jar org.eclipse.jface.text_3.6.1.r361_v20100825-0800.jar"/>
+                <attribute name="Rsrc-Class-Path" value="./ org.eclipse.osgi_3.6.2.R36x_v20110210.jar org.eclipse.jdt.core_3.6.2.v_A76_R36x.jar org.eclipse.equinox.preferences_3.3.0.v20100503.jar org.eclipse.equinox.common_3.6.0.v20100503.jar org.eclipse.core.runtime_3.6.0.v20100505.jar org.eclipse.core.resources_3.6.1.R36x_v20110131-1630.jar org.eclipse.core.jobs_3.5.1.R36x_v20100824.jar org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar org.eclipse.jface_3.6.2.M20110210-1200.jar org.eclipse.text_3.5.0.v20100601-1300.jar org.eclipse.jface.text_3.6.1.r361_v20100825-0800.jar"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
 
@@ -57,14 +57,14 @@
             <zipfileset dir="${compiler.lib.dir}" includes="commons-collections-3.2.1.jar"/>
 			-->
 
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.osgi_3.5.2.R35x_v20100126.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.jdt.core_3.5.2.v_981_R35x.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.equinox.preferences_3.2.301.R35x_v20091117.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.equinox.common_3.5.1.R35x_v20090807-1100.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.runtime_3.5.0.v20090525.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.resources_3.5.2.R35x_v20091203-1235.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.jobs_3.4.100.v20090429-1800.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.contenttype_3.4.1.R35x_v20090826-0451.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.osgi_3.6.2.R36x_v20110210.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.jdt.core_3.6.2.v_A76_R36x.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.equinox.preferences_3.3.0.v20100503.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.equinox.common_3.6.0.v20100503.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.runtime_3.6.0.v20100505.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.resources_3.6.1.R36x_v20110131-1630.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.jobs_3.5.1.R36x_v20100824.jar"/>
+            <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar"/>
             <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.text_3.5.0.v20100601-1300.jar"/>
             <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.jface_3.6.2.M20110210-1200.jar"/>
             <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.jface.text_3.6.1.r361_v20100825-0800.jar"/>
@@ -72,6 +72,7 @@
     </target>
 
 	<target name="compile.runtime.classes">
+		<mkdir dir="${runtime.build.dir}"/>
 		<javac srcdir="${runtime.src.dir}" destdir="${runtime.build.dir}" classpathref="runtime.classpath" />
 	</target>
 
@@ -80,7 +81,7 @@
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Class-Path" value=" ."/>
-                <attribute name="Rsrc-Class-Path" value="./ org.eclipse.osgi_3.5.2.R35x_v20100126.jar org.eclipse.jdt.core_3.5.2.v_981_R35x.jar org.eclipse.equinox.preferences_3.2.301.R35x_v20091117.jar org.eclipse.equinox.common_3.5.1.R35x_v20090807-1100.jar org.eclipse.core.runtime_3.5.0.v20090525.jar org.eclipse.core.resources_3.5.2.R35x_v20091203-1235.jar org.eclipse.core.jobs_3.4.100.v20090429-1800.jar org.eclipse.core.contenttype_3.4.1.R35x_v20090826-0451.jar commons-logging-1.1.1.jar commons-lang-2.5.jar commons-configuration-1.6.jar commons-collections-3.2.1.jar org.eclipse.text_3.5.0.v20100601-1300.jar org.eclipse.jface_3.6.2.M20110210-1200.jar org.eclipse.jface.text_3.6.1.r361_v20100825-0800.jar"/>
+                <attribute name="Rsrc-Class-Path" value="./"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
 
@@ -89,6 +90,9 @@
     </target>
 
 	<target name="translate.tests" depends="compile.compiler,compile.runtime">
+		<delete>
+			<fileset dir="${benchmark.target.dir}" includes="**"/>
+		</delete>
 		<java jar="${compiler.jar}" fork="true">
 			<arg value="${benchmark.src.dir}" />
 			<arg value="${benchmark.target.dir}" />

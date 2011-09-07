@@ -41,11 +41,14 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 	@Override
 	public boolean visit(MethodDeclaration method)
 	{
+		if (method.isConstructor())
+			return true;
+
 		IExtendedModifier modifier = getModifier(method, "@AEminium");
 		if (modifier != null)
 		{
 			method.modifiers().remove(modifier);
-			
+
 			this.buildClassBody(method);
 
 			if (method.getName().toString().equals("main"))
@@ -85,13 +88,6 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 
 		if (getModifier(method, "static") == null)
 		{
-			// add _this field
-			VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
-			frag.setName(ast.newSimpleName("_this"));
-
-			FieldDeclaration field = ast.newFieldDeclaration(frag);
-			field.setType(ast.newSimpleType(ast.newSimpleName(parent.getName().toString())));
-			
 			// add _this to parameter list
 			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 			param.setType(ast.newSimpleType(ast.newSimpleName(parent.getName().toString())));
@@ -103,7 +99,7 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 		/* add parameters */
 		constructor.parameters().addAll(ASTNode.copySubtrees(ast, method.parameters()));
 
-		for (Object param : method.parameters())
+		for (Object param : constructor.parameters())
 		{
 			SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
 			
@@ -155,14 +151,17 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 
 		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
 
-		/* FIXME: by now its only a copy */
+		Block backup_body = (Block) ASTNode.copySubtree(ast, method.getBody());
+		method.accept(new TranslateVisitor(this.compiler));
 		Block execute_body = (Block) ASTNode.copySubtree(ast, method.getBody());
+		method.setBody(backup_body);
 
 		execute.setBody(execute_body);
+
 		decl.bodyDeclarations().add(execute);
 
 		cu.types().add(decl);
-
+		
 		compiler.saveCU(cu);
 	}
 
