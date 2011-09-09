@@ -74,9 +74,10 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 		cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, cu_original.getPackage()));
 		cu.imports().addAll(ASTNode.copySubtrees(ast, cu_original.imports()));
 
-		TypeDeclaration decl = ast.newTypeDeclaration();		
+		TypeDeclaration decl = ast.newTypeDeclaration();	
+		cu.types().add(decl);
+	
 		decl.setName(ast.newSimpleName(this.taskBodyName(method)));
-		
 		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
 		
 		/* Create the constructor */
@@ -152,15 +153,13 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
 
 		Block backup_body = (Block) ASTNode.copySubtree(ast, method.getBody());
-		method.accept(new TranslateVisitor(this.compiler));
+		method.accept(new TranslateVisitor(this.compiler, decl));
 		Block execute_body = (Block) ASTNode.copySubtree(ast, method.getBody());
 		method.setBody(backup_body);
 
 		execute.setBody(execute_body);
 
 		decl.bodyDeclarations().add(execute);
-
-		cu.types().add(decl);
 		
 		compiler.saveCU(cu);
 	}
@@ -251,7 +250,7 @@ class AeminiumVisitor extends org.eclipse.jdt.core.dom.ASTVisitor
 	 * @param method The method owning the modifiers
 	 * @param name The common name of the modifier (e.g.: "public", "static", "@AEminium")
 	 */
-	private static IExtendedModifier getModifier(MethodDeclaration method, String name)
+	public static IExtendedModifier getModifier(MethodDeclaration method, String name)
 	{
 		for (Object modifier : method.modifiers())
 			if (modifier.toString().equals(name))

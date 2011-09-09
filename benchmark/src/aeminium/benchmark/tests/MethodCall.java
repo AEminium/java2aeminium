@@ -10,7 +10,6 @@ public class MethodCall
 		this.var = 1;
 	}
 
-	@AEminium
 	public void test()
 	{
 		System.out.println("Result: " + this.var);
