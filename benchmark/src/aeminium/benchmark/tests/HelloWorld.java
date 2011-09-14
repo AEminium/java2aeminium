@@ -5,6 +5,7 @@ public class HelloWorld
 	@AEminium
 	public static void main(String[] args)
 	{
-		System.out.println("HelloWorld: OK");
+		//System.out.println("HelloWorld: OK");
+		return;
 	}
 }

@@ -3,11 +3,15 @@ package aeminium.compiler.east;
 import java.util.List;
 import java.util.ArrayList;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
 
 import aeminium.compiler.east.EAST;
 
@@ -25,8 +29,9 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 	{
 		this.origin = origin;
 
-		if (origin.isInterface())
-			System.err.println("TODO: Interfaces are not supported yet.");
+		/* not suported yet */
+		assert(origin.isInterface());
+		assert(origin.getSuperclassType() == null);
 
 		this.fields = new ArrayList<EFieldDeclaration>();
 		for (Object field : origin.getFields())
@@ -37,8 +42,19 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 			this.methods.add(EAST.extend((MethodDeclaration) method));
 	}
 
-	public void translate(List<CompilationUnit> cus)
+	public TypeDeclaration translate(AST ast, List<CompilationUnit> cus)
 	{
-		// TODO
+		TypeDeclaration type = ast.newTypeDeclaration();
+		type.setName((SimpleName) ASTNode.copySubtree(ast, this.origin.getName()));
+
+		for (EFieldDeclaration field : this.fields)
+			type.bodyDeclarations().add(field.translate(ast, cus));
+
+		for (EMethodDeclaration method : this.methods)
+		{
+			type.bodyDeclarations().add(method.translate(ast, cus));
+		}
+
+		return type;
 	}
 }

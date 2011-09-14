@@ -39,4 +39,21 @@ public class EAST
 	{
 		return new EMethodDeclaration(method);
 	}
+
+	public static EStatement extend(Statement stmt)
+	{
+		if (stmt instanceof Block)
+			return new EBlock((Block) stmt);
+
+		if (stmt instanceof ReturnStatement)
+			return new EReturnStatement((ReturnStatement) stmt);
+
+		System.err.println("Invalid Statement");
+		return null;
+	}
+
+	public static EBlock extend(Block block)
+	{
+		return new EBlock(block);
+	}
 }

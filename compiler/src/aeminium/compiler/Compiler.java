@@ -73,13 +73,17 @@ public class Compiler
 			this.units.put(shortPath, EAST.extend(cu));
 		}
 
-		/* TODO */
+		AST ast = AST.newAST(AST.JLS3);
+
 		for (ECompilationUnit unit : this.units.values())
-			unit.translate(units);
+			unit.translate(ast, units);
 
 		// Save units
 		for (CompilationUnit unit : units)
+		{
+			System.out.println(unit);
 			this.save(unit);
+		}
 	}
 
 	/**
