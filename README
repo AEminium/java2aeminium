@@ -13,7 +13,24 @@ Developed in distinct phases:
 	An automated benchmarking script that lauches several sets of tests.
 
 TODO:
-	method body:
-		read aeminium.compiler.TranslateVisitor
+	Build EAST
+	
+	Optimize EAST
+		-> select nodes to paralellize and nodes to serialize
+		conservative rule:
+			nodes with 0 or 1 childs can be serialized without loss of paralellism   
 
-		
+	Translate EAST
+
+
+FIXME:
+	after a conditional statement (if, while, statement) task has been executed it should be possible to
+	cancel child tasks:
+		it can be done by modifying the code, or directly allowing it in the runtime
+		(maybe having execute return a boolean?)
+
+	if (.........)
+		return x;
+
+	x.method()
+	

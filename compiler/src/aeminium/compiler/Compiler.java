@@ -1,121 +1,110 @@
 package aeminium.compiler;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
-import java.io.FileWriter;
-
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.PackageDeclaration;
-import org.eclipse.jface.text.Document;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.text.edits.MalformedTreeException;
-import org.eclipse.text.edits.TextEdit;
+
+import aeminium.compiler.Translator;
+import aeminium.compiler.Optimizer;
+
+import aeminium.compiler.east.EAST;
+import aeminium.compiler.east.ECompilationUnit;
 
 public class Compiler
 {
-	private String sourceDir;
-	private String targetDir;
+	String source;
+	String target;
 
-	Compiler(String sourceDir, String targetDir)
+	/* required for AST creation */
+	String[] classPath;
+	String[] sourcePath;
+
+	Map<String, ECompilationUnit> units;
+
+	Compiler(String source, String target)
 	{
-		this.sourceDir = sourceDir;
-		this.targetDir = targetDir;
+		this.units = new HashMap<String, ECompilationUnit>();
+
+		this.source = source;
+		this.target = target;
+
+		/* set up the environment */
+		this.classPath = System.getProperty("classpath", "").split(";");
+		this.sourcePath = new String[1];
+		this.sourcePath[0] = source;
 	}
 
-	/**
-	 * Attempts to compile all files from sourceDir into targetDir
-	 */
-	public void compile()
+	public void run() throws IOException
 	{
-		this.compile(new File(this.sourceDir));
-	}
+		List<String> files = this.walk(new File(this.source));
+		Optimizer optimizer = new Optimizer(this);
+		List<CompilationUnit> units = new ArrayList<CompilationUnit>();
 
-	/**
-	 * Attempts to compile all files in a (sub)-directory
-	 * @param dir The directory path, relative to the directory where the compiler is being executed, to compile files from.
-	 */
-	private void compile(File dir)
-	{
-		File[] children = dir.listFiles();
-		if (children != null)
-			for (File child : children)
-				this.compile(child);
-		else
-			this.parse(dir);
-	}
-
-	/**
-	 * Parses a CompilationUnit (file) and creates the modified version in the target directory
-	 * @param file The file that contains the compilation unit.
-	 */
-	private void parse(File file)
-	{
-		String source;
-
-		try
+		for (String path : files)
 		{
-			source = readFileAsString(file);
-		} catch (IOException e)
-		{
-			System.err.println("Failed to load file: "+ e);
-			return;
+			String shortPath = path.replace(this.source + "/", "");
+			String content = readFile(path);
+
+			ASTParser parser = ASTParser.newParser(AST.JLS3);
+
+			parser.setSource(content.toCharArray());
+			parser.setEnvironment(this.classPath, this.sourcePath, null, true);
+			parser.setResolveBindings(true);
+			parser.setStatementsRecovery(true);
+			parser.setBindingsRecovery(true);
+			parser.setKind(ASTParser.K_COMPILATION_UNIT);
+			parser.setUnitName(shortPath);
+
+			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+
+			this.units.put(shortPath, EAST.extend(cu));
 		}
 
-		String sourcePath[] = { sourceDir };
-		String classPath[] = System.getProperty("classpath", "").split(";");
+		/* TODO */
+		for (ECompilationUnit unit : this.units.values())
+			unit.translate(units);
 
-		ASTParser parser = ASTParser.newParser(AST.JLS3);
-
-
-		parser.setSource(source.toCharArray());
-		parser.setEnvironment(classPath, sourcePath, null, true);
-		parser.setResolveBindings(true);
-		parser.setStatementsRecovery(true);
-		parser.setBindingsRecovery(true);
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		parser.setUnitName(file.toString().replace(this.sourceDir + "/", ""));
-
-		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
-
-		/* Modify the source */
-		cu.accept(new AeminiumVisitor(this));
-		
-		addAeminiumImports(cu);
-
-		this.saveCU(cu);
+		// Save units
+		for (CompilationUnit unit : units)
+			this.save(unit);
 	}
 
 	/**
-	 * Adds the AeminiumHelper to the imports
-	 */
-	public void addAeminiumImports(CompilationUnit cu)
+		Recursivly lists every regular file inside a given path
+		@param path The base path 
+	*/
+	public List<String> walk(File path)
 	{
-		AST ast = cu.getAST();
+		List<String> children = new ArrayList<String>();
 
-		ImportDeclaration imp = ast.newImportDeclaration();
-		imp.setName(ast.newName("aeminium.AeminiumHelper"));
+		if (path.isDirectory())
+		{
+			File[] files = path.listFiles();
+			for (File file : files)
+				children.addAll(this.walk(file));
+		} else
+			children.add(path.getPath());
 
-		cu.imports().add(imp);
+		return children;
 	}
 
-	/**
-	 * Saves a compilation unit to its correct path
-	 * @param cu The compilation unit to be stored
-	 */
-	public void saveCU(CompilationUnit cu)
+	private void save(CompilationUnit unit) throws IOException
 	{
 		BufferedWriter writer = null;
-		String path = this.getCUPath(cu);
+		String path = this.getCUPath(unit);
 
 		/* build directory tree */
 		String[] dirs = path.split("/");
@@ -133,10 +122,7 @@ public class Compiler
 		try
 		{
 			writer = new BufferedWriter(new FileWriter(path));
-			writer.write(cu.toString());
-		} catch (IOException e)
-		{
-			System.err.println("Failed to save compilation unit: " + e); 
+			writer.write(unit.toString());
 		} finally
 		{
 			try
@@ -149,55 +135,22 @@ public class Compiler
 		}
 	}
 
-	/**
-	 * Obtains the CU's file path from it's package and types definitions
-	 */ 
 	private String getCUPath(CompilationUnit cu)
 	{
-		String path = this.targetDir;
+		String path = this.target;
 
 		path += "/";
 		path += cu.getPackage().getName().toString().replace('.', '/');
 		path += "/";
-	
-		/*
-			FIXME:
-			if compilation unit has more than 1 defined this doesn't work
-		 	need to loop over them and choose the ONE that has a "public" access
-		*/
 		path += ((TypeDeclaration) cu.types().get(0)).getName();
 		path += ".java";
 		
 		return path;
 	}
 
-	/**
-	 * Compiles Java code to AEminium (runtime) code.
-	 * 
-	 * Call as java -j Compiler.jar sourceDir targetDir
-	 * @param args 
-	 */
-	public static void main(String[] args)
+	private static String readFile(String path) throws java.io.IOException
 	{
-		if (args.length != 2)
-		{
-			System.out.println("java -j Compiler.jar sourceDir targetDir");
-			return;
-		}
-
-		Compiler compiler = new Compiler(args[0], args[1]);
-		compiler.compile();
-	}
-
-	/**
-	 * Reads a file into a String
-	 * @param filePath The path to the file
-	 * @return the contents of the file
-	 * @throws java.io.IOException
-	 */
-	private static String readFileAsString(File file)
-		throws java.io.IOException
-	{
+		File file = new File(path);
 	    byte[] buffer = new byte[(int) file.length()];
 	    
 	    BufferedInputStream f = null;
@@ -220,4 +173,24 @@ public class Compiler
 	    
 	    return new String(buffer);
 	}
-} 
+
+	public static void main(String[] args)
+	{
+		if (args.length != 2)
+		{
+			System.err.println("java -jar Compiler source_dir target_dir");
+			return;
+		}
+
+		Compiler compiler = new Compiler(args[0], args[1]);
+
+		try
+		{
+			compiler.run();
+		} catch (IOException e)
+		{
+			System.err.println("ERROR: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+}

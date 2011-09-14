@@ -2,17 +2,12 @@ package aeminium.benchmark.tests;
 
 public class MethodCall
 {
-	public int var;
+	MethodCall() {}
 
-	MethodCall()
-	{
-		System.out.println("Constructor");
-		this.var = 1;
-	}
-
+	@AEminium
 	public void test()
 	{
-		System.out.println("Result: " + this.var);
+		System.out.println("MethodCall: OK");
 	}
 
 	@AEminium

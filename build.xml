@@ -111,8 +111,12 @@
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<!-- Temporary "unit" testing -->
 		<java classname="aeminium.benchmark.tests.HelloWorld" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
-		<!-- <java classname="aeminium.benchmark.tests.SimpleMath" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/> -->
+		<java classname="aeminium.benchmark.tests.MethodCall" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.StaticCall" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.Return" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.Logic" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.Loop" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
 	</target>
+
 </project>
