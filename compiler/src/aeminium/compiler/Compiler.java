@@ -50,7 +50,7 @@ public class Compiler
 	public void run() throws IOException
 	{
 		List<String> files = this.walk(new File(this.source));
-		List<CompilationUnit> units = new ArrayList<CompilationUnit>();
+		EAST east = new EAST();
 
 		for (String path : files)
 		{
@@ -69,19 +69,13 @@ public class Compiler
 
 			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
-			this.units.put(shortPath, EAST.extend(cu));
+			east.extend(cu);
 		}
 
-		AST ast = AST.newAST(AST.JLS3);
-
-		for (ECompilationUnit unit : this.units.values())
-		{
-			unit.optimize();
-			unit.translate(ast, units);
-		}
+		east.optimize();
 
 		// Save units
-		for (CompilationUnit unit : units)
+		for (CompilationUnit unit : east.translate())
 		{
 			System.out.println(unit);
 			this.save(unit);

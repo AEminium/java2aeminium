@@ -17,20 +17,22 @@ import aeminium.compiler.east.EStatement;
 
 public class EBlock extends EStatement
 {
+	EAST east;
 	Block origin;
 	List<EStatement> stmts;
 
-	EBlock(Block origin)
+	EBlock(EAST east, Block origin)
 	{
+		this.east = east;
 		this.origin = origin;
 		this.stmts = new ArrayList<EStatement>();
 
 		for (Object stmt : origin.statements())
-			this.stmts.add(EAST.extend((Statement) stmt));
+			this.stmts.add(this.east.extend((Statement) stmt));
 	}
 
 	@Override
-	public void translate(boolean sequential, AST ast, List<Statement> stmts)
+	public void translate(List<Statement> stmts)
 	{
 		// TODO
 	}

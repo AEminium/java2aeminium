@@ -17,23 +17,27 @@ import aeminium.compiler.east.EStatement;
 
 public class EReturnStatement extends EStatement
 {
+	EAST east;
 	ReturnStatement origin;
 	EExpression expr;
 
-	EReturnStatement(ReturnStatement origin)
+	EReturnStatement(EAST east, ReturnStatement origin)
 	{
+		this.east = east;
 		this.origin = origin;
 
 		if (origin.getExpression() != null)
 		{
-			this.expr = EAST.extend((Expression) origin.getExpression());
+			this.expr = this.east.extend((Expression) origin.getExpression());
 			this.link(this.expr);
 		}
 	}
 
 	@Override
-	public void translate(AST ast, List<Statement> stmts)
+	public void translate(List<Statement> stmts)
 	{
+		AST ast = this.east.getAST();
+
 		// return can't have any child
 		assert(this.sequential == true);
 
@@ -52,7 +56,7 @@ public class EReturnStatement extends EStatement
 
 			assign.setLeftHandSide(ret);
 
-			assign.setRightHandSide(this.expr.translate(ast, stmts));
+			assign.setRightHandSide(this.expr.translate(stmts));
 	
 			ExpressionStatement stmt = ast.newExpressionStatement(assign);
 			stmts.add(stmt);

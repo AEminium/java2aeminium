@@ -18,20 +18,24 @@ import aeminium.compiler.east.EAbstractTypeDeclaration;
 
 public class ECompilationUnit extends EASTNode
 {
+	EAST east;
 	CompilationUnit origin;
 	List<EAbstractTypeDeclaration> types;
 
-	ECompilationUnit(CompilationUnit origin)
+	ECompilationUnit(EAST east, CompilationUnit origin)
 	{
+		this.east = east;
 		this.origin = origin;
 		this.types = new ArrayList<EAbstractTypeDeclaration>();
 
 		for (Object type : origin.types())
-			this.types.add(EAST.extend((AbstractTypeDeclaration) type));
+			this.types.add(this.east.extend((AbstractTypeDeclaration) type));
 	}
 
-	public void translate(AST ast, List<CompilationUnit> cus)
+	public void translate(List<CompilationUnit> cus)
 	{
+		AST ast = this.east.getAST();
+
 		CompilationUnit unit = ast.newCompilationUnit();
 		
 		unit.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, this.origin.getPackage()));
@@ -43,7 +47,7 @@ public class ECompilationUnit extends EASTNode
 		unit.imports().add(helper);
 
 		for (EAbstractTypeDeclaration type : this.types)
-			unit.types().add(type.translate(ast, cus));
+			unit.types().add(type.translate(cus));
 
 		cus.add(unit);
 	}
@@ -52,5 +56,11 @@ public class ECompilationUnit extends EASTNode
 	{
 		for (EAbstractTypeDeclaration type : this.types)
 			type.optimize();
+	}
+
+	public String getQualifiedName()
+	{
+		return this.origin.getPackage().getName().toString() + "."
+			+ ((AbstractTypeDeclaration) this.origin.types().get(0)).getName();
 	}
 }

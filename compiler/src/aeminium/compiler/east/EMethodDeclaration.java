@@ -17,11 +17,13 @@ import aeminium.compiler.east.EBlock;
 
 public class EMethodDeclaration extends EBodyDeclaration
 {
+	EAST east;
 	MethodDeclaration origin;
 	EBlock body;
 
-	EMethodDeclaration(MethodDeclaration origin)
+	EMethodDeclaration(EAST east, MethodDeclaration origin)
 	{
+		this.east = east;
 		this.origin = origin;
 
 		// do something about parameters?
@@ -30,7 +32,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 		Block block = origin.getBody();
 
 		assert(block == null);
-		this.body = EAST.extend(block);		
+		this.body = this.east.extend(block);		
 	}
 
 	public void optimize()
@@ -41,8 +43,10 @@ public class EMethodDeclaration extends EBodyDeclaration
 		this.body.optimize();
 	}
 
-	public MethodDeclaration translate(AST ast, List<CompilationUnit> cus)
+	public MethodDeclaration translate(List<CompilationUnit> cus)
 	{
+		AST ast = this.east.getAST();
+
 		if (this.getModifier("@AEminium") != null)
 		{
 			this.buildClass(ast, cus);
@@ -163,7 +167,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		Block execute_body = (Block) ast.newBlock();
 
-		this.body.translate(true, ast, (List<Statement>) execute_body.statements()); 
+		this.body.translate((List<Statement>) execute_body.statements()); 
 
 		execute.setBody(execute_body);
 

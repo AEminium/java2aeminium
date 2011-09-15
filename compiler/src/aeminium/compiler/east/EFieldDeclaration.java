@@ -18,15 +18,19 @@ import aeminium.compiler.east.EMethodDeclaration;
 
 public class EFieldDeclaration
 {
+	EAST east;
 	FieldDeclaration origin;
 
-	EFieldDeclaration(FieldDeclaration origin)
+	EFieldDeclaration(EAST east, FieldDeclaration origin)
 	{
+		this.east = east;
 		this.origin = origin;
 	}
 
-	public FieldDeclaration translate(AST ast, List<CompilationUnit> cus)
+	public FieldDeclaration translate(List<CompilationUnit> cus)
 	{
+		AST ast = this.east.getAST();
+
 		FieldDeclaration field = (FieldDeclaration) ASTNode.copySubtree(origin.getAST(), this.origin);
 		field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 		field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));

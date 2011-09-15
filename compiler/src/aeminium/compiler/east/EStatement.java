@@ -13,5 +13,5 @@ import aeminium.compiler.east.EASTNode;
 public abstract class EStatement extends EASTDependentNode
 {
 	/* TODO: Anything else? */
-	public abstract void translate(AST ast, List<Statement> stmts);
+	public abstract void translate(List<Statement> stmts);
 }

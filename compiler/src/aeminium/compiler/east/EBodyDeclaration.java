@@ -12,5 +12,5 @@ import aeminium.compiler.east.EASTNode;
 
 public abstract class EBodyDeclaration extends EASTNode
 {
-	public abstract BodyDeclaration translate(AST ast, List<CompilationUnit> cus);
+	public abstract BodyDeclaration translate(List<CompilationUnit> cus);
 }
