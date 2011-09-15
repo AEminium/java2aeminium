@@ -53,13 +53,25 @@ public class EAST
 		if (decl instanceof TypeDeclaration)
 			return new ETypeDeclaration(this, (TypeDeclaration) decl); 
 	
-		System.err.println("Invalid AbstractTypeDeclaration");
+		System.err.println("Invalid AbstractTypeDeclaration: " + decl.getClass().toString());
 		return null;
 	}
 
 	public EExpression extend(Expression expr)
 	{
-		/* TODO */
+		if (expr instanceof MethodInvocation)
+			return new EMethodInvocation(this, (MethodInvocation) expr);
+
+		if (expr instanceof InfixExpression)
+			return new EInfixExpression(this, (InfixExpression) expr);
+
+		if (expr instanceof SimpleName)
+			return new ESimpleName(this, (SimpleName) expr);
+
+		if (expr instanceof NumberLiteral)
+			return new ENumberLiteral(this, (NumberLiteral) expr);
+
+		System.err.println("Invalid expr: " + expr.getClass().toString());
 		return null;
 	}
 
@@ -86,12 +98,25 @@ public class EAST
 		if (stmt instanceof ReturnStatement)
 			return new EReturnStatement(this, (ReturnStatement) stmt);
 
-		System.err.println("Invalid Statement");
+		if (stmt instanceof VariableDeclarationStatement)
+			return new EVariableDeclarationStatement(this, (VariableDeclarationStatement) stmt);
+
+		System.err.println("Invalid Statement: " + stmt.getClass().toString());
 		return null;
 	}
 
 	public EBlock extend(Block block)
 	{
 		return new EBlock(this, block);
+	}
+
+	public EVariableDeclarationFragment extend(VariableDeclarationFragment frag)
+	{
+		return new EVariableDeclarationFragment(this, frag);
+	}
+
+	public ESimpleName extend(SimpleName name)
+	{
+		return new ESimpleName(this, name);
 	}
 }

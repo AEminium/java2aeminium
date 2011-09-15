@@ -3,17 +3,12 @@ package aeminium.compiler.east;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.*;
 
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.Statement;
-
-import aeminium.compiler.east.EAST;
-
-import aeminium.compiler.east.EASTNode;
+import aeminium.compiler.east.*;
 
 public abstract class EExpression extends EASTDependentNode
 {
 	/* TODO: Anything else? */
-	public abstract Expression translate(List<Statement> stmts);
+	public abstract Expression translate(TypeDeclaration decl, List<Statement> stmts);
 }

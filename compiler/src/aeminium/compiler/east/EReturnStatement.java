@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.east.EAST;
@@ -34,12 +35,12 @@ public class EReturnStatement extends EStatement
 	}
 
 	@Override
-	public void translate(List<Statement> stmts)
+	public void translate(TypeDeclaration decl, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
 		// return can't have any child
-		assert(this.sequential == true);
+		assert(this.isRoot() == false);
 
 		if (this.expr != null)
 		{
@@ -55,8 +56,7 @@ public class EReturnStatement extends EStatement
 			ret.setName(ast.newSimpleName("_ret"));
 
 			assign.setLeftHandSide(ret);
-
-			assign.setRightHandSide(this.expr.translate(stmts));
+			assign.setRightHandSide(this.expr.translate(decl, stmts));
 	
 			ExpressionStatement stmt = ast.newExpressionStatement(assign);
 			stmts.add(stmt);

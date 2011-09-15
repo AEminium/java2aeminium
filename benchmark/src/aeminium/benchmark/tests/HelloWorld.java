@@ -3,9 +3,16 @@ package aeminium.benchmark.tests;
 public class HelloWorld
 {
 	@AEminium
-	public static void main(String[] args)
+	public static int main(String[] args)
 	{
-		//System.out.println("HelloWorld: OK");
-		return;
+		int a = x.method();
+		int b = x.method2();
+	
+		int c = a+b;
+
+		//if (c > 0)
+		//	System.out.println(c);
+
+		return 0;		
 	}
 }

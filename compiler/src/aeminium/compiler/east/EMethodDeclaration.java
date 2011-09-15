@@ -79,20 +79,6 @@ public class EMethodDeclaration extends EBodyDeclaration
 		decl.setName(ast.newSimpleName(this.bodyName()));
 		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
 		
-		/* Create the return placeholder */
-		if (!this.origin.getReturnType2().toString().equals("void"))
-		{		
-			VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
-			frag.setName(ast.newSimpleName("_ret"));
-
-			FieldDeclaration field = ast.newFieldDeclaration(frag);
-			field.setType((Type) ASTNode.copySubtree(ast, this.origin.getReturnType2()));
-			field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
-
-			decl.bodyDeclarations().add(field);
-		}
-
 		/* Create the constructor */
 		MethodDeclaration constructor = ast.newMethodDeclaration();
 		constructor.setName(ast.newSimpleName(this.bodyName()));
@@ -108,6 +94,41 @@ public class EMethodDeclaration extends EBodyDeclaration
 			param.setName(ast.newSimpleName("_this"));
 
 			constructor.parameters().add(param);
+		}
+
+		/* Create the return placeholder */
+		if (!this.origin.getReturnType2().toString().equals("void"))
+		{		
+			VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
+			frag.setName(ast.newSimpleName("_ret"));
+
+			FieldDeclaration field = ast.newFieldDeclaration(frag);
+			field.setType((Type) ASTNode.copySubtree(ast, this.origin.getReturnType2()));
+			field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
+			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
+
+			decl.bodyDeclarations().add(field);
+
+			// add _root field;
+			VariableDeclarationFragment root = ast.newVariableDeclarationFragment();
+			root.setName(ast.newSimpleName("_root"));
+
+			FieldDeclaration rootfield = ast.newFieldDeclaration(root);
+			rootfield.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
+
+			decl.bodyDeclarations().add(rootfield);
+
+			// this._root = this
+			Assignment asgn = ast.newAssignment();
+
+			FieldAccess access = ast.newFieldAccess();
+			access.setExpression(ast.newThisExpression());
+			access.setName(ast.newSimpleName("_root"));
+
+			asgn.setLeftHandSide(access);
+			asgn.setRightHandSide(ast.newThisExpression());
+
+			constructor_body.statements().add(ast.newExpressionStatement(asgn));
 		}
 
 		/* add parameters */
@@ -165,11 +186,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
 
-		Block execute_body = (Block) ast.newBlock();
-
-		this.body.translate((List<Statement>) execute_body.statements()); 
-
-		execute.setBody(execute_body);
+		execute.setBody(this.body.build(decl));
 
 		decl.bodyDeclarations().add(execute);
 		

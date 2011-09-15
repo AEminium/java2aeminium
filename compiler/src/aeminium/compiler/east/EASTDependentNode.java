@@ -13,9 +13,6 @@ public abstract class EASTDependentNode extends EASTNode
 
 	EASTDependentNode()
 	{
-		/* by default everything is parallel */
-		this.sequential = false;
-
 		this.childs = new ArrayList<EASTDependentNode>();
 		this.parents = new ArrayList<EASTDependentNode>();
 	}
@@ -26,14 +23,14 @@ public abstract class EASTDependentNode extends EASTNode
 		child.parents.add(this);
 	}
 
-	public boolean isSequential()
-	{
-		return this.sequential;
-	}
-
 	@Override
 	public void optimize()
 	{
-		this.sequential = this.childs.size() < 2;
+		// TODO optimize this
+	}
+
+	public boolean isRoot()
+	{
+		return this.parents.size() == 0;
 	}
 }
