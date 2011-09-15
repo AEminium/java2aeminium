@@ -1,29 +1,39 @@
 package aeminium.compiler.east;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 import aeminium.compiler.east.EASTNode;
 
 public abstract class EASTDependentNode extends EASTNode
 {
-	protected HashMap<EASTDependentNode, Boolean> childs;
-	protected HashMap<EASTDependentNode, Boolean> parents;
+	protected boolean sequential;
+	protected List<EASTDependentNode> childs;
+	protected List<EASTDependentNode> parents;
 
 	EASTDependentNode()
 	{
-		this.childs = new HashMap<EASTDependentNode, Boolean>();
-		this.parents = new HashMap<EASTDependentNode, Boolean>();
+		/* by default everything is parallel */
+		this.sequential = false;
+
+		this.childs = new ArrayList<EASTDependentNode>();
+		this.parents = new ArrayList<EASTDependentNode>();
 	}
 
 	protected void link(EASTDependentNode child)
 	{
-		/* by default everything is parallel */
-		this.childs.put(child, false);
-		child.parents.put(this, false);
+		this.childs.add(child);
+		child.parents.add(this);
 	}
 
-	protected boolean isSequential(EASTDependentNode child)
+	public boolean isSequential()
 	{
-		return this.childs.get(child);
+		return this.sequential;
+	}
+
+	@Override
+	public void optimize()
+	{
+		this.sequential = this.childs.size() < 2;
 	}
 }

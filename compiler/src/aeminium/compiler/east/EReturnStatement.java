@@ -32,10 +32,10 @@ public class EReturnStatement extends EStatement
 	}
 
 	@Override
-	public void translate(boolean sequential, AST ast, List<Statement> stmts)
+	public void translate(AST ast, List<Statement> stmts)
 	{
 		// return can't have any child
-		assert(sequential == true);
+		assert(this.sequential == true);
 
 		if (this.expr != null)
 		{
@@ -52,7 +52,7 @@ public class EReturnStatement extends EStatement
 
 			assign.setLeftHandSide(ret);
 
-			assign.setRightHandSide(this.expr.translate(this.isSequential(this.expr), ast, stmts));
+			assign.setRightHandSide(this.expr.translate(ast, stmts));
 	
 			ExpressionStatement stmt = ast.newExpressionStatement(assign);
 			stmts.add(stmt);

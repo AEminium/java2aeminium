@@ -6,16 +6,8 @@ import java.util.ArrayList;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 
-import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IExtendedModifier;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
 import aeminium.compiler.east.EAST;
 
@@ -33,11 +25,20 @@ public class EMethodDeclaration extends EBodyDeclaration
 		this.origin = origin;
 
 		// do something about parameters?
+		// see optimize(), on a future versio the read version is necessary for optimizing loops
 
 		Block block = origin.getBody();
 
 		assert(block == null);
 		this.body = EAST.extend(block);		
+	}
+
+	public void optimize()
+	{
+		// TODO: calculate if any parameter is read-only:
+		// a variable is read-only if there isn't any write operations in the closure of body operations
+
+		this.body.optimize();
 	}
 
 	public MethodDeclaration translate(AST ast, List<CompilationUnit> cus)
@@ -60,7 +61,115 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 	public void buildClass(AST ast, List<CompilationUnit> cus)
 	{
+		/* Create the class definition */
+		CompilationUnit cu = ast.newCompilationUnit();
+		CompilationUnit cu_original = (CompilationUnit) this.origin.getRoot();
+		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
+
+		cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, cu_original.getPackage()));
+		cu.imports().addAll(ASTNode.copySubtrees(ast, cu_original.imports()));
+
+		TypeDeclaration decl = ast.newTypeDeclaration();
+		cu.types().add(decl);
+	
+		decl.setName(ast.newSimpleName(this.bodyName()));
+		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
 		
+		/* Create the return placeholder */
+		if (!this.origin.getReturnType2().toString().equals("void"))
+		{		
+			VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
+			frag.setName(ast.newSimpleName("_ret"));
+
+			FieldDeclaration field = ast.newFieldDeclaration(frag);
+			field.setType((Type) ASTNode.copySubtree(ast, this.origin.getReturnType2()));
+			field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
+			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
+
+			decl.bodyDeclarations().add(field);
+		}
+
+		/* Create the constructor */
+		MethodDeclaration constructor = ast.newMethodDeclaration();
+		constructor.setName(ast.newSimpleName(this.bodyName()));
+		constructor.setConstructor(true);
+
+		Block constructor_body = ast.newBlock();
+
+		if (this.getModifier("static") == null)
+		{
+			// add _this to parameter list
+			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+			param.setType(ast.newSimpleType(ast.newSimpleName(parent.getName().toString())));
+			param.setName(ast.newSimpleName("_this"));
+
+			constructor.parameters().add(param);
+		}
+
+		/* add parameters */
+		constructor.parameters().addAll(ASTNode.copySubtrees(ast, this.origin.parameters()));
+
+		for (Object param : constructor.parameters())
+		{
+			SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
+			
+			// add field
+			VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
+			frag.setName((SimpleName) ASTNode.copySubtree(ast, parameter.getName()));
+
+			FieldDeclaration field = ast.newFieldDeclaration(frag);
+			field.setType((Type) ASTNode.copySubtree(ast, parameter.getType()));
+			
+			decl.bodyDeclarations().add(field);
+
+			// add assigment "this.field = field"
+			Assignment asgn = ast.newAssignment();
+			
+			FieldAccess left = ast.newFieldAccess();
+			left.setExpression(ast.newThisExpression());
+			left.setName((SimpleName) ASTNode.copySubtree(ast, parameter.getName()));
+
+			asgn.setLeftHandSide(left);
+			asgn.setRightHandSide((SimpleName) ASTNode.copySubtree(ast, parameter.getName()));
+			
+			ExpressionStatement stmt = ast.newExpressionStatement(asgn);
+
+			constructor_body.statements().add(stmt);
+		}
+
+		constructor.setBody(constructor_body);
+		decl.bodyDeclarations().add(constructor);
+
+		/* Create the execute() method */
+
+		// public void execute(aeminium.runtime.Runtime rt, aeminium.runtime.Task task) throws Exception
+		MethodDeclaration execute = ast.newMethodDeclaration();
+		execute.setName(ast.newSimpleName("execute"));
+		execute.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
+
+		SingleVariableDeclaration runtime = ast.newSingleVariableDeclaration();
+		runtime.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Runtime")));
+		runtime.setName(ast.newSimpleName("rt"));
+
+		execute.parameters().add(runtime);
+
+		SingleVariableDeclaration task = ast.newSingleVariableDeclaration();
+		task.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
+		task.setName(ast.newSimpleName("task"));
+
+		execute.parameters().add(task);
+
+		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
+
+		Block execute_body = (Block) ast.newBlock();
+
+		this.body.translate(true, ast, (List<Statement>) execute_body.statements()); 
+
+		execute.setBody(execute_body);
+
+		decl.bodyDeclarations().add(execute);
+		
+		cus.add(cu);	
 	}
 
 	public MethodDeclaration buildMain(AST ast)

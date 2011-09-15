@@ -50,7 +50,6 @@ public class Compiler
 	public void run() throws IOException
 	{
 		List<String> files = this.walk(new File(this.source));
-		Optimizer optimizer = new Optimizer(this);
 		List<CompilationUnit> units = new ArrayList<CompilationUnit>();
 
 		for (String path : files)
@@ -76,7 +75,10 @@ public class Compiler
 		AST ast = AST.newAST(AST.JLS3);
 
 		for (ECompilationUnit unit : this.units.values())
+		{
+			unit.optimize();
 			unit.translate(ast, units);
+		}
 
 		// Save units
 		for (CompilationUnit unit : units)

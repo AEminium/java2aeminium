@@ -33,6 +33,5 @@ public class EBlock extends EStatement
 	public void translate(boolean sequential, AST ast, List<Statement> stmts)
 	{
 		// TODO
-		System.out.println("TODO EBlock");
 	}
 }

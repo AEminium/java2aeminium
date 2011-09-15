@@ -15,5 +15,5 @@ import aeminium.compiler.east.EASTNode;
 public abstract class EExpression extends EASTDependentNode
 {
 	/* TODO: Anything else? */
-	public abstract Expression translate(boolean sequential, AST ast, List<Statement> stmts);
+	public abstract Expression translate(AST ast, List<Statement> stmts);
 }

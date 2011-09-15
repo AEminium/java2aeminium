@@ -23,8 +23,6 @@ public class EFieldDeclaration
 	EFieldDeclaration(FieldDeclaration origin)
 	{
 		this.origin = origin;
-
-		/* TODO */
 	}
 
 	public FieldDeclaration translate(AST ast, List<CompilationUnit> cus)
@@ -34,5 +32,10 @@ public class EFieldDeclaration
 		field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
 
 		return field;
+	}
+
+	public void optimize()
+	{
+		/* TODO? */
 	}
 }

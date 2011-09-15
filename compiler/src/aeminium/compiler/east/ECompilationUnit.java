@@ -47,4 +47,10 @@ public class ECompilationUnit extends EASTNode
 
 		cus.add(unit);
 	}
+
+	public void optimize()
+	{
+		for (EAbstractTypeDeclaration type : this.types)
+			type.optimize();
+	}
 }

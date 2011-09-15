@@ -51,10 +51,17 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 			type.bodyDeclarations().add(field.translate(ast, cus));
 
 		for (EMethodDeclaration method : this.methods)
-		{
 			type.bodyDeclarations().add(method.translate(ast, cus));
-		}
 
 		return type;
+	}
+
+	public void optimize()
+	{
+		for (EFieldDeclaration field : this.fields)
+			field.optimize();
+
+		for (EMethodDeclaration method : this.methods)
+			method.optimize();
 	}
 }
