@@ -8,14 +8,13 @@ import aeminium.compiler.east.*;
 
 public class EVariableDeclarationFragment extends EASTDependentNode
 {
-	EAST east;
 	VariableDeclarationFragment origin;
 	EExpression expr;
 	ESimpleName var;
 
 	EVariableDeclarationFragment(EAST east, VariableDeclarationFragment origin)
 	{
-		this.east = east;
+		super(east);
 		this.origin = origin;
 	
 		this.var = this.east.extend(origin.getName());
@@ -43,28 +42,30 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		{
 			if (this.isRoot())
 			{
-				TypeDeclaration subtask = method.newSubTaskBody(cus);
- 				Block body = method.addExecuteMethod(subtask);
+				Block body = ast.newBlock();
+				this.build(method, cus, (List<Statement>) body.statements());
 
-				System.err.println("TODO: VariableDeclarationFragment");
+				TypeDeclaration subtask = this.newSubTaskBody(method, cus, body);
+
+				List<Expression> dependencies = this.getDependencies(method, cus, stmts);
+				ClassInstanceCreation creation = this.newSubTaskCreation(method, cus, stmts, subtask);
+
+				this.schedule(method, cus, stmts, dependencies, creation);
 			} else
-			{
-				// FIXME: is this ok inside fors and what not??
-				stmts.add(this.build(method, cus, stmts));
-			}
+				this.build(method, cus, stmts);
 		}
 	}
 
-	public Statement build(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public void build(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
 		Assignment assign = ast.newAssignment();
 		
 		// FIXME: change to field here or in simplename?
-		assign.setLeftHandSide(this.var.translate(method, cus, stmts));// FIXME: translate or build ???
+		assign.setLeftHandSide(this.var.translate(method, cus, stmts)); // FIXME: translate or build ???
 		assign.setRightHandSide(this.expr.translate(method, cus, stmts));
 
-		return ast.newExpressionStatement(assign);
+		stmts.add(ast.newExpressionStatement(assign));
 	}
 }

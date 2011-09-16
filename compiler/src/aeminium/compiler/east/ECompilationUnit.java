@@ -18,13 +18,13 @@ import aeminium.compiler.east.EAbstractTypeDeclaration;
 
 public class ECompilationUnit extends EASTNode
 {
-	EAST east;
 	CompilationUnit origin;
 	List<EAbstractTypeDeclaration> types;
 
 	ECompilationUnit(EAST east, CompilationUnit origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 		this.types = new ArrayList<EAbstractTypeDeclaration>();
 

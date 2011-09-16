@@ -17,17 +17,17 @@ import aeminium.compiler.east.EBlock;
 
 public class EMethodDeclaration extends EBodyDeclaration
 {
-	EAST east;
 	MethodDeclaration origin;
 
 	EBlock body;
 
 	TypeDeclaration task;
-	int subtasks;
+	public int subtasks;
 
 	EMethodDeclaration(EAST east, MethodDeclaration origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 		this.subtasks = 0;
 
@@ -173,30 +173,8 @@ public class EMethodDeclaration extends EBodyDeclaration
 		constructor.setBody(constructor_body);
 		this.task.bodyDeclarations().add(constructor);
 
-		/* Create the execute() method */
-
 		// public void execute(aeminium.runtime.Runtime rt, aeminium.runtime.Task task) throws Exception
-		MethodDeclaration execute = ast.newMethodDeclaration();
-		execute.setName(ast.newSimpleName("execute"));
-		execute.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-
-		SingleVariableDeclaration runtime = ast.newSingleVariableDeclaration();
-		runtime.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Runtime")));
-		runtime.setName(ast.newSimpleName("rt"));
-
-		execute.parameters().add(runtime);
-
-		SingleVariableDeclaration task = ast.newSingleVariableDeclaration();
-		task.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
-		task.setName(ast.newSimpleName("task"));
-
-		execute.parameters().add(task);
-
-		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
-
-		execute.setBody(this.body.build(this, cus));
-
-		this.task.bodyDeclarations().add(execute);
+		ETypeDeclaration.addExecuteMethod(ast, this.task, this.body.build(this, cus));
 		
 		cus.add(cu);	
 	}
@@ -296,72 +274,8 @@ public class EMethodDeclaration extends EBodyDeclaration
 		return this.task;
 	}
 
-	public TypeDeclaration newSubTaskBody(List<CompilationUnit> cus)
+	public CompilationUnit getOriginalCU()
 	{
-		AST ast = this.east.getAST();
-		CompilationUnit cu_original = (CompilationUnit) this.origin.getRoot();
-		String taskname = this.bodyName() + "_" + this.subtasks;
-
-		CompilationUnit cu = ast.newCompilationUnit();
-
-		cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, cu_original.getPackage()));
-		cu.imports().addAll(ASTNode.copySubtrees(ast, cu_original.imports()));
-
-		TypeDeclaration decl = ast.newTypeDeclaration();
-		decl.setName(ast.newSimpleName(taskname));
-
-		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
-	
-		// constructor
-		{
-			MethodDeclaration constructor = ast.newMethodDeclaration();
-			constructor.setName(ast.newSimpleName(taskname));
-			constructor.setConstructor(true);
-
-			// add _root parameter
-
-			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-			param.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
-			param.setName(ast.newSimpleName("_root"));
-
-			constructor.parameters().add(param);
-
-			Block constructor_body = ast.newBlock();
-
-				// add _root field;
-				VariableDeclarationFragment root = ast.newVariableDeclarationFragment();
-				root.setName(ast.newSimpleName("_root"));
-
-				FieldDeclaration rootfield = ast.newFieldDeclaration(root);
-				rootfield.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
-
-				decl.bodyDeclarations().add(rootfield);
-
-				// this._root = _root
-				Assignment asgn = ast.newAssignment();
-
-				FieldAccess access = ast.newFieldAccess();
-				access.setExpression(ast.newThisExpression());
-				access.setName(ast.newSimpleName("_root"));
-
-				asgn.setLeftHandSide(access);
-				asgn.setRightHandSide(ast.newSimpleName("_root"));
-
-				constructor_body.statements().add(ast.newExpressionStatement(asgn));
-			constructor.setBody(constructor_body);
-
-			decl.bodyDeclarations().add(constructor);
-		}
-
-		// execute
-
-
-
-		cu.types().add(decl);
-		cus.add(cu);
-
-		this.subtasks++;
-
-		return decl;
+		return (CompilationUnit) this.origin.getRoot();
 	}
 }

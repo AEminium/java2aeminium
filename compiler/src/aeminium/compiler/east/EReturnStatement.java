@@ -8,13 +8,12 @@ import aeminium.compiler.east.*;
 
 public class EReturnStatement extends EStatement
 {
-	EAST east;
 	ReturnStatement origin;
 	EExpression expr;
 
 	EReturnStatement(EAST east, ReturnStatement origin)
 	{
-		this.east = east;
+		super(east);
 		this.origin = origin;
 
 		if (origin.getExpression() != null)

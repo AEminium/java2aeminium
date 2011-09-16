@@ -8,12 +8,13 @@ import aeminium.compiler.east.*;
 
 public class EBlock extends EStatement
 {
-	EAST east;
 	Block origin;
 	List<EStatement> stmts;
 
 	EBlock(EAST east, Block origin)
 	{
+		super(east);
+
 		this.east = east;
 		this.origin = origin;
 		this.stmts = new ArrayList<EStatement>();
@@ -42,7 +43,8 @@ public class EBlock extends EStatement
 		Block block = ast.newBlock();
 
 		for (EStatement stmt : this.stmts)
-			stmt.translate(method, cus, (List<Statement>) block.statements());
+			if (stmt.isRoot())
+				stmt.translate(method, cus, (List<Statement>) block.statements());
 
 		return block;
 	}

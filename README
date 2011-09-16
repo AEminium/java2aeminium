@@ -20,7 +20,7 @@ TODO:
 		conservative rule:
 			MethodInvocations (and ClassInstanceCreations?) are always in tasks
 			a node with exactly 1 dependent is placed in the same task as the dependent (dependent = a task waiting for "my" conclusion)
-			nodes with no parents are task roots:
+			nodes with no dependent are task roots:
 
 
 	Translate EAST
@@ -43,4 +43,4 @@ FIXME:
 		return x;
 
 	x.method()
-	
+

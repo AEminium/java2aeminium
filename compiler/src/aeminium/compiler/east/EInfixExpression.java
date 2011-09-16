@@ -8,15 +8,14 @@ import aeminium.compiler.east.*;
 
 public class EInfixExpression extends EExpression
 {
-	EAST east;
 	InfixExpression origin;
 	EExpression left;
 	EExpression right;
 
-
 	EInfixExpression(EAST east, InfixExpression origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 
 		this.left = this.east.extend(origin.getLeftOperand());

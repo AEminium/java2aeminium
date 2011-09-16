@@ -9,6 +9,11 @@ import aeminium.compiler.east.*;
 
 public abstract class EExpression extends EASTDependentNode
 {
+	EExpression(EAST east)
+	{
+		super(east);
+	}
+
 	/* TODO: Anything else? */
 	public abstract Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts);
 }

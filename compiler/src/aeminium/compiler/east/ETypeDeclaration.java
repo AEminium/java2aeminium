@@ -3,32 +3,19 @@ package aeminium.compiler.east;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-
-import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.SimpleName;
-
-import aeminium.compiler.east.EAST;
-
-import aeminium.compiler.east.EAbstractTypeDeclaration;
-import aeminium.compiler.east.EFieldDeclaration;
-import aeminium.compiler.east.EMethodDeclaration;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Modifier.*;
+import aeminium.compiler.east.*;
 
 public class ETypeDeclaration extends EAbstractTypeDeclaration
 {
-	EAST east;
 	TypeDeclaration origin;
 	List<EFieldDeclaration> fields;
 	List<EMethodDeclaration> methods;
 
 	ETypeDeclaration(EAST east, TypeDeclaration origin)
 	{
-		this.east = east;
+		super(east);
 		this.origin = origin;
 
 		/* FIXME: not suported yet */
@@ -67,5 +54,29 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 
 		for (EMethodDeclaration method : this.methods)
 			method.optimize();
+	}
+
+	public static void addExecuteMethod(AST ast, TypeDeclaration type, Block body)
+	{
+		MethodDeclaration execute = ast.newMethodDeclaration();
+		execute.setName(ast.newSimpleName("execute"));
+		execute.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
+
+		SingleVariableDeclaration runtime = ast.newSingleVariableDeclaration();
+		runtime.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Runtime")));
+		runtime.setName(ast.newSimpleName("rt"));
+
+		execute.parameters().add(runtime);
+
+		SingleVariableDeclaration task = ast.newSingleVariableDeclaration();
+		task.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
+		task.setName(ast.newSimpleName("task"));
+
+		execute.parameters().add(task);
+
+		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
+		execute.setBody(body);
+
+		type.bodyDeclarations().add(execute);
 	}
 }

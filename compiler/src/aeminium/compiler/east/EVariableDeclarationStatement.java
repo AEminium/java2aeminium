@@ -8,13 +8,13 @@ import aeminium.compiler.east.*;
 
 public class EVariableDeclarationStatement extends EStatement
 {
-	EAST east;
 	VariableDeclarationStatement origin;
 	List<EVariableDeclarationFragment> frags;
 
 	EVariableDeclarationStatement(EAST east, VariableDeclarationStatement origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 		this.frags = new ArrayList<EVariableDeclarationFragment>();
 

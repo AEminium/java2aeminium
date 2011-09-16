@@ -8,12 +8,11 @@ import aeminium.compiler.east.*;
 
 public class ENumberLiteral extends EExpression
 {
-	EAST east;
 	NumberLiteral origin;
 
 	ENumberLiteral(EAST east, NumberLiteral origin)
 	{
-		this.east = east;
+		super(east);
 		this.origin = origin;
 	}
 

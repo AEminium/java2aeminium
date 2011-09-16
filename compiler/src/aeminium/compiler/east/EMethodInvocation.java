@@ -8,7 +8,6 @@ import aeminium.compiler.east.*;
 
 public class EMethodInvocation extends EExpression
 {
-	EAST east;
 	MethodInvocation origin;
 
 	EExpression expr;
@@ -16,7 +15,8 @@ public class EMethodInvocation extends EExpression
 
 	EMethodInvocation(EAST east, MethodInvocation origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 
 		this.expr = this.east.extend(origin.getExpression());
@@ -37,9 +37,12 @@ public class EMethodInvocation extends EExpression
 	{
 		AST ast = this.east.getAST();
 
+		// TODO: allow regular method caling
+ 
 		assert (this.isRoot());
 
-		// TODO
+		// TODO check if node has @AEminium annotation, if not create(or check if already exists) a new body 
+		// that only calls the normal method
 		System.err.println("TODO: MethodInvocation");
 		FieldAccess ret = ast.newFieldAccess();
 
@@ -47,8 +50,10 @@ public class EMethodInvocation extends EExpression
 	}
 
 	@Override
-	public boolean isRoot()
+	public void optimize()
 	{
-		return true;
+		super.optimize();
+
+		this.root = true;
 	}
 }

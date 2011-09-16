@@ -15,16 +15,18 @@ public class HelloWorld
 	}
 
 	@AEminium
-	public static void main(String[] args)
+	public static int main(String[] args)
 	{
 		HelloWorld m = new HelloWorld();
 
 		int a = m.method();
 		int b = m.method2();
 	
-		int c = a+b;
+		//int c = a+b;
 
 		//if (c > 0)
 		//	System.out.println(c);
+
+		return 1;
 	}
 }

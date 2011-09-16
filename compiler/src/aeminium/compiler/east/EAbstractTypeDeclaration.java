@@ -13,6 +13,11 @@ import aeminium.compiler.east.EBodyDeclaration;
 
 public abstract class EAbstractTypeDeclaration extends EBodyDeclaration
 {
+	EAbstractTypeDeclaration(EAST east)
+	{
+		super(east);
+	}
+
 	public abstract AbstractTypeDeclaration translate(List<CompilationUnit> cus);
 	public abstract void optimize();
 }

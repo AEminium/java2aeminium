@@ -8,12 +8,12 @@ import aeminium.compiler.east.*;
 
 public class ESimpleName extends EExpression
 {
-	EAST east;
 	SimpleName origin;
 
 	ESimpleName(EAST east, SimpleName origin)
 	{
-		this.east = east;
+		super(east);
+
 		this.origin = origin;
 	}
 
@@ -34,4 +34,13 @@ public class ESimpleName extends EExpression
 		
 		return access;
 	}
+
+	@Override
+	protected List<Expression> getDependencies(EMethodDeclaration decl, List<CompilationUnit> cus, List<Statement> stmts)
+	{
+		System.err.println("TODO: SimpleName getDependencies()");
+
+		return super.getDependencies(decl, cus, stmts);
+	}	
+
 }
