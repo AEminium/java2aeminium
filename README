@@ -18,16 +18,26 @@ TODO:
 	Optimize EAST
 		-> select nodes to paralellize and nodes to serialize
 		conservative rule:
-			nodes with 0 or 1 childs can be serialized without loss of paralellism   
+			MethodInvocations (and ClassInstanceCreations?) are always in tasks
+			a node with exactly 1 dependent is placed in the same task as the dependent (dependent = a task waiting for "my" conclusion)
+			nodes with no parents are task roots:
+
 
 	Translate EAST
-
-
+		if (this.isRoot())
+		{
+			build new task body;
+			body.add(this.build())
+	
+			stmts.add( scheduling ) 
+		} else
+			stmts.add(this.build())
+		
 FIXME:
 	after a conditional statement (if, while, statement) task has been executed it should be possible to
 	cancel child tasks:
 		it can be done by modifying the code, or directly allowing it in the runtime
-		(maybe having execute return a boolean?)
+		(maybe having execute return a boolean? or call a Runtime.removeChilds(asdasd) )
 
 	if (.........)
 		return x;

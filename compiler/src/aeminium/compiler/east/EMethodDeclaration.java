@@ -19,12 +19,17 @@ public class EMethodDeclaration extends EBodyDeclaration
 {
 	EAST east;
 	MethodDeclaration origin;
+
 	EBlock body;
+
+	TypeDeclaration task;
+	int subtasks;
 
 	EMethodDeclaration(EAST east, MethodDeclaration origin)
 	{
 		this.east = east;
 		this.origin = origin;
+		this.subtasks = 0;
 
 		// do something about parameters?
 		// see optimize(), on a future versio the read version is necessary for optimizing loops
@@ -49,10 +54,10 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		if (this.getModifier("@AEminium") != null)
 		{
-			this.buildClass(ast, cus);
+			this.buildClass(cus);
 
 			if (this.isMain())
-				return this.buildMain(ast);
+				return this.buildMain();
 		}
 				
 		return (MethodDeclaration) ASTNode.copySubtree(ast, this.origin);
@@ -63,8 +68,10 @@ public class EMethodDeclaration extends EBodyDeclaration
 		return (this.getModifier("static") != null) && this.origin.getName().toString().equals("main");
 	}
 
-	public void buildClass(AST ast, List<CompilationUnit> cus)
+	public void buildClass(List<CompilationUnit> cus)
 	{
+		AST ast = this.east.getAST();
+
 		/* Create the class definition */
 		CompilationUnit cu = ast.newCompilationUnit();
 		CompilationUnit cu_original = (CompilationUnit) this.origin.getRoot();
@@ -73,11 +80,12 @@ public class EMethodDeclaration extends EBodyDeclaration
 		cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, cu_original.getPackage()));
 		cu.imports().addAll(ASTNode.copySubtrees(ast, cu_original.imports()));
 
-		TypeDeclaration decl = ast.newTypeDeclaration();
-		cu.types().add(decl);
+		this.task = ast.newTypeDeclaration();
+
+		cu.types().add(this.task);
 	
-		decl.setName(ast.newSimpleName(this.bodyName()));
-		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
+		this.task.setName(ast.newSimpleName(this.bodyName()));
+		this.task.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
 		
 		/* Create the constructor */
 		MethodDeclaration constructor = ast.newMethodDeclaration();
@@ -107,7 +115,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 			field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
 
-			decl.bodyDeclarations().add(field);
+			this.task.bodyDeclarations().add(field);
 
 			// add _root field;
 			VariableDeclarationFragment root = ast.newVariableDeclarationFragment();
@@ -116,7 +124,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 			FieldDeclaration rootfield = ast.newFieldDeclaration(root);
 			rootfield.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
 
-			decl.bodyDeclarations().add(rootfield);
+			this.task.bodyDeclarations().add(rootfield);
 
 			// this._root = this
 			Assignment asgn = ast.newAssignment();
@@ -145,7 +153,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 			FieldDeclaration field = ast.newFieldDeclaration(frag);
 			field.setType((Type) ASTNode.copySubtree(ast, parameter.getType()));
 			
-			decl.bodyDeclarations().add(field);
+			this.task.bodyDeclarations().add(field);
 
 			// add assigment "this.field = field"
 			Assignment asgn = ast.newAssignment();
@@ -163,7 +171,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 		}
 
 		constructor.setBody(constructor_body);
-		decl.bodyDeclarations().add(constructor);
+		this.task.bodyDeclarations().add(constructor);
 
 		/* Create the execute() method */
 
@@ -186,15 +194,16 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
 
-		execute.setBody(this.body.build(decl));
+		execute.setBody(this.body.build(this, cus));
 
-		decl.bodyDeclarations().add(execute);
+		this.task.bodyDeclarations().add(execute);
 		
 		cus.add(cu);	
 	}
 
-	public MethodDeclaration buildMain(AST ast)
+	public MethodDeclaration buildMain()
 	{
+		AST ast = this.east.getAST();
 		MethodDeclaration method = ast.newMethodDeclaration();
 		
 		method.setName((SimpleName) ASTNode.copySubtree(ast, this.origin.getName()));
@@ -280,5 +289,79 @@ public class EMethodDeclaration extends EBodyDeclaration
 		AbstractTypeDeclaration parent = (AbstractTypeDeclaration) this.origin.getParent();
 
 		return "AE_" + parent.getName().toString() + "_" + this.origin.getName().toString();
+	}
+
+	public TypeDeclaration getTaskBody()
+	{
+		return this.task;
+	}
+
+	public TypeDeclaration newSubTaskBody(List<CompilationUnit> cus)
+	{
+		AST ast = this.east.getAST();
+		CompilationUnit cu_original = (CompilationUnit) this.origin.getRoot();
+		String taskname = this.bodyName() + "_" + this.subtasks;
+
+		CompilationUnit cu = ast.newCompilationUnit();
+
+		cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, cu_original.getPackage()));
+		cu.imports().addAll(ASTNode.copySubtrees(ast, cu_original.imports()));
+
+		TypeDeclaration decl = ast.newTypeDeclaration();
+		decl.setName(ast.newSimpleName(taskname));
+
+		decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
+	
+		// constructor
+		{
+			MethodDeclaration constructor = ast.newMethodDeclaration();
+			constructor.setName(ast.newSimpleName(taskname));
+			constructor.setConstructor(true);
+
+			// add _root parameter
+
+			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+			param.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
+			param.setName(ast.newSimpleName("_root"));
+
+			constructor.parameters().add(param);
+
+			Block constructor_body = ast.newBlock();
+
+				// add _root field;
+				VariableDeclarationFragment root = ast.newVariableDeclarationFragment();
+				root.setName(ast.newSimpleName("_root"));
+
+				FieldDeclaration rootfield = ast.newFieldDeclaration(root);
+				rootfield.setType(ast.newSimpleType(ast.newSimpleName(this.bodyName())));
+
+				decl.bodyDeclarations().add(rootfield);
+
+				// this._root = _root
+				Assignment asgn = ast.newAssignment();
+
+				FieldAccess access = ast.newFieldAccess();
+				access.setExpression(ast.newThisExpression());
+				access.setName(ast.newSimpleName("_root"));
+
+				asgn.setLeftHandSide(access);
+				asgn.setRightHandSide(ast.newSimpleName("_root"));
+
+				constructor_body.statements().add(ast.newExpressionStatement(asgn));
+			constructor.setBody(constructor_body);
+
+			decl.bodyDeclarations().add(constructor);
+		}
+
+		// execute
+
+
+
+		cu.types().add(decl);
+		cus.add(cu);
+
+		this.subtasks++;
+
+		return decl;
 	}
 }

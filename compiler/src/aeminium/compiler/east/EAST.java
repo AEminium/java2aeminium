@@ -71,6 +71,9 @@ public class EAST
 		if (expr instanceof NumberLiteral)
 			return new ENumberLiteral(this, (NumberLiteral) expr);
 
+		if (expr instanceof ClassInstanceCreation)
+			return new EClassInstanceCreation(this, (ClassInstanceCreation) expr);
+
 		System.err.println("Invalid expr: " + expr.getClass().toString());
 		return null;
 	}

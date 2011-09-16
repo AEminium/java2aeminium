@@ -10,5 +10,5 @@ import aeminium.compiler.east.*;
 public abstract class EExpression extends EASTDependentNode
 {
 	/* TODO: Anything else? */
-	public abstract Expression translate(TypeDeclaration decl, List<Statement> stmts);
+	public abstract Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts);
 }

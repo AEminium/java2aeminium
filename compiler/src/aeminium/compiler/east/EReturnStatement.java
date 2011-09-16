@@ -3,18 +3,8 @@ package aeminium.compiler.east;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.AST;
-
-import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.ReturnStatement;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.Statement;
-
-import aeminium.compiler.east.EAST;
-import aeminium.compiler.east.EStatement;
+import org.eclipse.jdt.core.dom.*;
+import aeminium.compiler.east.*;
 
 public class EReturnStatement extends EStatement
 {
@@ -35,7 +25,7 @@ public class EReturnStatement extends EStatement
 	}
 
 	@Override
-	public void translate(TypeDeclaration decl, List<Statement> stmts)
+	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
@@ -56,7 +46,7 @@ public class EReturnStatement extends EStatement
 			ret.setName(ast.newSimpleName("_ret"));
 
 			assign.setLeftHandSide(ret);
-			assign.setRightHandSide(this.expr.translate(decl, stmts));
+			assign.setRightHandSide(this.expr.translate(method, cus, stmts));
 	
 			ExpressionStatement stmt = ast.newExpressionStatement(assign);
 			stmts.add(stmt);

@@ -23,7 +23,7 @@ public class EBlock extends EStatement
 	}
 
 	@Override
-	public void translate(TypeDeclaration decl, List<Statement> stmts)
+	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		// unsuported yet 
 		assert( this.isRoot() == false);
@@ -33,16 +33,16 @@ public class EBlock extends EStatement
 			// TODO
 			System.err.println("TODO: EBlock");
 		} else
-			stmts.add(this.build(decl));
+			stmts.add(this.build(method, cus));
 	}
 
-	public Block build(TypeDeclaration decl)
+	public Block build(EMethodDeclaration method, List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 		Block block = ast.newBlock();
 
 		for (EStatement stmt : this.stmts)
-			stmt.translate(decl, (List<Statement>) block.statements());
+			stmt.translate(method, cus, (List<Statement>) block.statements());
 
 		return block;
 	}

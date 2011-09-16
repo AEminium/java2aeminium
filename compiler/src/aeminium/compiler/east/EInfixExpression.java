@@ -27,10 +27,13 @@ public class EInfixExpression extends EExpression
 	}
 
 	@Override
-	public Expression translate(TypeDeclaration decl, List<Statement> stmts)
+	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
+		assert(this.isRoot() == false);
+
+		System.err.println("InfixExpression");
 		// TODO
 
 		return null;

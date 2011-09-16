@@ -18,7 +18,7 @@ public class ENumberLiteral extends EExpression
 	}
 
 	@Override
-	public Expression translate(TypeDeclaration decl, List<Statement> stmts)
+	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 

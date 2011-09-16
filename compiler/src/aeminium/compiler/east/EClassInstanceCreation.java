@@ -6,20 +6,16 @@ import java.util.ArrayList;
 import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.east.*;
 
-public class EMethodInvocation extends EExpression
+public class EClassInstanceCreation extends EExpression
 {
 	EAST east;
-	MethodInvocation origin;
-
-	EExpression expr;
+	ClassInstanceCreation origin;
 	List<EExpression> args;
 
-	EMethodInvocation(EAST east, MethodInvocation origin)
+	EClassInstanceCreation(EAST east, ClassInstanceCreation origin)
 	{
 		this.east = east;
 		this.origin = origin;
-
-		this.expr = this.east.extend(origin.getExpression());
 		this.args = new ArrayList<EExpression>();
 
 		for (Object arg : origin.arguments())
@@ -27,8 +23,8 @@ public class EMethodInvocation extends EExpression
 			EExpression earg = this.east.extend((Expression) arg);
 			this.link(earg);
 			this.args.add(earg);
-		} 	
-		
+		}
+
 		// TODO: add internal dependencies (System.out, and other statics here)?
 	}
 
@@ -37,18 +33,7 @@ public class EMethodInvocation extends EExpression
 	{
 		AST ast = this.east.getAST();
 
-		assert (this.isRoot());
-
-		// TODO
-		System.err.println("TODO: MethodInvocation");
-		FieldAccess ret = ast.newFieldAccess();
-
-		return ret;
-	}
-
-	@Override
-	public boolean isRoot()
-	{
-		return true;
+		System.err.println("TODO: ClassInstanceCreation");
+		return null;
 	}
 }

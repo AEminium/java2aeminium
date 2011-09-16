@@ -18,16 +18,20 @@ public class ESimpleName extends EExpression
 	}
 
 	@Override
-	public Expression translate(TypeDeclaration decl, List<Statement> stmts)
+	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot() == false);
 
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
+		FieldAccess root = ast.newFieldAccess();
+		root.setExpression(ast.newThisExpression());
+		root.setName(ast.newSimpleName("_root"));
 
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(root);
+		access.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
+		
 		return access;
 	}
 }

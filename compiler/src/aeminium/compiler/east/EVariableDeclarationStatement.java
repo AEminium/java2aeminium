@@ -27,9 +27,9 @@ public class EVariableDeclarationStatement extends EStatement
 	}
 
 	@Override
-	public void translate(TypeDeclaration decl, List<Statement> stmts)
+	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		for (EVariableDeclarationFragment frag : this.frags)
-			frag.translate(decl, stmts, this.origin.getType());
+			frag.translate(method, cus, stmts, this.origin.getType());
 	}
 }

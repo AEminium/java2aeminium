@@ -28,7 +28,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		}
 	}
 
-	public void translate(TypeDeclaration decl, List<Statement> stmts, Type type)
+	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts, Type type)
 	{
 		AST ast = this.east.getAST();
 
@@ -43,24 +43,27 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		{
 			if (this.isRoot())
 			{
-			
+				TypeDeclaration subtask = method.newSubTaskBody(cus);
+ 				Block body = method.addExecuteMethod(subtask);
+
+				System.err.println("TODO: VariableDeclarationFragment");
 			} else
 			{
-				// TODO
-				System.err.println("Fragment error");
+				// FIXME: is this ok inside fors and what not??
+				stmts.add(this.build(method, cus, stmts));
 			}
 		}
 	}
 
-	public Statement build(TypeDeclaration decl, List<Statement> stmts)
+	public Statement build(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
 		Assignment assign = ast.newAssignment();
 		
 		// FIXME: change to field here or in simplename?
-		assign.setLeftHandSide(this.var.translate(decl, stmts));// FIXME: translate or build ???
-		assign.setRightHandSide(this.expr.translate(decl, stmts));
+		assign.setLeftHandSide(this.var.translate(method, cus, stmts));// FIXME: translate or build ???
+		assign.setRightHandSide(this.expr.translate(method, cus, stmts));
 
 		return ast.newExpressionStatement(assign);
 	}
