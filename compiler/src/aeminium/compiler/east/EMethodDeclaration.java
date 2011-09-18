@@ -35,8 +35,8 @@ public class EMethodDeclaration extends EBodyDeclaration
 		// see optimize(), on a future versio the read version is necessary for optimizing loops
 
 		Block block = origin.getBody();
+		assert(block != null);
 
-		assert(block == null);
 		this.body = this.east.extend(block);		
 	}
 

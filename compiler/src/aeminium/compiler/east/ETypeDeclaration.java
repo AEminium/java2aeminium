@@ -19,7 +19,7 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 		this.origin = origin;
 
 		/* FIXME: not suported yet */
-		assert(origin.isInterface());
+		assert(!origin.isInterface());
 		assert(origin.getSuperclassType() == null);
 
 		this.fields = new ArrayList<EFieldDeclaration>();

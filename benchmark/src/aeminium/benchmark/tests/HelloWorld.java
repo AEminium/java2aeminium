@@ -19,8 +19,8 @@ public class HelloWorld
 	{
 		HelloWorld m = new HelloWorld();
 
-		int a = m.method();
-		int b = m.method2();
+		//int a = m.method();
+		//int b = m.method2();
 	
 		//int c = a+b;
 

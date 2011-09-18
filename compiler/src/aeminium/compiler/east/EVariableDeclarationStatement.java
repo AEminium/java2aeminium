@@ -20,9 +20,9 @@ public class EVariableDeclarationStatement extends EStatement
 
 		for (Object frag : origin.fragments())
 		{
-			this.frags.add(this.east.extend((VariableDeclarationFragment) frag));
-
-			// TODO: link them?			
+			EVariableDeclarationFragment efrag = this.east.extend((VariableDeclarationFragment) frag);
+			this.frags.add(efrag);
+			this.link(efrag);
 		}
 	}
 
@@ -31,5 +31,12 @@ public class EVariableDeclarationStatement extends EStatement
 	{
 		for (EVariableDeclarationFragment frag : this.frags)
 			frag.translate(method, cus, stmts, this.origin.getType());
+	}
+
+	@Override
+	public void optimize()
+	{
+		for (EVariableDeclarationFragment frag : this.frags)
+			frag.optimize();
 	}
 }

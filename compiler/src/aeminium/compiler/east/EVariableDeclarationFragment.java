@@ -47,7 +47,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 
 				TypeDeclaration subtask = this.newSubTaskBody(method, cus, body);
 
-				List<Expression> dependencies = this.getDependencies(method, cus, stmts);
+				List<Expression> dependencies = this.getChildDependencies(method, cus, stmts);
 				ClassInstanceCreation creation = this.newSubTaskCreation(method, cus, stmts, subtask);
 
 				this.schedule(method, cus, stmts, dependencies, creation);
@@ -67,5 +67,11 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		assign.setRightHandSide(this.expr.translate(method, cus, stmts));
 
 		stmts.add(ast.newExpressionStatement(assign));
+	}
+
+	@Override 
+	public void optimize()
+	{
+		super.optimize();
 	}
 }

@@ -33,6 +33,7 @@ public class EClassInstanceCreation extends EExpression
 	@Override
 	public void optimize()
 	{
+		super.optimize();
 		this.root = true;
 	}
 
@@ -74,12 +75,14 @@ public class EClassInstanceCreation extends EExpression
 		
 		// scheduling
 		ClassInstanceCreation creation = this.newSubTaskCreation(method, cus, stmts, decl);
-		List<Expression> dependencies = this.getDependencies(method, cus, stmts);
+		List<Expression> dependencies = this.getChildDependencies(method, cus, stmts);
+
 		this.schedule(method, cus, stmts, dependencies, creation);
 		
 		// expression
 		assert(this.task_id != -1);
 
+		//TODO add task creation and etc..
 		FieldAccess ret_body = ast.newFieldAccess();
 		ret_body.setExpression(ast.newThisExpression());
 		ret_body.setName(ast.newSimpleName("_body_" + this.task_id));

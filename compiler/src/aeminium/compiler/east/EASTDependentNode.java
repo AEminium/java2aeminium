@@ -36,6 +36,9 @@ public abstract class EASTDependentNode extends EASTNode
 	{
 		// FIXME:  if the parents change in the middle of optimize operations this might change..
 		this.root = this.parents.size() == 0;
+
+		for (EASTDependentNode child : this.childs)
+			child.optimize();
 	}
 
 	protected final boolean isRoot()
@@ -55,14 +58,22 @@ public abstract class EASTDependentNode extends EASTNode
 
 			FieldAccess access = ast.newFieldAccess();
 			access.setExpression(ast.newThisExpression());
+			
 			access.setName(ast.newSimpleName("_task_"+this.task_id));
 
 			exprs.add(access);
 		} else
-		{
-			for (EASTDependentNode child : this.childs)
-				exprs.addAll(child.getDependencies(method, cus, stmts));
-		}
+			exprs.addAll(this.getChildDependencies(method, cus, stmts));
+
+		return exprs;
+	}
+
+	protected List<Expression> getChildDependencies(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	{
+		List<Expression> exprs = new ArrayList<Expression>();
+
+		for (EASTDependentNode child : this.childs)
+			exprs.addAll(child.getDependencies(method, cus, stmts));
 
 		return exprs;
 	}
@@ -195,6 +206,18 @@ public abstract class EASTDependentNode extends EASTNode
 		var_stmt.setType((Type) ASTNode.copySubtree(ast, var_type));
 
 		stmts.add(var_stmt);
+
+		// add deps
+		for (Expression dep : dependencies)
+		{
+			MethodInvocation dep_invocation = ast.newMethodInvocation();
+			dep_invocation.setExpression(ast.newSimpleName("_deps_"+this.task_id));
+			dep_invocation.setName(ast.newSimpleName("add"));
+			
+			dep_invocation.arguments().add(dep);
+
+			stmts.add(ast.newExpressionStatement(dep_invocation));
+		}
 
 		// add task field
 		VariableDeclarationFragment task_frag = ast.newVariableDeclarationFragment();

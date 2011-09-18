@@ -24,6 +24,24 @@ public class EBlock extends EStatement
 	}
 
 	@Override
+	public void optimize()
+	{
+		super.optimize();
+		for (EStatement stmt : this.stmts)
+			stmt.optimize();
+	}
+
+	@Override
+	protected List<Expression> getChildDependencies(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	{
+		List<Expression> exprs = new ArrayList<Expression>();
+		exprs.addAll(super.getDependencies(method, cus, stmts));
+		
+		for (EStatement stmt : this.stmts)
+			exprs.addAll(stmt.getDependencies(method, cus, stmts));
+		return exprs;
+	}
+	@Override
 	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		// unsuported yet 

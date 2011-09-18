@@ -43,9 +43,14 @@ public class EMethodInvocation extends EExpression
 
 		// TODO check if node has @AEminium annotation, if not create(or check if already exists) a new body 
 		// that only calls the normal method
+
+		// TODO: set task 
+		this.task_id = method.subtasks;
+
 		System.err.println("TODO: MethodInvocation");
 		FieldAccess ret = ast.newFieldAccess();
 
+		method.subtasks++;
 		return ret;
 	}
 

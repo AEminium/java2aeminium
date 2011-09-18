@@ -22,7 +22,8 @@ public class ESimpleName extends EExpression
 	{
 		AST ast = this.east.getAST();
 
-		assert(this.isRoot() == false);
+		// cannot be root node
+		assert(!this.isRoot());
 
 		FieldAccess root = ast.newFieldAccess();
 		root.setExpression(ast.newThisExpression());

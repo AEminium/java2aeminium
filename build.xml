@@ -96,6 +96,7 @@
 		<java jar="${compiler.jar}" fork="true">
 			<arg value="${benchmark.src.dir}" />
 			<arg value="${benchmark.target.dir}" />
+			<jvmarg value="-ea" />
 		</java>
 	</target>
 

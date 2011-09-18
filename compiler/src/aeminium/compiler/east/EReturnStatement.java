@@ -29,7 +29,7 @@ public class EReturnStatement extends EStatement
 		AST ast = this.east.getAST();
 
 		// return can't have any child
-		assert(this.isRoot() == false);
+		assert(this.isRoot());
 
 		if (this.expr != null)
 		{
