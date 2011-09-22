@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EVariableDeclarationFragment extends EASTDependentNode
 {
@@ -27,51 +29,66 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		}
 	}
 
-	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts, Type type)
+	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts, Type type)
 	{
 		AST ast = this.east.getAST();
+		List<Statement> stmts = new ArrayList<Statement>();
 
-		VariableDeclarationFragment frag;
-		frag = (VariableDeclarationFragment) ASTNode.copySubtree(ast, this.origin);
-
-		FieldDeclaration field = ast.newFieldDeclaration(frag);
-		field.setType((Type) ASTNode.copySubtree(ast, type));
+		parent.addField((Type) ASTNode.copySubtree(ast, type), this.origin.getName().toString());
 
 		// initializer
 		if (this.expr != null)
 		{
 			if (this.isRoot())
 			{
+				this.task = parent.newSubtask(cus);
+
 				Block body = ast.newBlock();
-				this.build(method, cus, (List<Statement>) body.statements());
+				body.statements().add(this.build(parent, cus, prestmts));
 
-				TypeDeclaration subtask = this.newSubTaskBody(method, cus, body);
+				this.task.setExecute(body);
 
-				List<Expression> dependencies = this.getChildDependencies(method, cus, stmts);
-				ClassInstanceCreation creation = this.newSubTaskCreation(method, cus, stmts, subtask);
+				List<Task> children = this.getChildTasks(parent, cus, prestmts);
+				List<Expression> arguments = new ArrayList<Expression>();
+				List<Expression> dependencies = new ArrayList<Expression>();
+				arguments.add(ast.newThisExpression());
 
-				this.schedule(method, cus, stmts, dependencies, creation);
+				for (Task child : children)
+				{
+					arguments.add(child.getBodyAccess());
+					dependencies.add(child.getTaskAccess());
+				}
+	
+				this.task.addConstructor(this.task.createDefaultConstructor(children));
+				this.task.setExecute(body);
+
+				prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
 			} else
-				this.build(method, cus, stmts);
+				stmts.add(this.build(parent, cus, prestmts));
 		}
+
+		return stmts;
 	}
 
-	public void build(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Statement build(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
 		AST ast = this.east.getAST();
 
 		Assignment assign = ast.newAssignment();
 		
 		// FIXME: change to field here or in simplename?
-		assign.setLeftHandSide(this.var.translate(method, cus, stmts)); // FIXME: translate or build ???
-		assign.setRightHandSide(this.expr.translate(method, cus, stmts));
+		assign.setLeftHandSide(this.var.translate(parent, cus, prestmts)); // FIXME: translate or build ???
+		assign.setRightHandSide(this.expr.translate(parent, cus, prestmts));
 
-		stmts.add(ast.newExpressionStatement(assign));
+		return ast.newExpressionStatement(assign);
 	}
 
-	@Override 
+	@Override
 	public void optimize()
 	{
 		super.optimize();
+
+		// FIXME:
+		this.root = false;
 	}
 }

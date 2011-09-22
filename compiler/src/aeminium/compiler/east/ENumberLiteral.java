@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class ENumberLiteral extends EExpression
 {
@@ -17,7 +18,14 @@ public class ENumberLiteral extends EExpression
 	}
 
 	@Override
-	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public void optimize()
+	{
+		super.optimize();
+		this.root = false;
+	}
+
+	@Override
+	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 

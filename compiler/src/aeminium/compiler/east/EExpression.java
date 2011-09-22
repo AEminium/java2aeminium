@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public abstract class EExpression extends EASTDependentNode
 {
@@ -14,6 +15,5 @@ public abstract class EExpression extends EASTDependentNode
 		super(east);
 	}
 
-	/* TODO: Anything else? */
-	public abstract Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts);
+	public abstract Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts);
 }

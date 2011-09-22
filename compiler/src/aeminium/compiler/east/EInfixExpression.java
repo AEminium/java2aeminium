@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EInfixExpression extends EExpression
 {
@@ -26,7 +28,7 @@ public class EInfixExpression extends EExpression
 	}
 
 	@Override
-	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 

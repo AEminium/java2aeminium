@@ -42,10 +42,6 @@ public class ECompilationUnit extends EASTNode
 
 		unit.imports().addAll(ASTNode.copySubtrees(ast, this.origin.imports()));
 
-		ImportDeclaration helper = ast.newImportDeclaration();
-		helper.setName(ast.newName("aeminium.runtime.AeminiumHelper"));
-		unit.imports().add(helper);
-
 		for (EAbstractTypeDeclaration type : this.types)
 			unit.types().add(type.translate(cus));
 

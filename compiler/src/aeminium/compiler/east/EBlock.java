@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EBlock extends EStatement
 {
@@ -27,42 +29,64 @@ public class EBlock extends EStatement
 	public void optimize()
 	{
 		super.optimize();
+		
 		for (EStatement stmt : this.stmts)
 			stmt.optimize();
 	}
 
 	@Override
-	protected List<Expression> getChildDependencies(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getChildTasks(Task task, List<CompilationUnit> cus, List<Statement> stmts)
 	{
-		List<Expression> exprs = new ArrayList<Expression>();
-		exprs.addAll(super.getDependencies(method, cus, stmts));
+		List<Task> tasks = new ArrayList<Task>();
+		tasks.addAll(super.getTasks(task, cus, stmts));
 		
 		for (EStatement stmt : this.stmts)
-			exprs.addAll(stmt.getDependencies(method, cus, stmts));
-		return exprs;
+			tasks.addAll(stmt.getTasks(task, cus, stmts));
+
+		return tasks;
 	}
+
 	@Override
-	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
 		// unsuported yet 
 		assert( this.isRoot() == false);
+
+		List<Statement> stmts = new ArrayList<Statement>();
 			
 		if (this.isRoot())
 		{
 			// TODO
 			System.err.println("TODO: EBlock");
 		} else
-			stmts.add(this.build(method, cus));
+			stmts.add(this.build(parent, cus, prestmts));
+
+		return stmts;
 	}
 
-	public Block build(EMethodDeclaration method, List<CompilationUnit> cus)
+	public Block build(Task parent, List<CompilationUnit> cus)
+	{
+		AST ast = this.east.getAST();
+		Block block = ast.newBlock();
+
+		List<Statement> stmts = new ArrayList<Statement>();
+
+		for (EStatement stmt : this.stmts)
+			if (stmt.isRoot())
+				stmts.addAll(stmt.translate(parent, cus, block.statements()));
+
+		block.statements().addAll(stmts);
+		return block;
+	}
+
+	public Block build(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
 		AST ast = this.east.getAST();
 		Block block = ast.newBlock();
 
 		for (EStatement stmt : this.stmts)
 			if (stmt.isRoot())
-				stmt.translate(method, cus, (List<Statement>) block.statements());
+				block.statements().addAll(stmt.translate(parent, cus, prestmts));
 
 		return block;
 	}

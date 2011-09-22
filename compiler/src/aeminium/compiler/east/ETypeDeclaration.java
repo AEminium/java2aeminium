@@ -5,7 +5,9 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Modifier.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class ETypeDeclaration extends EAbstractTypeDeclaration
 {
@@ -54,29 +56,5 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 
 		for (EMethodDeclaration method : this.methods)
 			method.optimize();
-	}
-
-	public static void addExecuteMethod(AST ast, TypeDeclaration type, Block body)
-	{
-		MethodDeclaration execute = ast.newMethodDeclaration();
-		execute.setName(ast.newSimpleName("execute"));
-		execute.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-
-		SingleVariableDeclaration runtime = ast.newSingleVariableDeclaration();
-		runtime.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Runtime")));
-		runtime.setName(ast.newSimpleName("rt"));
-
-		execute.parameters().add(runtime);
-
-		SingleVariableDeclaration task = ast.newSingleVariableDeclaration();
-		task.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
-		task.setName(ast.newSimpleName("task"));
-
-		execute.parameters().add(task);
-
-		execute.thrownExceptions().add(ast.newSimpleName("Exception"));
-		execute.setBody(body);
-
-		type.bodyDeclarations().add(execute);
 	}
 }

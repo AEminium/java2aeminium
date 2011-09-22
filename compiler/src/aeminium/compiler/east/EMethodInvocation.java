@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EMethodInvocation extends EExpression
 {
@@ -33,24 +35,21 @@ public class EMethodInvocation extends EExpression
 	}
 
 	@Override
-	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
 		// TODO: allow regular method caling
+		// TODO check if node has @AEminium annotation, if not create(or check if already exists) a new body 
+		// that only calls the normal method
  
 		assert (this.isRoot());
 
-		// TODO check if node has @AEminium annotation, if not create(or check if already exists) a new body 
-		// that only calls the normal method
-
-		// TODO: set task 
-		this.task_id = method.subtasks;
+		this.task = parent.newSubtask(cus);
 
 		System.err.println("TODO: MethodInvocation");
 		FieldAccess ret = ast.newFieldAccess();
 
-		method.subtasks++;
 		return ret;
 	}
 

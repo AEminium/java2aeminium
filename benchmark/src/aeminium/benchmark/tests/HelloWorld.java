@@ -2,7 +2,7 @@ package aeminium.benchmark.tests;
 
 public class HelloWorld
 {
-	@AEminium
+/*	@AEminium
 	public Integer method()
 	{
 		return 0;
@@ -13,11 +13,12 @@ public class HelloWorld
 	{
 		return 1;
 	}
-
+*/
 	@AEminium
 	public static int main(String[] args)
 	{
 		HelloWorld m = new HelloWorld();
+		HelloWorld k = new HelloWorld();
 
 		//int a = m.method();
 		//int b = m.method2();

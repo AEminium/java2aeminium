@@ -5,7 +5,9 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Modifier.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EClassInstanceCreation extends EExpression
 {
@@ -34,67 +36,71 @@ public class EClassInstanceCreation extends EExpression
 	public void optimize()
 	{
 		super.optimize();
-		this.root = true;
-	}
+
+		// TODO check if the constructor being used has @AEminium
+		// if not, this call must be serialized, or at least run a serial version in a task that is paralell.
+ 	}
 
 	@Override
-	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
-		assert(this.isRoot());
-
-		// TODO: IMPROVE alow @AEminium on constructors? 
-		AST ast = this.east.getAST();
-
-		// task body
-		Block body = ast.newBlock();
-
-		// _ret = X(...);
-		Assignment assign = ast.newAssignment();
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("_ret"));
-
-		assign.setLeftHandSide(access);
-		assign.setRightHandSide(this.build(method, cus, (List<Statement>) body.statements()));
+		if (this.isRoot())
+		{
+			this.task = parent.newSubtask(cus);
 		
-		body.statements().add(ast.newExpressionStatement(assign));
+			// TODO: IMPROVE alow @AEminium on constructors? 
+			AST ast = this.east.getAST();
 
-		TypeDeclaration decl = this.newSubTaskBody(method, cus, body);
+			// task body
+			Block body = ast.newBlock();
 
-		// _ret field
-		VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
-		frag.setName(ast.newSimpleName("_ret"));
+			// _ret = X(...);
+			Assignment assign = ast.newAssignment();
 
-		FieldDeclaration ret = ast.newFieldDeclaration(frag);
-		ret.setType((SimpleType) ASTNode.copySubtree(ast, this.origin.getType()));
-		ret.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-		ret.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
+			FieldAccess access = ast.newFieldAccess();
+			access.setExpression(ast.newThisExpression());
+			access.setName(ast.newSimpleName("_ret"));
 
-		decl.bodyDeclarations().add(ret);
+			assign.setLeftHandSide(access);
+			assign.setRightHandSide(this.build(this.task, cus, prestmts));
 		
-		// scheduling
-		ClassInstanceCreation creation = this.newSubTaskCreation(method, cus, stmts, decl);
-		List<Expression> dependencies = this.getChildDependencies(method, cus, stmts);
+			body.statements().add(ast.newExpressionStatement(assign));
 
-		this.schedule(method, cus, stmts, dependencies, creation);
+			this.task.addField(this.origin.getType(), "_ret");
+
+			List<Expression> arguments = new ArrayList<Expression>();
+			List<Expression> dependencies = new ArrayList<Expression>();
+			arguments.add(ast.newThisExpression());
+
+			List<Task> children = this.getChildTasks(this.task, cus, prestmts);
+			for (Task child : children)
+			{
+				arguments.add(child.getBodyAccess());
+				dependencies.add(child.getTaskAccess());
+			}
+
+			MethodDeclaration constructor = this.task.createDefaultConstructor(children);
+			this.task.addConstructor(constructor);
+			this.task.setExecute(body);
 		
-		// expression
-		assert(this.task_id != -1);
 
-		//TODO add task creation and etc..
-		FieldAccess ret_body = ast.newFieldAccess();
-		ret_body.setExpression(ast.newThisExpression());
-		ret_body.setName(ast.newSimpleName("_body_" + this.task_id));
+			prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
 
-		FieldAccess ret_access = ast.newFieldAccess();
-		ret_access.setExpression(ret_body);
-		ret_access.setName(ast.newSimpleName("_ret"));
+			// TODO add task creation and etc..
+			FieldAccess ret_body = this.task.getBodyAccess();
 
-		return ret_access;
+			FieldAccess ret_access = ast.newFieldAccess();
+			ret_access.setExpression(ret_body);
+			ret_access.setName(ast.newSimpleName("_ret"));
+
+			return ret_access;
+		} else
+		{
+			return this.build(task, cus, prestmts);
+		}
 	}
 
-	public Expression build(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Expression build(Task task, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
 		AST ast = this.east.getAST();
 
@@ -102,7 +108,7 @@ public class EClassInstanceCreation extends EExpression
 		creation.setType((SimpleType) ASTNode.copySubtree(ast, this.origin.getType()));
 
 		for (EExpression arg : this.args)
-			creation.arguments().add(arg.translate(method, cus, stmts));
+			creation.arguments().add(arg.translate(task, cus, prestmts));
 
 		return creation;
 	}

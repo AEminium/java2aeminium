@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
 
 public class EVariableDeclarationStatement extends EStatement
 {
@@ -27,16 +29,49 @@ public class EVariableDeclarationStatement extends EStatement
 	}
 
 	@Override
-	public void translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
-		for (EVariableDeclarationFragment frag : this.frags)
-			frag.translate(method, cus, stmts, this.origin.getType());
+		List<Statement> stmts = new ArrayList<Statement>();
+
+		if (this.isRoot())
+		{
+			this.task = parent.newSubtask(cus);
+
+			// TODO: IMPROVE alow @AEminium on constructors? 
+			AST ast = this.east.getAST();
+
+			// task body
+			Block body = ast.newBlock();
+
+			for (EVariableDeclarationFragment frag : this.frags)
+				body.statements().addAll(frag.translate(parent, cus, prestmts, this.origin.getType()));
+
+
+			List<Task> children = this.getChildTasks(this.task, cus, prestmts);
+			List<Expression> arguments = new ArrayList<Expression>();
+			List<Expression> dependencies = new ArrayList<Expression>();
+			arguments.add(ast.newThisExpression());
+
+			for (Task child : children)
+			{
+				arguments.add(child.getBodyAccess());
+				dependencies.add(child.getTaskAccess());
+			}
+
+			this.task.addConstructor(this.task.createDefaultConstructor(children));
+			this.task.setExecute(body);
+
+			stmts.addAll(this.task.schedule(parent, arguments, dependencies));
+		} else
+			for (EVariableDeclarationFragment frag : this.frags)
+				stmts.addAll(frag.translate(parent, cus, prestmts, this.origin.getType()));
+
+		return stmts;
 	}
 
 	@Override
 	public void optimize()
 	{
-		for (EVariableDeclarationFragment frag : this.frags)
-			frag.optimize();
+		super.optimize();
 	}
 }

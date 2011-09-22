@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+
 import aeminium.compiler.east.*;
+import aeminium.compiler.Task;
+
 
 public class ESimpleName extends EExpression
 {
@@ -18,16 +21,17 @@ public class ESimpleName extends EExpression
 	}
 
 	@Override
-	public Expression translate(EMethodDeclaration method, List<CompilationUnit> cus, List<Statement> stmts)
+	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
 	{
 		AST ast = this.east.getAST();
 
+		// TODO: get this, not from this._parent, but from this._parent._parent.... 
 		// cannot be root node
 		assert(!this.isRoot());
 
 		FieldAccess root = ast.newFieldAccess();
 		root.setExpression(ast.newThisExpression());
-		root.setName(ast.newSimpleName("_root"));
+		root.setName(ast.newSimpleName("_parent"));
 
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(root);
@@ -37,11 +41,11 @@ public class ESimpleName extends EExpression
 	}
 
 	@Override
-	protected List<Expression> getDependencies(EMethodDeclaration decl, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getTasks(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
 	{
-		System.err.println("TODO: SimpleName getDependencies()");
+		System.err.println("TODO: SimpleName getTasks()");
 
-		return super.getDependencies(decl, cus, stmts);
+		return super.getTasks(task, cus, stmts);
 	}	
 
 }

@@ -12,16 +12,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-
-import aeminium.compiler.Translator;
-import aeminium.compiler.Optimizer;
-
-import aeminium.compiler.east.EAST;
-import aeminium.compiler.east.ECompilationUnit;
+import org.eclipse.jdt.core.dom.*;
+import aeminium.compiler.east.*;
 
 public class Compiler
 {
@@ -77,7 +69,16 @@ public class Compiler
 		// Save units
 		for (CompilationUnit unit : east.translate())
 		{
-			System.out.println(unit);
+			AST ast = east.getAST();
+
+			ImportDeclaration helper = ast.newImportDeclaration();
+			helper.setName(ast.newName("aeminium.runtime.AeminiumHelper"));
+			unit.imports().add(helper);
+
+			ImportDeclaration list = ast.newImportDeclaration();
+			list.setName(ast.newName("java.util.ArrayList"));
+			unit.imports().add(list);
+
 			this.save(unit);
 		}
 	}
