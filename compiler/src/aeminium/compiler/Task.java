@@ -10,7 +10,7 @@ import aeminium.compiler.east.*;
 public class Task
 {
 	EAST east;
-	Task parent;
+	public Task parent;
 	CompilationUnit cu;
 	TypeDeclaration type;
 	MethodDeclaration execute;
@@ -63,14 +63,30 @@ public class Task
 		return this.name;
 	}
 
+	public String getBodyName()
+	{
+		if (this.parent == null)
+			return "_body";
+
+		return this.parent.getBodyName() + "_" + this.task_id;
+	}
+
+	public String getTaskName()
+	{
+		if (this.parent == null)
+			return "_task";	
+
+		return this.parent.getTaskName() + "_" + this.task_id;
+	}
+
 	public FieldAccess getBodyAccess()
 	{
 		AST ast = this.east.getAST();
 
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("_body_" + this.task_id));
-
+		access.setName(ast.newSimpleName(this.getBodyName()));
+		
 		return access;
 	}
 
@@ -80,7 +96,7 @@ public class Task
 
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("_task_" + this.task_id));
+		access.setName(ast.newSimpleName(this.getTaskName()));
 
 		return access;
 	}
@@ -216,8 +232,8 @@ public class Task
 		List<Statement> stmts = new ArrayList<Statement>();
 		AST ast = this.east.getAST();
 
-		parent.addField(ast.newSimpleType(ast.newSimpleName(this.getName())), "_body_" + this.task_id);
-		parent.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "_task_" + this.task_id);
+		parent.addField(ast.newSimpleType(ast.newSimpleName(this.getName())), this.getBodyName());
+		parent.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), this.getTaskName());
 
 		/* this._body_1 = new AE_XX_1(); */
 		Assignment body_assign = ast.newAssignment();
@@ -270,7 +286,7 @@ public class Task
 	
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName("_task_" + this.task_id));
+		task_access.setName(ast.newSimpleName(this.getTaskName()));
 
 		task_assign.setLeftHandSide(task_access);
 
@@ -289,6 +305,17 @@ public class Task
 		task_assign.setRightHandSide(task_creation);
 
 		stmts.add(ast.newExpressionStatement(task_assign));
+
+		return stmts;
+	}
+
+	public List<Statement> scheduleSubtask(Task child, List<Expression> arguments, List<Expression> dependencies)
+	{
+		assert(child.task_id == -1);
+
+		child.task_id = ++this.subtasks;
+		List<Statement> stmts = child.schedule(this, arguments, dependencies);
+		child.task_id = -1;
 
 		return stmts;
 	}

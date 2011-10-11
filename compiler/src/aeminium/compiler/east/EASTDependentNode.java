@@ -56,7 +56,7 @@ public abstract class EASTDependentNode extends EASTNode
 		return this.root;
 	}
 
-	protected List<Task> getTasks(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getTasks()
 	{
 		List<Task> tasks = new ArrayList<Task>();
 
@@ -65,17 +65,17 @@ public abstract class EASTDependentNode extends EASTNode
 			assert(this.task != null);
 			tasks.add(this.task);
 		} else
-			tasks.addAll(this.getChildTasks(parent, cus, stmts));
+			tasks.addAll(this.getChildTasks());
 
 		return tasks;
 	}
 
-	protected List<Task> getChildTasks(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getChildTasks()
 	{
 		List<Task> tasks = new ArrayList<Task>();
-
+		System.err.println(this.childs);
 		for (EASTDependentNode child : this.childs)
-			tasks.addAll(child.getTasks(parent, cus, stmts));
+			tasks.addAll(child.getTasks());
 
 		return tasks;
 	}

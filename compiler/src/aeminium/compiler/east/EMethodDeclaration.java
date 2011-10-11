@@ -19,6 +19,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 	EBlock body;
 	Task task;
 	String name;
+	boolean aeminium;
 
 	EMethodDeclaration(EAST east, MethodDeclaration origin)
 	{
@@ -29,13 +30,21 @@ public class EMethodDeclaration extends EBodyDeclaration
 		AbstractTypeDeclaration parent = (AbstractTypeDeclaration) this.origin.getParent();
 		this.name = parent.getName().toString() + "_" + this.origin.getName().toString();
 
+		if (this.getModifier("@AEminium") != null)
+		{
+			this.origin.modifiers().remove(this.getModifier("@AEminium"));
+			this.aeminium = true;
+		} else
+			this.aeminium = false;
+
 		// do something about parameters?
-		// see optimize(), on a future versio the read version is necessary for optimizing loops
+		// see optimize(), on a future version the read version is necessary for optimizing loops
 
 		Block block = origin.getBody();
 		assert(block != null);
 
-		this.body = this.east.extend(block);		
+		this.body = this.east.extend(block);
+		this.east.putNode(this.east.resolveName(origin.resolveBinding()), this);	
 	}
 
 	public void optimize()
@@ -50,7 +59,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		AST ast = this.east.getAST();
 
-		if (this.getModifier("@AEminium") != null)
+		if (this.aeminium)
 		{
 			this.buildClass(cus);
 
@@ -70,7 +79,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		AST ast = this.east.getAST();
 		this.task = new Task(this.east, this.name, (CompilationUnit) this.origin.getRoot(), cus);
-	
+
 		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
 
 		/* Create the constructor */
@@ -208,5 +217,10 @@ public class EMethodDeclaration extends EBodyDeclaration
 				return (IExtendedModifier) modifier;
 
 		return null;
+	}
+
+	public boolean isAEminium()
+	{
+		return this.aeminium;
 	}
 }

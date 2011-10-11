@@ -11,11 +11,13 @@ public class EAST
 {
 	AST ast;
 	HashMap<String, ECompilationUnit> units;
+	HashMap<String, EASTNode> nodes;
 
 	public EAST()
 	{
 		this.ast = AST.newAST(AST.JLS3);
 		this.units = new HashMap<String, ECompilationUnit>();	
+		this.nodes = new HashMap<String, EASTNode>();	
 	}
 
 	public void optimize()
@@ -74,6 +76,9 @@ public class EAST
 		if (expr instanceof ClassInstanceCreation)
 			return new EClassInstanceCreation(this, (ClassInstanceCreation) expr);
 
+		if (expr instanceof Assignment)
+			return new EAssignment(this, (Assignment) expr);
+
 		System.err.println("Invalid expr: " + expr.getClass().toString());
 		return null;
 	}
@@ -104,6 +109,9 @@ public class EAST
 		if (stmt instanceof VariableDeclarationStatement)
 			return new EVariableDeclarationStatement(this, (VariableDeclarationStatement) stmt);
 
+		if (stmt instanceof ExpressionStatement)
+			return new EExpressionStatement(this, (ExpressionStatement) stmt);
+
 		System.err.println("Invalid Statement: " + stmt.getClass().toString());
 		return null;
 	}
@@ -121,5 +129,45 @@ public class EAST
 	public ESimpleName extend(SimpleName name)
 	{
 		return new ESimpleName(this, name);
+	}
+
+	public String resolveName(IBinding binding)
+	{
+		String id = "";
+		
+		if (binding instanceof IVariableBinding)
+		{
+			IVariableBinding var = (IVariableBinding) binding;
+			ITypeBinding type = var.getDeclaringClass();
+			if (type == null)
+			{
+				// local var
+				IMethodBinding method = var.getDeclaringMethod();
+				type = method.getDeclaringClass();
+				 id = "var_" + type.getQualifiedName() + "_" + method.getName() + "_" + var.getVariableId();
+			} else
+				id = "var_" + type.getQualifiedName() + "_" + var.getVariableId();
+		} else if (binding instanceof IMethodBinding)
+		{
+			IMethodBinding method = (IMethodBinding) binding;
+			ITypeBinding type = method.getDeclaringClass();
+	
+			// FIXME: identify overloaded methods
+			id = "method_" + type.getQualifiedName() + "_" + method.getName();
+		}
+
+		System.out.println(id);
+
+		return id;
+	}
+
+	public void putNode(String name, EASTNode node)
+	{
+		this.nodes.put(name, node);	
+	}
+
+	public EASTNode getNode(String name)
+	{
+		return this.nodes.get(name);
 	}
 }

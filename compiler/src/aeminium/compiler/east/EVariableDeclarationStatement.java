@@ -47,7 +47,7 @@ public class EVariableDeclarationStatement extends EStatement
 				body.statements().addAll(frag.translate(parent, cus, prestmts, this.origin.getType()));
 
 
-			List<Task> children = this.getChildTasks(this.task, cus, prestmts);
+			List<Task> children = this.getChildTasks();
 			List<Expression> arguments = new ArrayList<Expression>();
 			List<Expression> dependencies = new ArrayList<Expression>();
 			arguments.add(ast.newThisExpression());

@@ -48,7 +48,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 
 				this.task.setExecute(body);
 
-				List<Task> children = this.getChildTasks(parent, cus, prestmts);
+				List<Task> children = this.getChildTasks();
 				List<Expression> arguments = new ArrayList<Expression>();
 				List<Expression> dependencies = new ArrayList<Expression>();
 				arguments.add(ast.newThisExpression());
@@ -77,7 +77,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		Assignment assign = ast.newAssignment();
 		
 		// FIXME: change to field here or in simplename?
-		assign.setLeftHandSide(this.var.translate(parent, cus, prestmts)); // FIXME: translate or build ???
+		assign.setLeftHandSide(this.var.translate(parent, cus, prestmts));
 		assign.setRightHandSide(this.expr.translate(parent, cus, prestmts));
 
 		return ast.newExpressionStatement(assign);

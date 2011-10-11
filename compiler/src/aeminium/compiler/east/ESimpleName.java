@@ -41,11 +41,16 @@ public class ESimpleName extends EExpression
 	}
 
 	@Override
-	protected List<Task> getTasks(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getTasks()
 	{
-		System.err.println("TODO: SimpleName getTasks()");
+		System.err.println("TODO: SimpleName");
+		return super.getTasks();
+	}
 
-		return super.getTasks(task, cus, stmts);
-	}	
-
+	@Override
+	public void optimize()
+	{
+		super.optimize();
+		this.root = false;
+	}
 }

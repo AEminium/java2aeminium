@@ -54,7 +54,7 @@ public class EReturnStatement extends EStatement
 				ret.setName(ast.newSimpleName("_ret"));
 
 				assign.setLeftHandSide(ret);
-				assign.setRightHandSide(this.expr.translate(task, cus, prestmts));
+				assign.setRightHandSide(this.expr.translate(this.task, cus, prestmts));
 	
 				ExpressionStatement stmt = ast.newExpressionStatement(assign);
 				body.statements().add(stmt);
@@ -66,7 +66,7 @@ public class EReturnStatement extends EStatement
 			List<Expression> arguments = new ArrayList<Expression>();
 			arguments.add(ast.newThisExpression());
 
-			List<Task> children = this.getChildTasks(this.task, cus, prestmts);
+			List<Task> children = this.getChildTasks();
 			for (Task child : children)
 			{
 				arguments.add(child.getBodyAccess());

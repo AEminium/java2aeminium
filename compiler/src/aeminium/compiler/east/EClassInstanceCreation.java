@@ -72,7 +72,7 @@ public class EClassInstanceCreation extends EExpression
 			List<Expression> dependencies = new ArrayList<Expression>();
 			arguments.add(ast.newThisExpression());
 
-			List<Task> children = this.getChildTasks(this.task, cus, prestmts);
+			List<Task> children = this.getChildTasks();
 			for (Task child : children)
 			{
 				arguments.add(child.getBodyAccess());

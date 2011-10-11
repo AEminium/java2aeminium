@@ -11,29 +11,12 @@ Developed in distinct phases:
 
 * Benchmark
 	An automated benchmarking script that lauches several sets of tests.
-
+	
 TODO:
-	Build EAST
+	Variable dependencies (SimpleName, and QualifiedName)
 	
-	Optimize EAST
-		-> select nodes to paralellize and nodes to serialize
-		conservative rule:
-			MethodInvocations (and ClassInstanceCreations?) are always in tasks
-			a node with exactly 1 dependent is placed in the same task as the dependent (dependent = a task waiting for "my" conclusion)
-			nodes with no dependent are task roots:
-
-
-	Translate EAST
-		if (this.isRoot())
-		{
-			build new task body;
-			body.add(this.build())
 	
-			stmts.add( scheduling ) 
-		} else
-			stmts.add(this.build())
-		
-FIXME:
+
 	after a conditional statement (if, while, statement) task has been executed it should be possible to
 	cancel child tasks:
 		it can be done by modifying the code, or directly allowing it in the runtime

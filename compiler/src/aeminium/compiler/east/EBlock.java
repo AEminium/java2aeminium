@@ -35,13 +35,13 @@ public class EBlock extends EStatement
 	}
 
 	@Override
-	protected List<Task> getChildTasks(Task task, List<CompilationUnit> cus, List<Statement> stmts)
+	protected List<Task> getChildTasks()
 	{
 		List<Task> tasks = new ArrayList<Task>();
-		tasks.addAll(super.getTasks(task, cus, stmts));
+		tasks.addAll(super.getTasks());
 		
 		for (EStatement stmt : this.stmts)
-			tasks.addAll(stmt.getTasks(task, cus, stmts));
+			tasks.addAll(stmt.getTasks());
 
 		return tasks;
 	}
@@ -49,15 +49,32 @@ public class EBlock extends EStatement
 	@Override
 	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
 	{
-		// unsuported yet 
-		assert( this.isRoot() == false);
-
 		List<Statement> stmts = new ArrayList<Statement>();
 			
 		if (this.isRoot())
 		{
-			// TODO
-			System.err.println("TODO: EBlock");
+			AST ast = this.east.getAST();
+			this.task = parent.newSubtask(cus);
+
+			Block body = ast.newBlock();
+			body.statements().add(this.build(this.task, cus, body.statements()));
+			
+			List<Expression> dependencies = new ArrayList<Expression>();
+			List<Expression> arguments = new ArrayList<Expression>();
+			arguments.add(ast.newThisExpression());
+
+			List<Task> children = this.getChildTasks();
+			for (Task child : children)
+			{
+				arguments.add(child.getBodyAccess());
+				dependencies.add(child.getTaskAccess());
+			}
+
+			this.task.addConstructor(this.task.createDefaultConstructor(children));
+			this.task.setExecute(body);
+
+			prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
+
 		} else
 			stmts.add(this.build(parent, cus, prestmts));
 
@@ -85,7 +102,7 @@ public class EBlock extends EStatement
 		Block block = ast.newBlock();
 
 		for (EStatement stmt : this.stmts)
-			if (stmt.isRoot())
+			if (stmt.parents.size() == 0) // the roots
 				block.statements().addAll(stmt.translate(parent, cus, prestmts));
 
 		return block;
