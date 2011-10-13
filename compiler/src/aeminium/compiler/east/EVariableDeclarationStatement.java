@@ -21,57 +21,14 @@ public class EVariableDeclarationStatement extends EStatement
 		this.frags = new ArrayList<EVariableDeclarationFragment>();
 
 		for (Object frag : origin.fragments())
-		{
-			EVariableDeclarationFragment efrag = this.east.extend((VariableDeclarationFragment) frag);
-			this.frags.add(efrag);
-			this.link(efrag);
-		}
+			this.frags.add(this.east.extend((VariableDeclarationFragment) frag));
 	}
 
 	@Override
-	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
+	public Statement translate(Task parent)
 	{
 		List<Statement> stmts = new ArrayList<Statement>();
-
-		if (this.isRoot())
-		{
-			this.task = parent.newSubtask(cus);
-
-			// TODO: IMPROVE alow @AEminium on constructors? 
-			AST ast = this.east.getAST();
-
-			// task body
-			Block body = ast.newBlock();
-
-			for (EVariableDeclarationFragment frag : this.frags)
-				body.statements().addAll(frag.translate(parent, cus, prestmts, this.origin.getType()));
-
-
-			List<Task> children = this.getChildTasks();
-			List<Expression> arguments = new ArrayList<Expression>();
-			List<Expression> dependencies = new ArrayList<Expression>();
-			arguments.add(ast.newThisExpression());
-
-			for (Task child : children)
-			{
-				arguments.add(child.getBodyAccess());
-				dependencies.add(child.getTaskAccess());
-			}
-
-			this.task.addConstructor(this.task.createDefaultConstructor(children));
-			this.task.setExecute(body);
-
-			stmts.addAll(this.task.schedule(parent, arguments, dependencies));
-		} else
-			for (EVariableDeclarationFragment frag : this.frags)
-				stmts.addAll(frag.translate(parent, cus, prestmts, this.origin.getType()));
-
-		return stmts;
-	}
-
-	@Override
-	public void optimize()
-	{
-		super.optimize();
+		System.err.println("TODO: VariableDeclarationStatement");
+		return null;
 	}
 }

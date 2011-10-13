@@ -29,82 +29,27 @@ public class EBlock extends EStatement
 	public void optimize()
 	{
 		super.optimize();
-		
+
 		for (EStatement stmt : this.stmts)
 			stmt.optimize();
 	}
 
 	@Override
-	protected List<Task> getChildTasks()
+	public Statement translate(Task parent)
 	{
-		List<Task> tasks = new ArrayList<Task>();
-		tasks.addAll(super.getTasks());
-		
-		for (EStatement stmt : this.stmts)
-			tasks.addAll(stmt.getTasks());
-
-		return tasks;
+		System.err.println("TODO: EBlock translate");
+		return null;
 	}
 
-	@Override
-	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
-	{
-		List<Statement> stmts = new ArrayList<Statement>();
-			
-		if (this.isRoot())
-		{
-			AST ast = this.east.getAST();
-			this.task = parent.newSubtask(cus);
-
-			Block body = ast.newBlock();
-			body.statements().add(this.build(this.task, cus, body.statements()));
-			
-			List<Expression> dependencies = new ArrayList<Expression>();
-			List<Expression> arguments = new ArrayList<Expression>();
-			arguments.add(ast.newThisExpression());
-
-			List<Task> children = this.getChildTasks();
-			for (Task child : children)
-			{
-				arguments.add(child.getBodyAccess());
-				dependencies.add(child.getTaskAccess());
-			}
-
-			this.task.addConstructor(this.task.createDefaultConstructor(children));
-			this.task.setExecute(body);
-
-			prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
-
-		} else
-			stmts.add(this.build(parent, cus, prestmts));
-
-		return stmts;
-	}
-
-	public Block build(Task parent, List<CompilationUnit> cus)
+	public Block build(Task parent)
 	{
 		AST ast = this.east.getAST();
 		Block block = ast.newBlock();
-
-		List<Statement> stmts = new ArrayList<Statement>();
 
 		for (EStatement stmt : this.stmts)
 			if (stmt.isRoot())
-				stmts.addAll(stmt.translate(parent, cus, block.statements()));
-
-		block.statements().addAll(stmts);
-		return block;
-	}
-
-	public Block build(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
-	{
-		AST ast = this.east.getAST();
-		Block block = ast.newBlock();
-
-		for (EStatement stmt : this.stmts)
-			if (stmt.parents.size() == 0) // the roots
-				block.statements().addAll(stmt.translate(parent, cus, prestmts));
+				block.statements().add(stmt.translate(parent));
 
 		return block;
 	}
-}	
+}

@@ -19,67 +19,51 @@ public class EReturnStatement extends EStatement
 		this.origin = origin;
 
 		if (origin.getExpression() != null)
-		{
 			this.expr = this.east.extend((Expression) origin.getExpression());
-			this.link(this.expr);
-		}
+	}
+	
+	@Override
+	public void optimize()
+	{
+		super.optimize();
+		this.expr.optimize();
 	}
 
 	@Override
-	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
+	public Statement translate(Task parent)
 	{
 		AST ast = this.east.getAST();
-		List <Statement> stmts = new ArrayList<Statement>();
 
-		// TODO:
 		assert(this.isRoot());
+		assert(this.expr != null);
 
-		if (this.isRoot())
-		{
-			this.task = parent.newSubtask(cus);
+		if (!this.isRoot())
+			return this.build(parent);
 
-			Block body = ast.newBlock();
+		this.task = parent.newStrongDependency("ret");
 
-			if (this.expr != null)
-			{
-				// this._root._ret = ...;
-				Assignment assign = ast.newAssignment();
-	
-				FieldAccess parentaccess = ast.newFieldAccess();
-				parentaccess.setExpression(ast.newThisExpression());
-				parentaccess.setName(ast.newSimpleName("_parent"));
+		Block execute = ast.newBlock();
+		execute.statements().add(this.build(task));
+		task.setExecute(execute);
 
-				FieldAccess ret = ast.newFieldAccess();
-				ret.setExpression(parentaccess);
-				ret.setName(ast.newSimpleName("_ret"));
+		MethodDeclaration constructor = task.createConstructor();
+		task.addConstructor(constructor);
 
-				assign.setLeftHandSide(ret);
-				assign.setRightHandSide(this.expr.translate(this.task, cus, prestmts));
-	
-				ExpressionStatement stmt = ast.newExpressionStatement(assign);
-				body.statements().add(stmt);
-			}
-		
-			// TODO: mark task as finished?
-		
-			List<Expression> dependencies = new ArrayList<Expression>();
-			List<Expression> arguments = new ArrayList<Expression>();
-			arguments.add(ast.newThisExpression());
+		return ast.newEmptyStatement();
+	}
 
-			List<Task> children = this.getChildTasks();
-			for (Task child : children)
-			{
-				arguments.add(child.getBodyAccess());
-				dependencies.add(child.getTaskAccess());
-			}
+	public Statement build(Task task)
+	{
+		AST ast = this.east.getAST();
 
-			this.task.addConstructor(this.task.createDefaultConstructor(children));
-			this.task.setExecute(body);
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(task.getRootBody());
+		ret.setName(ast.newSimpleName("ae_ret"));
 
-			prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(ret);
+		assign.setRightHandSide(this.expr.translate(task)); 
 
-		} 
-
-		return stmts;
+		return ast.newExpressionStatement(assign);
 	}
 }

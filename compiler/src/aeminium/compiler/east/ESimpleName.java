@@ -21,36 +21,16 @@ public class ESimpleName extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent, List<CompilationUnit> cus, List<Statement> stmts)
-	{
-		AST ast = this.east.getAST();
-
-		// TODO: get this, not from this._parent, but from this._parent._parent.... 
-		// cannot be root node
-		assert(!this.isRoot());
-
-		FieldAccess root = ast.newFieldAccess();
-		root.setExpression(ast.newThisExpression());
-		root.setName(ast.newSimpleName("_parent"));
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(root);
-		access.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
-		
-		return access;
-	}
-
-	@Override
-	protected List<Task> getTasks()
-	{
-		System.err.println("TODO: SimpleName");
-		return super.getTasks();
-	}
-
-	@Override
 	public void optimize()
 	{
 		super.optimize();
 		this.root = false;
+	}
+
+	@Override
+	public Expression translate(Task parent)
+	{
+		System.err.println("TODO: SimpleName");
+		return null;
 	}
 }

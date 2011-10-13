@@ -19,42 +19,19 @@ public class EExpressionStatement extends EStatement
 		this.origin = origin;
 
 		this.expr = this.east.extend((Expression) origin.getExpression());
-		this.link(this.expr);
 	}
 
 	@Override
-	public List<Statement> translate(Task parent, List<CompilationUnit> cus, List<Statement> prestmts)
+	public void optimize()
 	{
-		AST ast = this.east.getAST();
-		List <Statement> stmts = new ArrayList<Statement>();
+		super.optimize();
+		this.expr.optimize();
+	}
 
-		// TODO:
-		assert(this.isRoot());
-
-		if (this.isRoot())
-		{
-			this.task = parent.newSubtask(cus);
-
-			Block body = ast.newBlock();
-			this.expr.translate(this.task, cus, body.statements());
-
-			List<Expression> dependencies = new ArrayList<Expression>();
-			List<Expression> arguments = new ArrayList<Expression>();
-			arguments.add(ast.newThisExpression());
-
-			List<Task> children = this.getChildTasks();
-			for (Task child : children)
-			{
-				arguments.add(child.getBodyAccess());
-				dependencies.add(child.getTaskAccess());
-			}
-			System.out.println(this.childs);
-			this.task.addConstructor(this.task.createDefaultConstructor(children));
-			this.task.setExecute(body);
-
-			prestmts.addAll(this.task.schedule(parent, arguments, dependencies));
-		} 
-
-		return stmts;
+	@Override
+	public Statement translate(Task parent)
+	{
+		System.err.println("translate: ExpressionStatement");
+		return null;
 	}
 }

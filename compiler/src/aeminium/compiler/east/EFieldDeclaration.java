@@ -3,26 +3,18 @@ package aeminium.compiler.east;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Modifier.*;
+import aeminium.compiler.east.*;
 
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
-
-import aeminium.compiler.east.EAST;
-
-import aeminium.compiler.east.ETypeDeclaration;
-import aeminium.compiler.east.EMethodDeclaration;
-
-public class EFieldDeclaration
+public class EFieldDeclaration extends EBodyDeclaration
 {
 	EAST east;
 	FieldDeclaration origin;
 
 	EFieldDeclaration(EAST east, FieldDeclaration origin)
 	{
+		super(east);
 		this.east = east;
 		this.origin = origin;
 	}
@@ -40,6 +32,7 @@ public class EFieldDeclaration
 
 	public void optimize()
 	{
-		/* TODO? */
+		//super.optimize();
+		/* TODO ? */
 	}
 }

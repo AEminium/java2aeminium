@@ -79,58 +79,15 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		AST ast = this.east.getAST();
 		this.task = new Task(this.east, this.name, (CompilationUnit) this.origin.getRoot(), cus);
+		this.task.setMethodTask(this.origin.getReturnType2(), this.origin.parameters());
 
 		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
 
+		task.setExecute(this.body.build(this.task));
+
 		/* Create the constructor */
-		MethodDeclaration constructor = ast.newMethodDeclaration();
-		constructor.setName(ast.newSimpleName(this.name));
-		constructor.setConstructor(true);
-
-		Block constructor_body = ast.newBlock();
-
-		if (this.getModifier("static") == null)
-		{
-			// add _this to parameter list
-			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-			param.setType(ast.newSimpleType(ast.newSimpleName(parent.getName().toString())));
-			param.setName(ast.newSimpleName("_this"));
-
-			constructor.parameters().add(param);
-		}
-
-		/* Create the return placeholder */
-		if (!this.origin.isConstructor() && !this.origin.getReturnType2().toString().equals("void"))
-			this.task.addField(this.origin.getReturnType2(), "_ret");
-
-		/* add parameters */
-		constructor.parameters().addAll(ASTNode.copySubtrees(ast, this.origin.parameters()));
-
-		for (Object param : constructor.parameters())
-		{
-			SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
-			
-			// add field
-			this.task.addField(parameter.getType(), parameter.getName().toString());
-
-			// add assigment "this.field = field"
-			Assignment asgn = ast.newAssignment();
-			
-			FieldAccess left = ast.newFieldAccess();
-			left.setExpression(ast.newThisExpression());
-			left.setName((SimpleName) ASTNode.copySubtree(ast, parameter.getName()));
-
-			asgn.setLeftHandSide(left);
-			asgn.setRightHandSide((SimpleName) ASTNode.copySubtree(ast, parameter.getName()));
-			
-			ExpressionStatement stmt = ast.newExpressionStatement(asgn);
-
-			constructor_body.statements().add(stmt);
-		}
-
-		constructor.setBody(constructor_body);
-		task.addConstructor(constructor);
-		task.setExecute(this.body.build(this.task, cus));
+		MethodDeclaration constructor = this.task.createConstructor();
+		this.task.addConstructor(constructor);
 	}
 
 	public MethodDeclaration buildMain()
@@ -153,46 +110,14 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		body.statements().add(ast.newExpressionStatement(init));
 
-		// AeminiumHelper.schedule( ... );
-		MethodInvocation schedule = ast.newMethodInvocation();
-		schedule.setExpression(ast.newSimpleName("AeminiumHelper"));
-		schedule.setName(ast.newSimpleName("schedule"));
+		ClassInstanceCreation creation = ast.newClassInstanceCreation();
+		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getType())));
 
-			// AeminiumHelper.createNonBlockingTask(new AE_HelloWorld_main_body(args), AeminiumHelper.NO_HINTS),
-			MethodInvocation create = ast.newMethodInvocation();
-			create.setExpression(ast.newSimpleName("AeminiumHelper"));
-			create.setName(ast.newSimpleName("createNonBlockingTask"));
+		creation.arguments().add(ast.newNullLiteral());
+		for (Object arg : this.origin.parameters())
+			creation.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));
 
-			ClassInstanceCreation main_body = ast.newClassInstanceCreation();
-			main_body.setType(ast.newSimpleType(ast.newSimpleName(this.name)));
-
-			for (Object param : this.origin.parameters())
-			{
-				SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
-				main_body.arguments().add(ASTNode.copySubtree(ast, parameter.getName()));
-			}
-
-			create.arguments().add(main_body);
-
-			FieldAccess no_hints = ast.newFieldAccess();
-			no_hints.setExpression(ast.newSimpleName("AeminiumHelper"));
-			no_hints.setName(ast.newSimpleName("NO_HINTS"));
-
-			create.arguments().add(no_hints);
-
-		schedule.arguments().add(create);
-
-		FieldAccess no_parent = ast.newFieldAccess();
-		no_parent.setExpression(ast.newSimpleName("AeminiumHelper"));
-		no_parent.setName(ast.newSimpleName("NO_PARENT"));
-		schedule.arguments().add(no_parent);
-
-		FieldAccess no_deps = ast.newFieldAccess();
-		no_deps.setExpression(ast.newSimpleName("AeminiumHelper"));
-		no_deps.setName(ast.newSimpleName("NO_DEPS"));
-		schedule.arguments().add(no_deps);
-		
-		body.statements().add(ast.newExpressionStatement(schedule));
+		body.statements().add(ast.newExpressionStatement(creation));
 
 		// AeminiumHelper.shutdown();
 		MethodInvocation shutdown = ast.newMethodInvocation();
