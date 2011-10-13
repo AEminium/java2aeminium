@@ -21,6 +21,8 @@ public class EMethodDeclaration extends EBodyDeclaration
 	String name;
 	boolean aeminium;
 
+	IMethodBinding binding;
+
 	EMethodDeclaration(EAST east, MethodDeclaration origin)
 	{
 		super(east);
@@ -53,6 +55,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 		// a variable is read-only if there isn't any write operations in the closure of body operations
 
 		this.body.optimize();
+		this.binding = this.origin.resolveBinding();
 	}
 
 	public MethodDeclaration translate(List<CompilationUnit> cus)
@@ -79,7 +82,12 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		AST ast = this.east.getAST();
 		this.task = new Task(this.east, this.name, (CompilationUnit) this.origin.getRoot(), cus);
-		this.task.setMethodTask(this.origin.getReturnType2(), this.origin.parameters());
+
+		Type this_type = null;
+		if (!this.isStatic())
+			this_type = this.east.buildTypeFromBinding(this.binding.getDeclaringClass());
+
+		this.task.setMethodTask(this.origin.getReturnType2(), this_type, this.origin.parameters());
 
 		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
 
@@ -147,5 +155,10 @@ public class EMethodDeclaration extends EBodyDeclaration
 	public boolean isAEminium()
 	{
 		return this.aeminium;
+	}
+
+	public boolean isStatic()
+	{
+		return this.getModifier("static") != null;
 	}
 }

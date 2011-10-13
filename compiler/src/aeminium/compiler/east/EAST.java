@@ -170,4 +170,14 @@ public class EAST
 	{
 		return this.nodes.get(name);
 	}
+
+	public Type buildTypeFromBinding(ITypeBinding binding)
+	{
+		if (binding.isClass())
+			return this.ast.newSimpleType(this.ast.newName(binding.getQualifiedName()));
+
+		// TODO
+		System.err.println("Binding: TODO: complex types");
+		return null;
+	}
 }

@@ -16,8 +16,9 @@ public class EMethodInvocation extends EExpression
 	List<EExpression> args;
 
 	ITypeBinding type;
+	IMethodBinding binding;
 	EMethodDeclaration declaration;
-
+	
 	EMethodInvocation(EAST east, MethodInvocation origin)
 	{
 		super(east);
@@ -33,14 +34,6 @@ public class EMethodInvocation extends EExpression
 		// TODO: add internal dependencies (System.out, and other statics here)?
 	}
 
-
-	@Override
-	public Expression translate(Task parent)
-	{
-		System.err.println("TODO: MethodInvocation");
-		return null;
-	}
-
 	@Override
 	public void optimize()
 	{
@@ -52,6 +45,78 @@ public class EMethodInvocation extends EExpression
 			arg.optimize(); 
 		
 		this.declaration = (EMethodDeclaration) this.east.getNode(this.east.resolveName(this.origin.resolveMethodBinding()));
+		this.binding = this.origin.resolveMethodBinding();
 		this.type = this.origin.resolveTypeBinding();
+	}
+
+	@Override
+	public Expression translate(Task parent)
+	{
+		AST ast = this.east.getAST();
+
+		assert(this.isRoot());
+
+		if (!this.isRoot())
+			return this.buildSequential(parent);
+
+		/* in self task */
+		this.task = parent.newStrongDependency("invoke");
+		this.task.addField(this.east.buildTypeFromBinding(this.type), "ae_ret");
+
+		ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
+		caller_type.typeArguments().add(this.east.buildTypeFromBinding(this.type));
+
+		this.task.setSuperClass(caller_type);
+
+		Block execute = ast.newBlock();
+		execute.statements().add(ast.newExpressionStatement(this.build(task)));
+		task.setExecute(execute);
+
+		MethodDeclaration constructor = task.createConstructor();
+		task.addConstructor(constructor);
+
+		/* in parent task */
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName(this.task.getName()));
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(access);
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		return ret;
+	}
+
+	public Expression buildSequential(Task task)
+	{
+		System.err.println("TODO sequential invocation");
+		return null;
+	}
+
+	public Expression build(Task task)
+	{
+		AST ast = this.east.getAST();
+
+		String method_name = this.east.resolveName(this.binding);
+		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
+
+		if (method == null || !method.isAEminium())
+		{
+			System.err.println("TODO: sequential invocation");
+			return null;
+		}
+		
+		ClassInstanceCreation create = ast.newClassInstanceCreation();
+		create.setType(ast.newSimpleType(ast.newSimpleName(method.task.getType())));	
+		
+		create.arguments().add(ast.newThisExpression());
+
+		if (!method.isStatic())
+			create.arguments().add(this.expr.translate(task));
+
+		for (EExpression arg : this.args)
+			create.arguments().add(arg.translate(task));
+
+		return create;
 	}
 }

@@ -12,6 +12,7 @@ import aeminium.compiler.Task;
 public class ESimpleName extends EExpression
 {
 	SimpleName origin;
+	IBinding binding;
 
 	ESimpleName(EAST east, SimpleName origin)
 	{
@@ -24,13 +25,23 @@ public class ESimpleName extends EExpression
 	public void optimize()
 	{
 		super.optimize();
+
 		this.root = false;
+		this.binding = this.origin.resolveBinding();
 	}
 
 	@Override
 	public Expression translate(Task parent)
 	{
-		System.err.println("TODO: SimpleName");
-		return null;
+		AST ast = this.east.getAST();
+
+		String variable = this.east.resolveName(this.binding);
+		EASTDependentNode node = (EASTDependentNode) this.east.getNode(variable);
+
+		FieldAccess field = ast.newFieldAccess();
+		field.setExpression(parent.getPathToTask(node.task));
+		field.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
+
+		return field;
 	}
 }

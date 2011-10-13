@@ -2,6 +2,7 @@ package aeminium.compiler;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Modifier.*;
@@ -20,6 +21,7 @@ public class Task
 	Task parent;
 	List<Task> strongDependencies;
 	List<Task> weakDependencies;
+	List<Task> children;
 
 	String type;
 	String name;
@@ -27,6 +29,7 @@ public class Task
 	/* only used when this task receives additional params (e.g.: is a method task) */
 	boolean isMethod;
 	Type returnType;
+	Type thisType;
 	List<SingleVariableDeclaration> parameters;
 
 	public Task(EAST east, String type, CompilationUnit original, List<CompilationUnit> cus)
@@ -36,6 +39,7 @@ public class Task
 		this.parent = null;
 		this.strongDependencies = new ArrayList<Task>();
 		this.weakDependencies = new ArrayList<Task>();
+		this.children = new ArrayList<Task>();
 
 		this.type = type;
 		this.name = "ae";
@@ -43,6 +47,7 @@ public class Task
 		this.isMethod = false;
 		this.parameters = null;
 		this.returnType = null;
+		this.thisType = null;
 
 		this.build(original, cus);
 	}
@@ -60,6 +65,21 @@ public class Task
 		task.setName(this.name + "_s" + this.strongDependencies.size());
 		task.parent = this;
 	}
+
+	public Task newChild(String suffix)
+	{
+		Task task = new Task(this.east, this.type + "_" + suffix + this.children.size(), this.cu, this.cus);
+		this.addChild(task);
+		return task;
+	}
+	
+	public void addChild(Task task)
+	{
+		this.children.add(task);
+		task.setName(this.name + "_c" + this.children.size());
+		task.parent = this;
+	}
+
 
 	public void addWeakDependency(Task task)
 	{
@@ -87,9 +107,10 @@ public class Task
 		cus.add(this.cu);
 	}
 
-	public void setMethodTask(Type returnType, List<SingleVariableDeclaration> parameters)
+	public void setMethodTask(Type returnType, Type thisType, List<SingleVariableDeclaration> parameters)
 	{
 		this.isMethod = true;
+		this.thisType = thisType;
 		this.returnType = returnType;
 		this.parameters = parameters;
 	}
@@ -97,6 +118,11 @@ public class Task
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+
+	public void setSuperClass(Type type)
+	{
+		this.decl.setSuperclassType(type);
 	}
 
 	public String getName()
@@ -112,20 +138,6 @@ public class Task
 	public CompilationUnit getCompilationUnit()
 	{
 		return this.cu;
-	}
-
-	public Expression getRootBody()
-	{
-		AST ast = this.east.getAST();
-
-		if (this.parent == null)
-			return ast.newThisExpression();
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(this.parent.getRootBody());
-		access.setName(ast.newSimpleName("ae_parent"));
-
-		return access;
 	}
 
 	public MethodDeclaration createConstructor()
@@ -169,7 +181,7 @@ public class Task
 					ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
 					caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, this.returnType));
 
-					this.decl.setSuperclassType(caller_type);
+					this.addField(this.returnType, "ae_ret");
 
 					// add ae_parent parameter
 					SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
@@ -190,6 +202,32 @@ public class Task
 
 					asgn.setLeftHandSide(access);
 					asgn.setRightHandSide(ast.newSimpleName("ae_parent"));
+
+					constructor_body.statements().add(ast.newExpressionStatement(asgn));
+				}
+
+				if (this.thisType != null)
+				{
+					this.addField(this.thisType, "ae_this");
+
+					// add ae_this parameter
+					SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
+
+					param.setType((Type) ASTNode.copySubtree(ast, this.thisType));
+					param.setName(ast.newSimpleName("ae_this"));
+
+					constructor.parameters().add(param);
+
+					// this.ae_this = ae_this
+		
+					Assignment asgn = ast.newAssignment();
+
+					FieldAccess access = ast.newFieldAccess();
+					access.setExpression(ast.newThisExpression());
+					access.setName(ast.newSimpleName("ae_this"));
+
+					asgn.setLeftHandSide(access);
+					asgn.setRightHandSide(ast.newSimpleName("ae_this"));
 
 					constructor_body.statements().add(ast.newExpressionStatement(asgn));
 				}
@@ -237,7 +275,7 @@ public class Task
 
 			constructor_body.statements().add(ast.newExpressionStatement(task_asgn));
 
-			// add child bodies
+			// add bodies
 			for (Task dep : this.strongDependencies)
 			{
 				SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getType()));
@@ -245,7 +283,7 @@ public class Task
 
 				this.addField(type, name);
 
-				// this.ae_1 = new ....()
+				// this.ae_s1 = new ....()
 				Assignment child_asgn = ast.newAssignment();
 
 				FieldAccess child_access = ast.newFieldAccess();
@@ -256,6 +294,14 @@ public class Task
 				child_asgn.setRightHandSide(dep.create());
 
 				constructor_body.statements().add(ast.newExpressionStatement(child_asgn));
+			}
+
+			for (Task child : this.children)
+			{
+				SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getType()));
+				String name = child.getName();
+
+				this.addField(type, name);	
 			}
 
 			// AeminiumHelper.schedule(this.ae_task, AeminiumHelper.NO_PARENT, Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
@@ -379,5 +425,49 @@ public class Task
 		field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
 
 		this.decl.bodyDeclarations().add(field);
+	}
+
+	public Expression getPathToTask(Task target)
+	{
+		AST ast = this.east.getAST();
+
+		// TODO: this can be optimized
+		Expression path = this.getPathToRoot();
+		Stack<Task> tasks = new Stack<Task>();
+
+		while (target != null)
+		{
+			tasks.push(target);
+			target = target.parent;
+		}
+
+		if (!tasks.empty())
+		{
+			tasks.pop();
+			while (!tasks.empty())
+			{
+				FieldAccess newPath = ast.newFieldAccess();
+				newPath.setExpression(path);
+				newPath.setName(ast.newSimpleName(tasks.pop().getName()));
+				path = newPath;
+			}
+		}
+
+		System.err.println(path);
+		return path;
+	}
+
+	public Expression getPathToRoot()
+	{
+		AST ast = this.east.getAST();
+
+		if (this.parent == null)
+			return ast.newThisExpression();
+
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(this.parent.getPathToRoot());
+		access.setName(ast.newSimpleName("ae_parent"));
+
+		return access;
 	}
 }

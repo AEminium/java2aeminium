@@ -13,7 +13,6 @@ public class EClassInstanceCreation extends EExpression
 {
 	ClassInstanceCreation origin;
 	List<EExpression> args;
-	IMethodBinding binding;
 
 	EClassInstanceCreation(EAST east, ClassInstanceCreation origin)
 	{
@@ -41,7 +40,55 @@ public class EClassInstanceCreation extends EExpression
 	@Override
 	public Expression translate(Task parent)
 	{
-		System.err.println("TODO: ClassInstanceCreation translate");
-		return null;
+		AST ast = this.east.getAST();
+
+		assert(this.isRoot());
+
+		if (!this.isRoot())
+			return this.build(parent);
+
+		/* in self task */
+		this.task = parent.newStrongDependency("class");
+		this.task.addField((Type) ASTNode.copySubtree(ast, this.origin.getType()), "ae_ret");
+
+		Block execute = ast.newBlock();
+
+		FieldAccess this_ret = ast.newFieldAccess();
+		this_ret.setExpression(ast.newThisExpression());
+		this_ret.setName(ast.newSimpleName("ae_ret"));
+
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(this_ret);
+		assign.setRightHandSide(this.build(task));
+		execute.statements().add(ast.newExpressionStatement(assign));
+
+		task.setExecute(execute);
+
+		MethodDeclaration constructor = task.createConstructor();
+		task.addConstructor(constructor);
+
+		/* in parent task */
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName(this.task.getName()));
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(access);
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		return ret;
+	}
+
+	public Expression build(Task task)
+	{
+		AST ast = this.east.getAST();
+
+		ClassInstanceCreation create = ast.newClassInstanceCreation();
+		create.setType((Type) ASTNode.copySubtree(ast, this.origin.getType()));
+
+		for (EExpression arg: this.args)
+			create.arguments().add(arg.translate(task));
+
+		return create;
 	}
 }

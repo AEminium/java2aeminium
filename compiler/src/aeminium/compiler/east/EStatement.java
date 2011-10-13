@@ -15,5 +15,5 @@ public abstract class EStatement extends EASTDependentNode
 		super(east);
 	}
 
-	public abstract Statement translate(Task parent);
+	public abstract List<Statement> translate(Task parent);
 }

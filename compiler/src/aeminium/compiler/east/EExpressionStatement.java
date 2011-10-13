@@ -29,7 +29,7 @@ public class EExpressionStatement extends EStatement
 	}
 
 	@Override
-	public Statement translate(Task parent)
+	public List<Statement> translate(Task parent)
 	{
 		System.err.println("translate: ExpressionStatement");
 		return null;

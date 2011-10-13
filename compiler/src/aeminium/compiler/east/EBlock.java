@@ -35,7 +35,7 @@ public class EBlock extends EStatement
 	}
 
 	@Override
-	public Statement translate(Task parent)
+	public List<Statement> translate(Task parent)
 	{
 		System.err.println("TODO: EBlock translate");
 		return null;
@@ -48,7 +48,7 @@ public class EBlock extends EStatement
 
 		for (EStatement stmt : this.stmts)
 			if (stmt.isRoot())
-				block.statements().add(stmt.translate(parent));
+				block.statements().addAll(stmt.translate(parent));
 
 		return block;
 	}
