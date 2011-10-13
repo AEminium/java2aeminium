@@ -42,6 +42,12 @@ public class ESimpleName extends EExpression
 		field.setExpression(parent.getPathToTask(node.task));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
 
+		// FIXME: this is wrong, not only it depends on the creation, but also on the last task that
+		// accessed it. That can be determined in compile time, if no conditional code is found
+		// (no loops or ifs or ternary operators)
+
+		parent.addWeakDependency(node.task);
+
 		return field;
 	}
 }
