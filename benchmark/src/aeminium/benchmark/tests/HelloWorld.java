@@ -3,17 +3,17 @@ package aeminium.benchmark.tests;
 public class HelloWorld
 {
 	@AEminium
-	public Integer method()
+	public int method()
 	{
 		return 1;
 	}
 
 	@AEminium
-	public static Integer main(String[] args)
+	public static void main(String[] args)
 	{
 		HelloWorld m = new HelloWorld();
-		Integer a = m.method();
+		int a = m.method();
+//		a = m.method();
 
-		return 1;
 	}
 }

@@ -84,8 +84,6 @@ public class Task
 	public void addWeakDependency(Task task)
 	{
 		this.weakDependencies.add(task);
-
-		task.setName(this.name + "_w" + this.weakDependencies.size());
 	}
 
 	private void build(CompilationUnit original, List<CompilationUnit> cus)
@@ -346,7 +344,11 @@ public class Task
 
 				for (Task dep : this.weakDependencies)
 				{
-					System.err.println("TODO: weakDependencies");
+					FieldAccess dep_task = ast.newFieldAccess();
+					dep_task.setExpression(this.getPathToTask(dep));
+					dep_task.setName(ast.newSimpleName("ae_task"));
+
+					asList.arguments().add(dep_task);
 				}
 				
 				schedule.arguments().add(asList);
@@ -453,7 +455,6 @@ public class Task
 			}
 		}
 
-		System.err.println(path);
 		return path;
 	}
 

@@ -48,7 +48,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		if (!this.isRoot())
 			return this.build(parent, type);
 
-		this.task = parent.newChild("declfrag");
+		this.task = parent.newStrongDependency("declfrag");
 
 		Block execute = ast.newBlock();
 		execute.statements().addAll(this.build(task, type));
@@ -57,6 +57,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		MethodDeclaration constructor = task.createConstructor();
 		task.addConstructor(constructor);
 
+/*
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
 		task_access.setName(ast.newSimpleName(this.task.getName()));
@@ -65,7 +66,9 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		assign.setLeftHandSide(task_access);
 		assign.setRightHandSide(this.task.create());
 
-		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
+
+*/
+		return new ArrayList<Statement>();
 	}
 
 	public List<Statement> build(Task task, Type type)

@@ -156,8 +156,6 @@ public class EAST
 			id = "method_" + type.getQualifiedName() + "_" + method.getName();
 		}
 
-		System.out.println(id);
-
 		return id;
 	}
 
@@ -176,8 +174,29 @@ public class EAST
 		if (binding.isClass())
 			return this.ast.newSimpleType(this.ast.newName(binding.getQualifiedName()));
 
+		if (binding.isPrimitive())
+			return this.ast.newPrimitiveType(PrimitiveType.toCode(binding.getName()));
+
 		// TODO
 		System.err.println("Binding: TODO: complex types");
 		return null;
+	}
+
+	public Type boxPrimitiveType(PrimitiveType primitive)
+	{
+		HashMap<PrimitiveType.Code, String> primitives = new HashMap<PrimitiveType.Code, String>();
+
+		primitives.put(PrimitiveType.BYTE, "Byte");
+		primitives.put(PrimitiveType.SHORT, "Short");
+		primitives.put(PrimitiveType.INT, "Integer");
+		primitives.put(PrimitiveType.LONG, "Long");
+		primitives.put(PrimitiveType.FLOAT, "Float");
+		primitives.put(PrimitiveType.DOUBLE, "Double");
+		primitives.put(PrimitiveType.CHAR, "Char");
+		primitives.put(PrimitiveType.BOOLEAN, "Boolean");
+		
+		System.out.println(primitive);
+		String boxedName = primitives.get(primitive.getPrimitiveTypeCode());
+		return this.ast.newSimpleType(ast.newSimpleName(boxedName));
 	}
 }

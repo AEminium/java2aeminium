@@ -16,7 +16,7 @@ public class EInfixExpression extends EExpression
 	List<EExpression> extended;
 
 	Object constant;
-	ITypeBinding type;
+	ITypeBinding binding;
 
 	EInfixExpression(EAST east, InfixExpression origin)
 	{
@@ -33,10 +33,6 @@ public class EInfixExpression extends EExpression
 			for (Object ext : origin.extendedOperands())
 				this.extended.add(this.east.extend((Expression) ext));	
 		}
-
-		// TODO: allow constant resolving
-		this.constant = this.origin.resolveConstantExpressionValue();
-		this.type = this.origin.resolveTypeBinding();
 	}
 
 	@Override
@@ -50,12 +46,71 @@ public class EInfixExpression extends EExpression
 		if (this.extended != null)
 			for (EExpression ext : this.extended)
 				ext.optimize();
+
+		// TODO: allow constant resolving
+		this.constant = this.origin.resolveConstantExpressionValue();
+		this.binding = this.origin.resolveTypeBinding();
+
+		System.out.println(this.binding);
 	}
 
 	@Override
 	public Expression translate(Task parent)
 	{
-		System.err.println("translate InfixExpression");
-		return null;
+		AST ast = this.east.getAST();
+
+		assert(this.isRoot());
+
+		if (!this.isRoot())
+			return this.build(parent);
+
+		/* in self task */
+		this.task = parent.newStrongDependency("infix");
+		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret");
+
+		Block execute = ast.newBlock();
+
+		FieldAccess this_ret = ast.newFieldAccess();
+		this_ret.setExpression(ast.newThisExpression());
+		this_ret.setName(ast.newSimpleName("ae_ret"));
+
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(this_ret);
+		assign.setRightHandSide(this.build(task));
+		execute.statements().add(ast.newExpressionStatement(assign));
+
+		task.setExecute(execute);
+
+		MethodDeclaration constructor = task.createConstructor();
+		task.addConstructor(constructor);
+
+		/* in parent task */
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName(this.task.getName()));
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(access);
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		return ret;
+	}
+
+	public Expression build(Task task)
+	{
+		AST ast = this.east.getAST();
+
+		InfixExpression infix = ast.newInfixExpression();
+		infix.setLeftOperand(this.left.translate(task));
+		infix.setRightOperand(this.right.translate(task));
+		infix.setOperator(this.origin.getOperator());
+
+		if (this.extended != null)
+		{
+			for (EExpression ext: this.extended)
+				infix.extendedOperands().add(ext.translate(task));
+		}
+
+		return infix;
 	}
 }

@@ -87,7 +87,16 @@ public class EMethodDeclaration extends EBodyDeclaration
 		if (!this.isStatic())
 			this_type = this.east.buildTypeFromBinding(this.binding.getDeclaringClass());
 
-		this.task.setMethodTask(this.origin.getReturnType2(), this_type, this.origin.parameters());
+		Type ret_type = this.origin.getReturnType2();
+		if (ret_type instanceof PrimitiveType)
+		{
+			PrimitiveType ret_primitive = (PrimitiveType)ret_type;
+
+			if (ret_primitive.getPrimitiveTypeCode() != PrimitiveType.VOID)
+				ret_type = this.east.boxPrimitiveType(ret_primitive);
+		}
+
+		this.task.setMethodTask(ret_type, this_type, this.origin.parameters());
 
 		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
 
@@ -121,7 +130,6 @@ public class EMethodDeclaration extends EBodyDeclaration
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
 		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getType())));
 
-		creation.arguments().add(ast.newNullLiteral());
 		for (Object arg : this.origin.parameters())
 			creation.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));
 
