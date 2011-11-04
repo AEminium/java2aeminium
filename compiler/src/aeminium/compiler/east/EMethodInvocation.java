@@ -61,12 +61,11 @@ public class EMethodInvocation extends EExpression
 
 		/* in self task */
 		this.task = parent.newStrongDependency("invoke");
+		this.task.setInvocation();
 
 		Type ret_type = this.east.buildTypeFromBinding(this.type);
 		if (ret_type instanceof PrimitiveType)
 			ret_type = this.east.boxPrimitiveType((PrimitiveType) ret_type);
-
-		this.task.addField(ret_type, "ae_ret");
 
 		ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
 		caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, ret_type));

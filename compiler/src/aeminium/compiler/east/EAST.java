@@ -79,6 +79,9 @@ public class EAST
 		if (expr instanceof Assignment)
 			return new EAssignment(this, (Assignment) expr);
 
+		if (expr instanceof ThisExpression)
+			return new EThisExpression(this, (ThisExpression) expr);
+
 		System.err.println("Invalid expr: " + expr.getClass().toString());
 		return null;
 	}
@@ -112,6 +115,9 @@ public class EAST
 		if (stmt instanceof ExpressionStatement)
 			return new EExpressionStatement(this, (ExpressionStatement) stmt);
 
+		if (stmt instanceof IfStatement)
+			return new EIfStatement(this, (IfStatement) stmt);
+
 		System.err.println("Invalid Statement: " + stmt.getClass().toString());
 		return null;
 	}
@@ -119,6 +125,11 @@ public class EAST
 	public EBlock extend(Block block)
 	{
 		return new EBlock(this, block);
+	}
+
+	public ESingleVariableDeclaration extend(SingleVariableDeclaration decl)
+	{
+		return new ESingleVariableDeclaration(this, decl);
 	}
 
 	public EVariableDeclarationFragment extend(VariableDeclarationFragment frag)
@@ -144,7 +155,7 @@ public class EAST
 				// local var
 				IMethodBinding method = var.getDeclaringMethod();
 				type = method.getDeclaringClass();
-				 id = "var_" + type.getQualifiedName() + "_" + method.getName() + "_" + var.getVariableId();
+				id = "var_" + type.getQualifiedName() + "_" + method.getName() + "_" + var.getVariableId();
 			} else
 				id = "var_" + type.getQualifiedName() + "_" + var.getVariableId();
 		} else if (binding instanceof IMethodBinding)
@@ -195,7 +206,6 @@ public class EAST
 		primitives.put(PrimitiveType.CHAR, "Char");
 		primitives.put(PrimitiveType.BOOLEAN, "Boolean");
 		
-		System.out.println(primitive);
 		String boxedName = primitives.get(primitive.getPrimitiveTypeCode());
 		return this.ast.newSimpleType(ast.newSimpleName(boxedName));
 	}

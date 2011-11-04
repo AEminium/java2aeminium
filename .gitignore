@@ -1,3 +1,4 @@
 *.class
 */build/*
 benchmark/target/*
+*.jar

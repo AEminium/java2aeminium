@@ -49,7 +49,7 @@ public class EClassInstanceCreation extends EExpression
 
 		/* in self task */
 		this.task = parent.newStrongDependency("class");
-		this.task.addField((Type) ASTNode.copySubtree(ast, this.origin.getType()), "ae_ret");
+		this.task.addField((Type) ASTNode.copySubtree(ast, this.origin.getType()), "ae_ret", true);
 
 		Block execute = ast.newBlock();
 

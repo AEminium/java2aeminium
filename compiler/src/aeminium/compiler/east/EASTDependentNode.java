@@ -39,6 +39,11 @@ public abstract class EASTDependentNode extends EASTNode
 		return this.weakDependencies;
 	}
 
+	protected void addWeakDependency(EASTDependentNode node)
+	{
+		this.weakDependencies.add(node);
+	}
+
 	public Expression translateWeakDependency()
 	{
 		System.err.println("WeakDependency of unhandled node type");

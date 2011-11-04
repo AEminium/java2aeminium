@@ -30,23 +30,34 @@ public class ESimpleName extends EExpression
 		this.binding = this.origin.resolveBinding();
 	}
 
+	public void setTask(Task task)
+	{
+		this.task = task;
+	}
+
+	public Task getTask()
+	{
+		return this.task;
+	}
+
 	@Override
 	public Expression translate(Task parent)
 	{
 		AST ast = this.east.getAST();
 
 		String variable = this.east.resolveName(this.binding);
-		EASTDependentNode node = (EASTDependentNode) this.east.getNode(variable);
+		ESimpleName node = (ESimpleName) this.east.getNode(variable);
 
 		FieldAccess field = ast.newFieldAccess();
-		field.setExpression(parent.getPathToTask(node.task));
+		field.setExpression(parent.getPathToTask(node.getTask()));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
 
 		// FIXME: this is wrong, not only it depends on the creation, but also on the last task that
 		// accessed it. That can be determined in compile time, if no conditional code is found
 		// (no loops or ifs or ternary operators)
 
-		parent.addWeakDependency(node.task);
+		for (EASTDependentNode dep : node.getWeakDependencies())
+			parent.addWeakDependency(dep.task);
 
 		return field;
 	}

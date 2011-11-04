@@ -33,6 +33,8 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 	{
 		super.optimize();
 	
+		this.var.optimize();
+
 		if (this.expr != null)
 			this.expr.optimize();
 
@@ -65,8 +67,6 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(task_access);
 		assign.setRightHandSide(this.task.create());
-
-
 */
 		return new ArrayList<Statement>();
 	}
@@ -75,8 +75,13 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 	{
 		AST ast = this.east.getAST();
 
-		task.addField(type, this.origin.getName().toString());
-		this.east.putNode(this.east.resolveName(this.binding), this);
+		task.addField(type, this.origin.getName().toString(), false);
+
+		if (this.expr != null)
+			this.var.addWeakDependency(this.expr);
+
+		this.var.setTask(task);
+		this.east.putNode(this.east.resolveName(this.binding), this.var);
 
 		List<Statement> stmts = new ArrayList<Statement>();
 

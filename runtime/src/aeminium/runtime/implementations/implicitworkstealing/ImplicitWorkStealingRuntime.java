@@ -121,7 +121,8 @@ public final class ImplicitWorkStealingRuntime implements Runtime {
 			
 			@Override
 			public void handleTaskException(Task task, Throwable t) {
-				System.err.println(PREFIX + "Task " + task + " threw exception: " + t);
+				System.err.println(PREFIX + "Task " + task + " threw exception: " + t + "\n");
+				t.printStackTrace();
 			}
 			
 			@Override

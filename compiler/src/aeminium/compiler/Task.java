@@ -32,6 +32,8 @@ public class Task
 	Type thisType;
 	List<SingleVariableDeclaration> parameters;
 
+	boolean isInvocation;
+
 	public Task(EAST east, String type, CompilationUnit original, List<CompilationUnit> cus)
 	{
 		this.east = east;
@@ -48,6 +50,8 @@ public class Task
 		this.parameters = null;
 		this.returnType = null;
 		this.thisType = null;
+
+		this.isInvocation = false;
 
 		this.build(original, cus);
 	}
@@ -148,7 +152,7 @@ public class Task
 
 		Block constructor_body = ast.newBlock();
 
-			if (this.parent != null)
+			if (!this.isMethod)
 			{
 				// add _parent parameter
 				SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
@@ -158,7 +162,7 @@ public class Task
 				constructor.parameters().add(param);
 
 				// this.ae_parent = ae_parent
-				this.addField(ast.newSimpleType(ast.newName(this.parent.getType())), "ae_parent");
+				this.addField(ast.newSimpleType(ast.newName(this.parent.getType())), "ae_parent", false);
 		
 				Assignment asgn = ast.newAssignment();
 
@@ -172,16 +176,18 @@ public class Task
 				constructor_body.statements().add(ast.newExpressionStatement(asgn));
 			} else 
 			{
-				assert (this.isMethod);
-
+				Type caller_type;
 				if (!this.returnType.toString().equals("void"))
 				{
-					ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
-					caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, this.returnType));
+					this.addField(this.returnType, "ae_ret", true);
+				
+					caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
+					((ParameterizedType) caller_type).typeArguments().add((Type) ASTNode.copySubtree(ast, this.returnType));
+				} else
+					caller_type = ast.newSimpleType(ast.newName("aeminium.runtime.SimpleCallerBody"));
 
-					this.addField(this.returnType, "ae_ret");
-
-					// add ae_parent parameter
+				// add ae_parent parameter
+				{
 					SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 
 					param.setType((Type) ASTNode.copySubtree(ast, caller_type));
@@ -190,8 +196,8 @@ public class Task
 					constructor.parameters().add(param);
 
 					// this.ae_parent = ae_parent
-					this.addField((Type) ASTNode.copySubtree(ast, caller_type), "ae_parent");
-		
+					this.addField((Type) ASTNode.copySubtree(ast, caller_type), "ae_parent", false);
+
 					Assignment asgn = ast.newAssignment();
 
 					FieldAccess access = ast.newFieldAccess();
@@ -206,7 +212,7 @@ public class Task
 
 				if (this.thisType != null)
 				{
-					this.addField(this.thisType, "ae_this");
+					this.addField(this.thisType, "ae_this", false);
 
 					// add ae_this parameter
 					SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
@@ -236,7 +242,7 @@ public class Task
 					constructor.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, param));
 
 					// this.x = x
-					this.addField((Type) ASTNode.copySubtree(ast, param.getType()), param.getName().toString());
+					this.addField((Type) ASTNode.copySubtree(ast, param.getType()), param.getName().toString(), false);
 		
 					Assignment asgn = ast.newAssignment();
 
@@ -251,9 +257,11 @@ public class Task
 				}
 			}
 
-			// this.ae_task = AeminiumHelper.createNonBlockingTask(this, AeminiumHelper.NO_HINTS);
-			this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task");
+			// already added by CallerBody<X>
+			if (!this.isInvocation)
+				this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
 
+			// this.ae_task = AeminiumHelper.createNonBlockingTask(this, AeminiumHelper.NO_HINTS);
 			Assignment task_asgn = ast.newAssignment();
 	
 			FieldAccess task_access = ast.newFieldAccess();
@@ -279,7 +287,7 @@ public class Task
 				SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getType()));
 				String name = dep.getName();
 
-				this.addField(type, name);
+				this.addField(type, name, false);
 
 				// this.ae_s1 = new ....()
 				Assignment child_asgn = ast.newAssignment();
@@ -299,29 +307,36 @@ public class Task
 				SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getType()));
 				String name = child.getName();
 
-				this.addField(type, name);	
+				this.addField(type, name, false);
 			}
 
-			// AeminiumHelper.schedule(this.ae_task, AeminiumHelper.NO_PARENT, Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
+			// AeminiumHelper.schedule(this.ae_task, ..., Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
 			MethodInvocation schedule = ast.newMethodInvocation();
 			schedule.setExpression(ast.newSimpleName("AeminiumHelper"));
 			schedule.setName(ast.newSimpleName("schedule"));
 
 			schedule.arguments().add((Expression) ASTNode.copySubtree(ast, task_access));
-			if (this.parent == null)
-				schedule.arguments().add(ast.newName("AeminiumHelper.NO_PARENT"));
-			else
-			{
-				FieldAccess access = ast.newFieldAccess();
-				access.setExpression(ast.newThisExpression());
-				access.setName(ast.newSimpleName("ae_parent"));
+			// this.ae_parent == null ? AeminiumHelper.NO_PARENT : this.ae_parent.ae_task
+			ConditionalExpression expr = ast.newConditionalExpression();
+			
+			FieldAccess access = ast.newFieldAccess();
+			access.setExpression(ast.newThisExpression());
+			access.setName(ast.newSimpleName("ae_parent"));
 
-				FieldAccess parent_task = ast.newFieldAccess();
-				parent_task.setExpression(access);
-				parent_task.setName(ast.newSimpleName("ae_task"));
+			InfixExpression inf = ast.newInfixExpression();
+			inf.setLeftOperand(access);
+			inf.setRightOperand(ast.newNullLiteral());
+			inf.setOperator(InfixExpression.Operator.EQUALS);
 
-				schedule.arguments().add(parent_task);
-			}
+			FieldAccess parent_task = ast.newFieldAccess();
+			parent_task.setExpression((Expression) ASTNode.copySubtree(ast,access));
+			parent_task.setName(ast.newSimpleName("ae_task"));
+		
+			expr.setExpression(inf);
+			expr.setThenExpression(ast.newName("AeminiumHelper.NO_PARENT"));
+			expr.setElseExpression(parent_task);
+
+			schedule.arguments().add(expr);
 
 			if (this.strongDependencies.size() > 0 || this.weakDependencies.size() > 0)
 			{
@@ -414,7 +429,7 @@ public class Task
 		this.decl.bodyDeclarations().add(this.execute);
 	}
 
-	public void addField(Type type, String name)
+	public void addField(Type type, String name, boolean vol)
 	{
 		AST ast = this.east.getAST();
 		
@@ -424,7 +439,9 @@ public class Task
 		FieldDeclaration field = ast.newFieldDeclaration(frag);
 		field.setType((Type) ASTNode.copySubtree(ast, type));
 		field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-		field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
+
+		if (vol)
+			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
 
 		this.decl.bodyDeclarations().add(field);
 	}
@@ -470,5 +487,10 @@ public class Task
 		access.setName(ast.newSimpleName("ae_parent"));
 
 		return access;
+	}
+
+	public void setInvocation()
+	{
+		this.isInvocation = true;
 	}
 }

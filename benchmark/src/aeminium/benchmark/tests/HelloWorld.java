@@ -3,17 +3,18 @@ package aeminium.benchmark.tests;
 public class HelloWorld
 {
 	@AEminium
-	public int method()
+	public int fib(int n)
 	{
-		return 1;
+		if (n < 2)
+			return n;
+		else
+			return this.fib(n-1) + this.fib(n-2);
 	}
 
 	@AEminium
-	public static void main(String[] args)
+	public static int main(String[] args)
 	{
-		HelloWorld m = new HelloWorld();
-		int a = m.method();
-//		a = m.method();
-
+		HelloWorld h = new HelloWorld();
+		int a = h.fib(20);
 	}
 }

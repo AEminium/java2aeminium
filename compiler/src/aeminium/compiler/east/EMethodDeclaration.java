@@ -15,8 +15,10 @@ import aeminium.compiler.Task;
 public class EMethodDeclaration extends EBodyDeclaration
 {
 	MethodDeclaration origin;
-
+	
 	EBlock body;
+	List<ESingleVariableDeclaration> parameters;
+
 	Task task;
 	String name;
 	boolean aeminium;
@@ -46,7 +48,11 @@ public class EMethodDeclaration extends EBodyDeclaration
 		assert(block != null);
 
 		this.body = this.east.extend(block);
-		this.east.putNode(this.east.resolveName(origin.resolveBinding()), this);	
+		this.east.putNode(this.east.resolveName(origin.resolveBinding()), this);
+
+		this.parameters = new ArrayList<ESingleVariableDeclaration>();
+		for (Object param : this.origin.parameters())
+			this.parameters.add(this.east.extend((SingleVariableDeclaration) param));
 	}
 
 	public void optimize()
@@ -55,7 +61,11 @@ public class EMethodDeclaration extends EBodyDeclaration
 		// a variable is read-only if there isn't any write operations in the closure of body operations
 
 		this.body.optimize();
+
 		this.binding = this.origin.resolveBinding();
+
+		for (ESingleVariableDeclaration param : this.parameters)
+			param.optimize();
 	}
 
 	public MethodDeclaration translate(List<CompilationUnit> cus)
@@ -98,6 +108,9 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		this.task.setMethodTask(ret_type, this_type, this.origin.parameters());
 
+		for (ESingleVariableDeclaration param : this.parameters)
+			param.translate(this);
+
 		TypeDeclaration parent = (TypeDeclaration) this.origin.getParent();
 
 		task.setExecute(this.body.build(this.task));
@@ -129,6 +142,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
 		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getType())));
+		creation.arguments().add(ast.newNullLiteral());
 
 		for (Object arg : this.origin.parameters())
 			creation.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));

@@ -50,8 +50,6 @@ public class EInfixExpression extends EExpression
 		// TODO: allow constant resolving
 		this.constant = this.origin.resolveConstantExpressionValue();
 		this.binding = this.origin.resolveTypeBinding();
-
-		System.out.println(this.binding);
 	}
 
 	@Override
@@ -66,7 +64,7 @@ public class EInfixExpression extends EExpression
 
 		/* in self task */
 		this.task = parent.newStrongDependency("infix");
-		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret");
+		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret", true);
 
 		Block execute = ast.newBlock();
 

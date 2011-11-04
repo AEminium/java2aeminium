@@ -36,7 +36,7 @@
 	<target name="compile.compiler.classes">
 		<delete dir="${compiler.build.dir}" />
 		<mkdir dir="${compiler.build.dir}" />
-		<javac srcdir="${compiler.src.dir}" destdir="${compiler.build.dir}" classpathref="compiler.classpath" />
+		<javac srcdir="${compiler.src.dir}" destdir="${compiler.build.dir}" classpathref="compiler.classpath" includeantruntime="false"  debug="true"/>
 	</target>
 
 	<target name="compile.compiler" depends="compile.compiler.classes">
@@ -74,7 +74,7 @@
 
 	<target name="compile.runtime.classes">
 		<mkdir dir="${runtime.build.dir}"/>
-		<javac srcdir="${runtime.src.dir}" destdir="${runtime.build.dir}" classpathref="runtime.classpath" />
+		<javac srcdir="${runtime.src.dir}" destdir="${runtime.build.dir}" classpathref="runtime.classpath" includeantruntime="false" debug="true"/>
 	</target>
 
 	<target name="compile.runtime" depends="compile.runtime.classes">
@@ -101,7 +101,7 @@
 		</java>
 	</target>
 
-	<target name="precompile.tests" depends="translate.tests">
+	<target name="precompile.tests" depends="">
 		<copy todir="${benchmark.target.dir}/aeminium/runtime" >
 			<fileset dir="${compiler.dist.dir}/"/>
 		</copy>
@@ -111,7 +111,7 @@
 	</target>
 
 	<target name="compile.tests" depends="precompile.tests">
-		<javac srcdir="${benchmark.target.dir}" destdir="${benchmark.build.dir}" classpathref="benchmark.classpath" />
+		<javac srcdir="${benchmark.target.dir}" destdir="${benchmark.build.dir}" classpathref="benchmark.classpath" includeantruntime="false" debug="true"/>
 	</target>
 
 	<target name="run" depends="compile.tests">
