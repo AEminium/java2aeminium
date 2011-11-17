@@ -8,17 +8,20 @@ import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
-
 public class ESimpleName extends EExpression
 {
 	SimpleName origin;
 	IBinding binding;
+
+	Task write;
+	List<Task> reads;
 
 	ESimpleName(EAST east, SimpleName origin)
 	{
 		super(east);
 
 		this.origin = origin;
+		this.reads = new ArrayList<Task>();
 	}
 
 	@Override
@@ -40,8 +43,28 @@ public class ESimpleName extends EExpression
 		return this.task;
 	}
 
+	private void addDependencies(Task parent, boolean write)
+	{
+		if (write)
+		{
+			if (this.reads.size() > 0)
+				for (Task dep : this.reads)
+					parent.addWeakDependency(dep);
+			else if (this.write != null)
+				parent.addWeakDependency(this.write);
+
+			this.write = parent;
+			this.reads = new ArrayList<Task>();
+		} else
+		{
+			if (this.write != null)
+				parent.addWeakDependency(this.write);
+			this.reads.add(parent);
+		}
+	}
+
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
 		AST ast = this.east.getAST();
 
@@ -56,8 +79,7 @@ public class ESimpleName extends EExpression
 		// accessed it. That can be determined in compile time, if no conditional code is found
 		// (no loops or ifs or ternary operators)
 
-		for (EASTDependentNode dep : node.getWeakDependencies())
-			parent.addWeakDependency(dep.task);
+		this.addDependencies(parent, write);
 
 		return field;
 	}

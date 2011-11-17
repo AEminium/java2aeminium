@@ -37,7 +37,7 @@ public class EAssignment extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
 		System.err.println("TODO: EAssignment translate");
 		return null;

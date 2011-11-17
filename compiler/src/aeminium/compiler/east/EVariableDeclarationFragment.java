@@ -87,13 +87,9 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 
 		if (this.expr != null)
 		{
-			FieldAccess field = ast.newFieldAccess();
-			field.setExpression(ast.newThisExpression());
-			field.setName((SimpleName) ASTNode.copySubtree(ast, this.origin.getName()));
-
 			Assignment assign = ast.newAssignment();
-			assign.setLeftHandSide(field);
-			assign.setRightHandSide(this.expr.translate(task));
+			assign.setLeftHandSide(this.var.translate(task, true));
+			assign.setRightHandSide(this.expr.translate(task, false));
 			
 			stmts.add(ast.newExpressionStatement(assign));
 		}

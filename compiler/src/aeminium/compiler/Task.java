@@ -87,6 +87,7 @@ public class Task
 
 	public void addWeakDependency(Task task)
 	{
+		assert(task != null);
 		this.weakDependencies.add(task);
 	}
 
@@ -450,26 +451,48 @@ public class Task
 	{
 		AST ast = this.east.getAST();
 
-		// TODO: this can be optimized
-		Expression path = this.getPathToRoot();
-		Stack<Task> tasks = new Stack<Task>();
+		Task self = this;
+		Stack<Task> tasks_target = new Stack<Task>();
+		Stack<Task> tasks_self = new Stack<Task>();
 
 		while (target != null)
 		{
-			tasks.push(target);
+			tasks_target.push(target);
 			target = target.parent;
 		}
 
-		if (!tasks.empty())
+		while (self != null)
 		{
-			tasks.pop();
-			while (!tasks.empty())
-			{
-				FieldAccess newPath = ast.newFieldAccess();
-				newPath.setExpression(path);
-				newPath.setName(ast.newSimpleName(tasks.pop().getName()));
-				path = newPath;
-			}
+			tasks_self.push(self);
+			self = self.parent;
+		}
+
+		assert(!tasks_target.empty() && !tasks_self.empty());
+ 
+		while (!tasks_target.empty() && !tasks_self.empty() && tasks_target.peek() == tasks_self.peek())
+		{
+			tasks_target.pop();
+			tasks_self.pop();
+		}
+
+		Expression path = ast.newThisExpression();
+
+		while (!tasks_self.empty())
+		{
+			tasks_self.pop();
+
+			FieldAccess field = ast.newFieldAccess();
+			field.setExpression(path);
+			field.setName(ast.newSimpleName("ae_parent"));
+			path = field;
+		}
+
+		while (!tasks_target.empty())
+		{
+			FieldAccess field = ast.newFieldAccess();
+			field.setExpression(path);
+			field.setName(ast.newSimpleName(tasks_target.pop().getName()));
+			path = field;
 		}
 
 		return path;

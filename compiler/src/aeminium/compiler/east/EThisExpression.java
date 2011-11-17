@@ -28,8 +28,10 @@ public class EThisExpression extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
+		// TODO/FIXME: add this as a dependency when write == true??? 
+
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
@@ -72,6 +74,8 @@ public class EThisExpression extends EExpression
 
 	public Expression build(Task task)
 	{
+		// TODO: write
+
 		AST ast = this.east.getAST();
 
 		FieldAccess access = ast.newFieldAccess();

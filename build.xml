@@ -101,7 +101,7 @@
 		</java>
 	</target>
 
-	<target name="precompile.tests" depends="">
+	<target name="precompile.tests" depends="translate.tests">
 		<copy todir="${benchmark.target.dir}/aeminium/runtime" >
 			<fileset dir="${compiler.dist.dir}/"/>
 		</copy>

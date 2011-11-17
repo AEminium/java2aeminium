@@ -38,7 +38,7 @@ public class EClassInstanceCreation extends EExpression
  	}
 
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
 		AST ast = this.east.getAST();
 
@@ -86,8 +86,10 @@ public class EClassInstanceCreation extends EExpression
 		ClassInstanceCreation create = ast.newClassInstanceCreation();
 		create.setType((Type) ASTNode.copySubtree(ast, this.origin.getType()));
 
+		// TODO calculate constructor read/write operations on parameters and "globals" (statics)
+		// assuming worst case of write always
 		for (EExpression arg: this.args)
-			create.arguments().add(arg.translate(task));
+			create.arguments().add(arg.translate(task, true));
 
 		return create;
 	}

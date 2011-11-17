@@ -15,5 +15,5 @@ public abstract class EExpression extends EASTDependentNode
 		super(east);
 	}
 
-	public abstract Expression translate(Task parent);
+	public abstract Expression translate(Task parent, boolean write);
 }

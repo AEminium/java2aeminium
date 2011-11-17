@@ -50,7 +50,7 @@ public class EMethodInvocation extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
 		AST ast = this.east.getAST();
 
@@ -115,11 +115,13 @@ public class EMethodInvocation extends EExpression
 		
 		create.arguments().add(ast.newThisExpression());
 
+		// TODO check if method read/write operations on the owner object (this) and on the arguments
+		// assuming worst case of always write
 		if (!method.isStatic())
-			create.arguments().add(this.expr.translate(task));
+			create.arguments().add(this.expr.translate(task, true));
 
 		for (EExpression arg : this.args)
-			create.arguments().add(arg.translate(task));
+			create.arguments().add(arg.translate(task, true));
 
 		return create;
 	}

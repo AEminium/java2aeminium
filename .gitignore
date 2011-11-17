@@ -1,4 +1,9 @@
+/*
 *.class
-*/build/*
-benchmark/target/*
 *.jar
+*/build
+!.gitignore
+!jar-in-jar-loader.zip
+!/compiler/
+!/runtime/
+!/benchmark/

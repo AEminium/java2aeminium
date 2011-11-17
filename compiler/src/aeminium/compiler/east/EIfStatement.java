@@ -75,7 +75,7 @@ public class EIfStatement extends EStatement
 		AST ast = this.east.getAST();
 
 		IfStatement ifstmt = ast.newIfStatement();
-		ifstmt.setExpression(this.expr.translate(task));
+		ifstmt.setExpression(this.expr.translate(task, false));
 
 		List<Statement> then_stmts = this.then_stmt.translate(task);
 		if (then_stmts.size() > 1)

@@ -25,7 +25,7 @@ public class ENumberLiteral extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent)
+	public Expression translate(Task parent, boolean write)
 	{
 		AST ast = this.east.getAST();
 
