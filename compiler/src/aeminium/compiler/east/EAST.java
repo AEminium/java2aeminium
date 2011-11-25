@@ -82,6 +82,9 @@ public class EAST
 		if (expr instanceof ThisExpression)
 			return new EThisExpression(this, (ThisExpression) expr);
 
+		if (expr instanceof ParenthesizedExpression)
+			return new EParenthesizedExpression(this, (ParenthesizedExpression) expr);
+
 		System.err.println("Invalid expr: " + expr.getClass().toString());
 		return null;
 	}

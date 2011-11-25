@@ -56,7 +56,7 @@ public class ECompilationUnit extends EASTNode
 
 	public String getQualifiedName()
 	{
-		return this.origin.getPackage().getName().toString() + "."
-			+ ((AbstractTypeDeclaration) this.origin.types().get(0)).getName();
+		String name = ((AbstractTypeDeclaration) this.origin.types().get(0)).getName().toString();
+		return this.origin.getPackage().getName().toString() + "." + name;
 	}
 }

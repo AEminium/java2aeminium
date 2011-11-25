@@ -8,23 +8,33 @@ import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
-public class EThisExpression extends EExpression
+public class EParenthesizedExpression extends EExpression
 {
-	ThisExpression origin;
+	ParenthesizedExpression origin;
+	EExpression expr;
+
+	Object constant;
 	ITypeBinding binding;
-	
-	EThisExpression(EAST east, ThisExpression origin)
+
+	EParenthesizedExpression(EAST east, ParenthesizedExpression origin)
 	{
 		super(east);
 
 		this.origin = origin;
-		this.binding = this.origin.resolveTypeBinding();
+	
+		this.expr = this.east.extend(origin.getExpression());
 	}
 
 	@Override
 	public void optimize()
 	{
 		super.optimize();
+
+		this.expr.optimize();
+
+		// TODO: allow constant resolving
+		this.constant = this.origin.resolveConstantExpressionValue();
+		this.binding = this.origin.resolveTypeBinding();
 	}
 
 	@Override
@@ -35,12 +45,11 @@ public class EThisExpression extends EExpression
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(parent, read);
 
 		/* in self task */
-		this.task = parent.newStrongDependency("this");
-
-		this.task.addField(ast.newSimpleType(ast.newName(this.binding.getQualifiedName())), "ae_ret", true);
+		this.task = parent.newStrongDependency("paren");
+		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret", true);
 
 		Block execute = ast.newBlock();
 
@@ -50,7 +59,7 @@ public class EThisExpression extends EExpression
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(task));
+		assign.setRightHandSide(this.build(task, read));
 		execute.statements().add(ast.newExpressionStatement(assign));
 
 		task.setExecute(execute);
@@ -70,22 +79,13 @@ public class EThisExpression extends EExpression
 		return ret;
 	}
 
-	public Expression build(Task task)
+	public Expression build(Task task, boolean read)
 	{
-		// TODO: read??
-
-		AST ast = this.east.getAST();
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(task.getPathToRoot());
-		access.setName(ast.newSimpleName("ae_this"));
-
-		return access;
+		return this.expr.translate(task, read);
 	}
 
-	@Override
-	public void setWriteTask(Task writer)
+	public void setWriteTask(Task task)
 	{
-		System.out.println("TODO: writing to \"this\" what to do?");
+		this.expr.setWriteTask(task);
 	}
 }

@@ -37,9 +37,22 @@ public class EAssignment extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean write)
+	public Expression translate(Task parent, boolean reads)
 	{
+		/*
+			TODO
+			order of translation is important for dependencies 
+			c = c+1;
+			must translate c+1 before c
+		*/
 		System.err.println("TODO: EAssignment translate");
 		return null;
+	}
+
+	@Override
+	public void setWriteTask(Task writer)
+	{
+		/* TODO */
+		System.out.println("TODO: write to assignment");
 	}
 }

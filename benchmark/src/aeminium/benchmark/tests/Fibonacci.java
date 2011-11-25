@@ -1,6 +1,6 @@
 package aeminium.benchmark.tests;
 
-public class HelloWorld
+public class Fibonacci
 {
 	@AEminium
 	public int fib(int n)
@@ -14,7 +14,7 @@ public class HelloWorld
 	@AEminium
 	public static int main(String[] args)
 	{
-		HelloWorld h = new HelloWorld();
+		Fibonacci h = new Fibonacci();
 		int a = h.fib(20);
 	}
 }

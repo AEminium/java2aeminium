@@ -41,9 +41,6 @@ public class EMethodDeclaration extends EBodyDeclaration
 		} else
 			this.aeminium = false;
 
-		// do something about parameters?
-		// see optimize(), on a future version the read version is necessary for optimizing loops
-
 		Block block = origin.getBody();
 		assert(block != null);
 

@@ -75,7 +75,7 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 	{
 		AST ast = this.east.getAST();
 
-		task.addField(type, this.origin.getName().toString(), false);
+		task.addField(type, this.origin.getName().toString(), true);
 
 		if (this.expr != null)
 			this.var.addWeakDependency(this.expr);
@@ -88,9 +88,11 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		if (this.expr != null)
 		{
 			Assignment assign = ast.newAssignment();
-			assign.setLeftHandSide(this.var.translate(task, true));
-			assign.setRightHandSide(this.expr.translate(task, false));
-			
+
+			assign.setRightHandSide(this.expr.translate(task, true));
+			assign.setLeftHandSide(this.var.translate(task, false));
+			this.var.setWriteTask(task);
+
 			stmts.add(ast.newExpressionStatement(assign));
 		}
 

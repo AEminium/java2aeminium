@@ -101,7 +101,9 @@
 		</java>
 	</target>
 
-	<target name="precompile.tests" depends="translate.tests">
+	<!--<target name="precompile.tests" depends=""> -->
+	<!--<target name="precompile.tests" depends="translate.tests"> --> 
+	<target name="precompile.tests" depends="">
 		<copy todir="${benchmark.target.dir}/aeminium/runtime" >
 			<fileset dir="${compiler.dist.dir}/"/>
 		</copy>
@@ -115,7 +117,7 @@
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<java classname="aeminium.benchmark.tests.HelloWorld" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.Fibonacci" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
 	</target>
 
 </project>

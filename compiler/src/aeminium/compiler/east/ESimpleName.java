@@ -21,6 +21,7 @@ public class ESimpleName extends EExpression
 		super(east);
 
 		this.origin = origin;
+		this.write = null;
 		this.reads = new ArrayList<Task>();
 	}
 
@@ -43,28 +44,33 @@ public class ESimpleName extends EExpression
 		return this.task;
 	}
 
-	private void addDependencies(Task parent, boolean write)
+	public void addReadTask(Task task)
 	{
-		if (write)
-		{
-			if (this.reads.size() > 0)
-				for (Task dep : this.reads)
-					parent.addWeakDependency(dep);
-			else if (this.write != null)
-				parent.addWeakDependency(this.write);
+		System.out.println("read " + this.origin);
+		if (this.write != null)
+			task.addWeakDependency(this.write);
+		else
+			System.out.println("fail");
+		this.reads.add(task);
+	}
 
-			this.write = parent;
-			this.reads = new ArrayList<Task>();
-		} else
-		{
-			if (this.write != null)
-				parent.addWeakDependency(this.write);
-			this.reads.add(parent);
-		}
+	public void setWriteTask(Task task)
+	{
+		// TODO/FIXME (no loops or ifs or ternary operators)
+
+		System.out.println("write " + this.origin);
+		if (this.reads.size() > 0)
+			for (Task dep : this.reads)
+				task.addWeakDependency(dep);
+		else if (this.write != null)
+			task.addWeakDependency(this.write);
+
+		this.write = task;
+		this.reads = new ArrayList<Task>();
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean write)
+	public Expression translate(Task parent, boolean read)
 	{
 		AST ast = this.east.getAST();
 
@@ -72,14 +78,12 @@ public class ESimpleName extends EExpression
 		ESimpleName node = (ESimpleName) this.east.getNode(variable);
 
 		FieldAccess field = ast.newFieldAccess();
+
 		field.setExpression(parent.getPathToTask(node.getTask()));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.origin));
 
-		// FIXME: this is wrong, not only it depends on the creation, but also on the last task that
-		// accessed it. That can be determined in compile time, if no conditional code is found
-		// (no loops or ifs or ternary operators)
-
-		this.addDependencies(parent, write);
+		if (read)
+			node.addReadTask(parent);
 
 		return field;
 	}

@@ -53,7 +53,7 @@ public class EInfixExpression extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean write)
+	public Expression translate(Task parent, boolean reads)
 	{
 		AST ast = this.east.getAST();
 
@@ -99,16 +99,22 @@ public class EInfixExpression extends EExpression
 		AST ast = this.east.getAST();
 
 		InfixExpression infix = ast.newInfixExpression();
-		infix.setLeftOperand(this.left.translate(task, false));
-		infix.setRightOperand(this.right.translate(task, false));
+		infix.setLeftOperand(this.left.translate(task, true));
+		infix.setRightOperand(this.right.translate(task, true));
 		infix.setOperator(this.origin.getOperator());
 
 		if (this.extended != null)
 		{
 			for (EExpression ext: this.extended)
-				infix.extendedOperands().add(ext.translate(task, false));
+				infix.extendedOperands().add(ext.translate(task, true));
 		}
 
 		return infix;
+	}
+
+	@Override
+	public void setWriteTask(Task writer)
+	{
+		// nothing to do here
 	}
 }

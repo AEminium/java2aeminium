@@ -25,10 +25,16 @@ public class ENumberLiteral extends EExpression
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean write)
+	public Expression translate(Task parent, boolean read)
 	{
 		AST ast = this.east.getAST();
 
 		return (NumberLiteral) ASTNode.copySubtree(ast, this.origin);
+	}
+
+	@Override
+	public void setWriteTask(Task writer)
+	{
+		// nothing to do here
 	}
 }

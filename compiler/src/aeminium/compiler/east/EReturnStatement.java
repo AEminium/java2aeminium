@@ -72,7 +72,7 @@ public class EReturnStatement extends EStatement
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(ret);
-		assign.setRightHandSide(this.expr.translate(task, false)); 
+		assign.setRightHandSide(this.expr.translate(task, true)); 
 
 		// if the value is required, push it to the caller task
 		IfStatement ifstmt = ast.newIfStatement();

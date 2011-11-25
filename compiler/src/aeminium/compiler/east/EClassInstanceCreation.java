@@ -38,7 +38,7 @@ public class EClassInstanceCreation extends EExpression
  	}
 
 	@Override
-	public Expression translate(Task parent, boolean write)
+	public Expression translate(Task parent, boolean reads)
 	{
 		AST ast = this.east.getAST();
 
@@ -91,6 +91,15 @@ public class EClassInstanceCreation extends EExpression
 		for (EExpression arg: this.args)
 			create.arguments().add(arg.translate(task, true));
 
+		for (EExpression arg: this.args)
+			arg.setWriteTask(task);
+
 		return create;
+	}
+
+	@Override
+	public void setWriteTask(Task writer)
+	{
+		System.err.println("TODO/FIXME: writing to a class creation, possibly ignore because no other ref is made");
 	}
 }
