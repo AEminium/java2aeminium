@@ -113,13 +113,17 @@ public abstract class ImplicitTask implements Task {
 	}
 	
 	public final void detachChild(ImplicitWorkStealingRuntime rt, ImplicitTask child) {
+	  boolean shouldComplete = false;
 		synchronized (this) {
 			childCount -= 1;
 			if ( childCount == 0 ) {
 				if ( state == ImplicitTaskState.WAITING_FOR_CHILDREN ) {
-					taskCompleted(rt);
+					shouldComplete = true;
 				}
 			}
+		}
+		if (shouldComplete) {
+		  taskCompleted(rt);
 		}
 	}
 
@@ -153,10 +157,10 @@ public abstract class ImplicitTask implements Task {
 	public final void taskFinished(ImplicitWorkStealingRuntime rt) {
 		synchronized (this) {
 			state = ImplicitTaskState.WAITING_FOR_CHILDREN;
-
-			if ( childCount == 0 ) {
-				taskCompleted(rt);
-			}
+		}
+		
+		if ( childCount == 0 ) {
+			taskCompleted(rt);
 		}
 	}
 	
