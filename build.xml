@@ -44,7 +44,7 @@
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="aeminium.compiler.Compiler"/>
-                <attribute name="Class-Path" value=" ."/>
+                <attribute name="Class-Path" value="." />
                 <attribute name="Rsrc-Class-Path" value="./ org.eclipse.osgi_3.6.2.R36x_v20110210.jar org.eclipse.jdt.core_3.6.2.v_A76_R36x.jar org.eclipse.equinox.preferences_3.3.0.v20100503.jar org.eclipse.equinox.common_3.6.0.v20100503.jar org.eclipse.core.runtime_3.6.0.v20100505.jar org.eclipse.core.resources_3.6.1.R36x_v20110131-1630.jar org.eclipse.core.jobs_3.5.1.R36x_v20100824.jar org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar org.eclipse.jface_3.6.2.M20110210-1200.jar org.eclipse.text_3.5.0.v20100601-1300.jar org.eclipse.jface.text_3.6.1.r361_v20100825-0800.jar"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
@@ -101,9 +101,8 @@
 		</java>
 	</target>
 
-	<!--<target name="precompile.tests" depends=""> -->
-	<!--<target name="precompile.tests" depends="translate.tests"> --> 
 	<target name="precompile.tests" depends="">
+	<!-- <target name="precompile.tests" depends="translate.tests"> -->
 		<copy todir="${benchmark.target.dir}/aeminium/runtime" >
 			<fileset dir="${compiler.dist.dir}/"/>
 		</copy>
@@ -117,7 +116,7 @@
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<java classname="aeminium.benchmark.tests.Fibonacci" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.benchmark.tests.Integrate" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
 	</target>
 
 </project>

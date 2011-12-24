@@ -25,7 +25,7 @@ public class Integrate
         double ar = (fr + fc) * hh;
         double alr = al + ar;
 
-        if (Integrate.abs(alr - a) <= 1.0e-11)
+        if (Integrate.abs(alr - a) <= 1e-11)
             return alr;
         else
             return Integrate.eval(c, r, fc, fr, ar) + Integrate.eval(l, c, fl, fc, al);
@@ -40,6 +40,7 @@ public class Integrate
 	@AEminium
 	public static void main(String[] args)
 	{
-		double area = Integrate.integrate(0-1000.0, 1000.0);
+		double area = Integrate.integrate(0-10.0, 20.0);
+		// System.out.println(area);
 	}
 }

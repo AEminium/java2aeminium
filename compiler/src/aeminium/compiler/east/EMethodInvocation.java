@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.PrimitiveType;
 
 import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
@@ -57,20 +58,25 @@ public class EMethodInvocation extends EExpression
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.buildSequential(parent);
+			return this.build(parent);
 
 		/* in self task */
 		this.task = parent.newStrongDependency("invoke");
-		this.task.setInvocation();
 
 		Type ret_type = this.east.buildTypeFromBinding(this.type);
-		if (ret_type instanceof PrimitiveType)
-			ret_type = this.east.boxPrimitiveType((PrimitiveType) ret_type);
 
-		ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
-		caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, ret_type));
+		if (!this.isSequential())
+		{
+			this.task.setInvocation();
 
-		this.task.setSuperClass(caller_type);
+			if (ret_type instanceof PrimitiveType)
+				ret_type = this.east.boxPrimitiveType((PrimitiveType) ret_type);
+
+			ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
+			caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, ret_type));
+
+			this.task.setSuperClass(caller_type);
+		}
 
 		Block execute = ast.newBlock();
 		execute.statements().add(ast.newExpressionStatement(this.build(task)));
@@ -80,6 +86,10 @@ public class EMethodInvocation extends EExpression
 		task.addConstructor(constructor);
 
 		/* in parent task */
+		if ((ret_type instanceof PrimitiveType) &&
+			((PrimitiveType) ret_type).getPrimitiveTypeCode() == PrimitiveType.VOID)
+			return null;
+
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
 		access.setName(ast.newSimpleName(this.task.getName()));
@@ -91,25 +101,43 @@ public class EMethodInvocation extends EExpression
 		return ret;
 	}
 
+	public boolean isSequential()
+	{
+		String method_name = this.east.resolveName(this.binding);
+		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
+
+		return method == null || !method.isAEminium();
+	}
+
 	public Expression buildSequential(Task task)
 	{
-		System.err.println("TODO sequential invocation");
-		return null;
+		AST ast = this.east.getAST();
+
+		MethodInvocation invoke = ast.newMethodInvocation();
+		invoke.setExpression(this.expr.translate(task, true));
+
+		for (EExpression arg : this.args)
+			invoke.arguments().add(arg.translate(task, true));
+
+		// TODO: What about static sequential calls?
+		this.expr.setWriteTask(task);
+
+		for (EExpression arg : this.args)
+			arg.setWriteTask(task);
+
+		return invoke;
 	}
 
 	public Expression build(Task task)
 	{
 		AST ast = this.east.getAST();
 
+		if (this.isSequential())
+			return this.buildSequential(task);
+
 		String method_name = this.east.resolveName(this.binding);
 		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
 
-		if (method == null || !method.isAEminium())
-		{
-			System.err.println("TODO: sequential invocation");
-			return null;
-		}
-		
 		ClassInstanceCreation create = ast.newClassInstanceCreation();
 		create.setType(ast.newSimpleType(ast.newSimpleName(method.task.getType())));	
 		
