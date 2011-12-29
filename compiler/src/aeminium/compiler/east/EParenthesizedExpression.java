@@ -1,20 +1,17 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EParenthesizedExpression extends EExpression
 {
-	ParenthesizedExpression origin;
-	EExpression expr;
+	private final ParenthesizedExpression origin;
+	private final EExpression expr;
 
-	Object constant;
-	ITypeBinding binding;
+	private Object constant;
+	private ITypeBinding binding;
 
 	EParenthesizedExpression(EAST east, ParenthesizedExpression origin)
 	{
@@ -26,29 +23,54 @@ public class EParenthesizedExpression extends EExpression
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
-
-		this.expr.optimize();
+		super.analyse();
 
 		// TODO: allow constant resolving
 		this.constant = this.origin.resolveConstantExpressionValue();
 		this.binding = this.origin.resolveTypeBinding();
+
+		this.expr.analyse();
+		
+		this.datagroup = this.expr.getDataGroup();
+		this.signature.addFrom(this.expr.getSignature());
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean read)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.expr.optimize();
+		
+		return sum;
+	}
+	
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("paren");
+		else
+			this.task = parent;
+		
+		this.expr.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent, read);
+			return this.build(cus);
+
+		cus.add(this.task.getCompilationUnit());
 
 		/* in self task */
-		this.task = parent.newStrongDependency("paren");
 		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret", true);
 
 		Block execute = ast.newBlock();
@@ -59,7 +81,7 @@ public class EParenthesizedExpression extends EExpression
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(task, read));
+		assign.setRightHandSide(this.build(cus));
 		execute.statements().add(ast.newExpressionStatement(assign));
 
 		task.setExecute(execute);
@@ -79,13 +101,8 @@ public class EParenthesizedExpression extends EExpression
 		return ret;
 	}
 
-	public Expression build(Task task, boolean read)
+	public Expression build(List<CompilationUnit> cus)
 	{
-		return this.expr.translate(task, read);
-	}
-
-	public void setWriteTask(Task task)
-	{
-		this.expr.setWriteTask(task);
+		return this.expr.translate(cus);
 	}
 }

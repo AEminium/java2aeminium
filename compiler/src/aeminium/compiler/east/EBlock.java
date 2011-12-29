@@ -5,19 +5,17 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EBlock extends EStatement
 {
-	Block origin;
-	List<EStatement> stmts;
+	private final Block origin;
+	private final List<EStatement> stmts;
 
 	EBlock(EAST east, Block origin)
 	{
 		super(east);
 
-		this.east = east;
 		this.origin = origin;
 		this.stmts = new ArrayList<EStatement>();
 
@@ -26,29 +24,54 @@ public class EBlock extends EStatement
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 
 		for (EStatement stmt : this.stmts)
-			stmt.optimize();
+			stmt.analyse();
+
+		for (EStatement stmt : this.stmts)
+			this.signature.addFrom(stmt.getSignature());
 	}
 
 	@Override
-	public List<Statement> translate(Task parent)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		for (EStatement stmt : this.stmts)
+			sum += stmt.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		// TODO: this.task
+		for (EStatement stmt : this.stmts)
+			stmt.preTranslate(parent);
+	}
+	
+	@Override
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		System.err.println("TODO: EBlock translate");
 		return null;
 	}
 
-	public Block build(Task parent)
+	@SuppressWarnings("unchecked")
+	public Block build(Task parent, List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 		Block block = ast.newBlock();
 
 		for (EStatement stmt : this.stmts)
+		{
 			if (stmt.isRoot())
-				block.statements().addAll(stmt.translate(parent));
+				block.statements().addAll(stmt.translate(cus));
+		}
 
 		return block;
 	}

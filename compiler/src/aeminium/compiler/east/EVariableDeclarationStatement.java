@@ -6,13 +6,12 @@ import java.util.Arrays;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EVariableDeclarationStatement extends EStatement
 {
-	VariableDeclarationStatement origin;
-	List<EVariableDeclarationFragment> frags;
+	private final VariableDeclarationStatement origin;
+	private final List<EVariableDeclarationFragment> frags;
 
 	EVariableDeclarationStatement(EAST east, VariableDeclarationStatement origin)
 	{
@@ -26,30 +25,57 @@ public class EVariableDeclarationStatement extends EStatement
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
 		for (EVariableDeclarationFragment frag : this.frags)
-			frag.optimize();
+			frag.analyse();
+		
+		for (EVariableDeclarationFragment frag : this.frags)
+			this.signature.addFrom(frag.getSignature());
 	}
 
 	@Override
-	public List<Statement> translate(Task parent)
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		for (EVariableDeclarationFragment frag : this.frags)
+			sum += frag.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newChild("decl");
+		else
+			this.task = parent;
+		
+		for (EVariableDeclarationFragment frag : this.frags)
+			frag.preTranslate(this);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
-		this.task = parent.newChild("decl");
-
+		cus.add(this.task.getCompilationUnit());
+		
 		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(task));
-		task.setExecute(execute);
+		execute.statements().addAll(this.build(cus));
+		this.task.setExecute(execute);
 
-		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
+		MethodDeclaration constructor = this.task.createConstructor();
+		this.task.addConstructor(constructor);
 
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
@@ -62,13 +88,18 @@ public class EVariableDeclarationStatement extends EStatement
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 
-	public List<Statement> build(Task task)
+	public List<Statement> build(List<CompilationUnit> cus)
 	{
 		List<Statement> stmts = new ArrayList<Statement>();
 
 		for (EVariableDeclarationFragment frag : this.frags)
-			stmts.addAll(frag.translate(task, this.origin.getType()));
+			stmts.addAll(frag.translate(cus));
 
 		return stmts;
+	}
+
+	public Type getType()
+	{
+		return this.origin.getType();
 	}
 }

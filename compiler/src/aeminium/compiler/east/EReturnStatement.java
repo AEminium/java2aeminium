@@ -1,19 +1,16 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
-
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EReturnStatement extends EStatement
 {
-	ReturnStatement origin;
-	EExpression expr;
+	private final ReturnStatement origin;
+	private final EExpression expr;
 
 	EReturnStatement(EAST east, ReturnStatement origin)
 	{
@@ -22,17 +19,46 @@ public class EReturnStatement extends EStatement
 
 		if (origin.getExpression() != null)
 			this.expr = this.east.extend((Expression) origin.getExpression());
+		else
+			this.expr = null;
 	}
 	
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
-		this.expr.optimize();
+		super.analyse();
+		
+		this.expr.analyse();
+		
+		this.signature.addFrom(this.expr.getSignature());
+		// TODO/FIXME: merge with the return datagroup
+		
 	}
 
 	@Override
-	public List<Statement> translate(Task parent)
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		sum += this.expr.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newChild("ret");
+		else
+			this.task = parent;
+		
+		this.expr.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
@@ -40,12 +66,12 @@ public class EReturnStatement extends EStatement
 		assert(this.expr != null);
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
-		this.task = parent.newChild("ret");
-
+		cus.add(this.task.getCompilationUnit());
+		
 		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(task));
+		execute.statements().addAll(this.build(cus));
 		task.setExecute(execute);
 
 		MethodDeclaration constructor = task.createConstructor();
@@ -62,7 +88,7 @@ public class EReturnStatement extends EStatement
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 
-	public List<Statement> build(Task task)
+	public List<Statement> build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
@@ -72,7 +98,7 @@ public class EReturnStatement extends EStatement
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(ret);
-		assign.setRightHandSide(this.expr.translate(task, true)); 
+		assign.setRightHandSide(this.expr.translate(cus)); 
 
 		// if the value is required, push it to the caller task
 		IfStatement ifstmt = ast.newIfStatement();

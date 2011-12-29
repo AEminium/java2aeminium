@@ -1,18 +1,19 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.SignatureItemMerge;
+import aeminium.compiler.datagroup.SignatureItemRead;
+import aeminium.compiler.datagroup.SignatureItemWrite;
 
 public class EAssignment extends EExpression
 {
-	Assignment origin;
-	EExpression left;
-	EExpression right;
+	private final Assignment origin;
+	private final EExpression left;
+	private final EExpression right;
 
 	ITypeBinding type;
 
@@ -28,16 +29,47 @@ public class EAssignment extends EExpression
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 
-		this.left.optimize();
-		this.right.optimize();
+		this.left.analyse();
+		this.right.analyse();
+		
+		this.datagroup = this.left.getDataGroup();
+		
+		this.signature.addFrom(this.left.getSignature());
+		this.signature.addFrom(this.right.getSignature());
+
+		this.signature.add(new SignatureItemWrite(this.left.getDataGroup()));
+		this.signature.add(new SignatureItemRead(this.right.getDataGroup()));
+		this.signature.add(new SignatureItemMerge(this.left.getDataGroup(), this.right.getDataGroup()));
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean reads)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.left.optimize();
+		sum += this.right.optimize();
+		
+		return sum;
+	}
+	
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("assign");
+		else
+			this.task = parent;
+		
+		this.left.preTranslate(this.task);
+		this.right.preTranslate(this.task);
+	}
+	
+	@Override
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		/*
 			TODO
@@ -47,12 +79,5 @@ public class EAssignment extends EExpression
 		*/
 		System.err.println("TODO: EAssignment translate");
 		return null;
-	}
-
-	@Override
-	public void setWriteTask(Task writer)
-	{
-		/* TODO */
-		System.out.println("TODO: write to assignment");
 	}
 }

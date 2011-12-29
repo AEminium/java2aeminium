@@ -5,19 +5,20 @@ import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.SignatureItemRead;
+import aeminium.compiler.datagroup.TemporaryDataGroup;
 
 public class EInfixExpression extends EExpression
 {
-	InfixExpression origin;
-	EExpression left;
-	EExpression right;
-	List<EExpression> extended;
+	private final InfixExpression origin;
+	private final EExpression left;
+	private final EExpression right;
+	private final List<EExpression> extended;
 
-	Object constant;
-	ITypeBinding binding;
-
+	private Object constant;
+	private ITypeBinding binding;
+	
 	EInfixExpression(EAST east, InfixExpression origin)
 	{
 		super(east);
@@ -32,38 +33,89 @@ public class EInfixExpression extends EExpression
 			this.extended = new ArrayList<EExpression>();
 			for (Object ext : origin.extendedOperands())
 				this.extended.add(this.east.extend((Expression) ext));	
-		}
+		} else
+			this.extended = null;
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 
-		this.left.optimize();
-		this.right.optimize();
+		this.left.analyse();
+		this.right.analyse();
 
 		if (this.extended != null)
 			for (EExpression ext : this.extended)
-				ext.optimize();
+				ext.analyse();
 
 		// TODO: allow constant resolving
 		this.constant = this.origin.resolveConstantExpressionValue();
 		this.binding = this.origin.resolveTypeBinding();
+		
+		this.datagroup = new TemporaryDataGroup(this);
+		
+		this.signature.addFrom(this.left.getSignature());
+		this.signature.add(new SignatureItemRead(this.left.getDataGroup()));
+		
+		this.signature.addFrom(this.right.getSignature());
+		this.signature.add(new SignatureItemRead(this.right.getDataGroup()));
+		
+		if (this.extended != null)
+		{
+			for (EExpression ext : this.extended)
+			{
+				this.signature.addFrom(ext.getSignature());
+				this.signature.add(new SignatureItemRead(ext.getDataGroup()));
+			}
+		}
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean reads)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.left.optimize();
+		sum += this.right.optimize();
+		
+		if (this.extended != null)
+			for (EExpression ext : this.extended)
+				sum += ext.optimize();
+	
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("infix");
+		else
+			this.task = parent;
+		
+		this.left.preTranslate(this.task);
+		this.right.preTranslate(this.task);
+		
+		if (this.extended != null)
+			for (EExpression ext : this.extended)
+				ext.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
+		cus.add(this.task.getCompilationUnit());
+		
 		/* in self task */
-		this.task = parent.newStrongDependency("infix");
 		this.task.addField(this.east.buildTypeFromBinding(this.binding), "ae_ret", true);
 
 		Block execute = ast.newBlock();
@@ -74,7 +126,7 @@ public class EInfixExpression extends EExpression
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(task));
+		assign.setRightHandSide(this.build(cus));
 		execute.statements().add(ast.newExpressionStatement(assign));
 
 		task.setExecute(execute);
@@ -94,27 +146,20 @@ public class EInfixExpression extends EExpression
 		return ret;
 	}
 
-	public Expression build(Task task)
+	@SuppressWarnings("unchecked")
+	public Expression build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		InfixExpression infix = ast.newInfixExpression();
-		infix.setLeftOperand(this.left.translate(task, true));
-		infix.setRightOperand(this.right.translate(task, true));
+		infix.setLeftOperand(this.left.translate(cus));
+		infix.setRightOperand(this.right.translate(cus));
 		infix.setOperator(this.origin.getOperator());
 
 		if (this.extended != null)
-		{
 			for (EExpression ext: this.extended)
-				infix.extendedOperands().add(ext.translate(task, true));
-		}
+				infix.extendedOperands().add(ext.translate(cus));
 
 		return infix;
-	}
-
-	@Override
-	public void setWriteTask(Task writer)
-	{
-		// nothing to do here
 	}
 }

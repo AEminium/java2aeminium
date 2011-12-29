@@ -4,16 +4,12 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.Modifier.*;
-
-import aeminium.compiler.east.*;
-import aeminium.compiler.Task;
 
 public class ETypeDeclaration extends EAbstractTypeDeclaration
 {
-	TypeDeclaration origin;
-	List<EFieldDeclaration> fields;
-	List<EMethodDeclaration> methods;
+	private final TypeDeclaration origin;
+	private final List<EFieldDeclaration> fields;
+	private final List<EMethodDeclaration> methods;
 
 	ETypeDeclaration(EAST east, TypeDeclaration origin)
 	{
@@ -33,6 +29,40 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 			this.methods.add(this.east.extend((MethodDeclaration) method));
 	}
 
+	@Override
+	public void analyse()
+	{
+		for (EFieldDeclaration field : this.fields)
+			field.analyse();
+
+		for (EMethodDeclaration method : this.methods)
+			method.analyse();
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = 0;
+		
+		for (EFieldDeclaration field : this.fields)
+			sum += field.optimize();
+
+		for (EMethodDeclaration method : this.methods)
+			sum += method.optimize();
+		
+		return sum;
+	}
+	
+	public void preTranslate()
+	{
+		for (EFieldDeclaration field : this.fields)
+			field.preTranslate();
+
+		for (EMethodDeclaration method : this.methods)
+			method.preTranslate();
+	}
+	
+	@SuppressWarnings("unchecked")
 	public TypeDeclaration translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
@@ -49,12 +79,4 @@ public class ETypeDeclaration extends EAbstractTypeDeclaration
 		return type;
 	}
 
-	public void optimize()
-	{
-		for (EFieldDeclaration field : this.fields)
-			field.optimize();
-
-		for (EMethodDeclaration method : this.methods)
-			method.optimize();
-	}
 }

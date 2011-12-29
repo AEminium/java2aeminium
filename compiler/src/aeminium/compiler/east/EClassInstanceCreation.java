@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.Modifier.*;
-
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.SignatureItem;
+import aeminium.compiler.datagroup.SignatureItemRead;
+import aeminium.compiler.datagroup.SignatureItemWrite;
+import aeminium.compiler.datagroup.TemporaryDataGroup;
 
 public class EClassInstanceCreation extends EExpression
 {
@@ -26,29 +27,53 @@ public class EClassInstanceCreation extends EExpression
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 
 		for (EExpression arg : this.args)
-			arg.optimize();
+			arg.analyse();
 
 		// TODO check if the constructor being used has @AEminium
 		// if not, this call must be serialized, or at least run a serial version in a task that is paralell.
+
+		this.datagroup = new TemporaryDataGroup(this);
+		
+		for (EExpression arg : this.args)
+		{
+			this.signature.addFrom(arg.getSignature());
+			this.signature.add(new SignatureItemRead(arg.getDataGroup()));
+		}
+		
+		this.signature.add(new SignatureItemWrite(this.getDataGroup()));
  	}
 
 	@Override
-	public Expression translate(Task parent, boolean reads)
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("class");
+		else
+			this.task = parent;
+		
+		for (EExpression arg : this.args)
+			arg.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
+		cus.add(this.task.getCompilationUnit());
+		
 		/* in self task */
-		this.task = parent.newStrongDependency("class");
 		this.task.addField((Type) ASTNode.copySubtree(ast, this.origin.getType()), "ae_ret", true);
 
 		Block execute = ast.newBlock();
@@ -59,13 +84,13 @@ public class EClassInstanceCreation extends EExpression
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(task));
+		assign.setRightHandSide(this.build(cus));
 		execute.statements().add(ast.newExpressionStatement(assign));
 
-		task.setExecute(execute);
+		this.task.setExecute(execute);
 
-		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
+		MethodDeclaration constructor = this.task.createConstructor();
+		this.task.addConstructor(constructor);
 
 		/* in parent task */
 		FieldAccess access = ast.newFieldAccess();
@@ -79,7 +104,8 @@ public class EClassInstanceCreation extends EExpression
 		return ret;
 	}
 
-	public Expression build(Task task)
+	@SuppressWarnings("unchecked")
+	public Expression build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
@@ -87,19 +113,9 @@ public class EClassInstanceCreation extends EExpression
 		create.setType((Type) ASTNode.copySubtree(ast, this.origin.getType()));
 
 		// TODO calculate constructor read/write operations on parameters and "globals" (statics)
-		// assuming worst case of write always
 		for (EExpression arg: this.args)
-			create.arguments().add(arg.translate(task, true));
-
-		for (EExpression arg: this.args)
-			arg.setWriteTask(task);
+			create.arguments().add(arg.translate(cus));
 
 		return create;
-	}
-
-	@Override
-	public void setWriteTask(Task writer)
-	{
-		System.err.println("TODO/FIXME: writing to a class creation, possibly ignore because no other ref is made");
 	}
 }

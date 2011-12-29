@@ -1,11 +1,8 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
-
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public abstract class EStatement extends EASTDependentNode
@@ -15,5 +12,6 @@ public abstract class EStatement extends EASTDependentNode
 		super(east);
 	}
 
-	public abstract List<Statement> translate(Task parent);
+	public abstract void preTranslate(Task parent);
+	public abstract List<Statement> translate(List<CompilationUnit> cus);
 }

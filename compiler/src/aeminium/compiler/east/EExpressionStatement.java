@@ -1,12 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.jdt.core.dom.*;
+import org.eclipse.osgi.internal.resolver.ComputeNodeOrder;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EExpressionStatement extends EStatement
@@ -23,30 +22,54 @@ public class EExpressionStatement extends EStatement
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
-		this.expr.optimize();
+		super.analyse();
+		this.expr.analyse();
+		
+		this.signature.addFrom(this.expr.getSignature());
 	}
 
 	@Override
-	public List<Statement> translate(Task parent)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.expr.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newChild("expstmt");
+		else
+			this.task = parent;
+		
+		this.expr.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
-		this.task = parent.newChild("expstmt");
-
+		cus.add(this.task.getCompilationUnit());
+		
 		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(task));
-		task.setExecute(execute);
+		execute.statements().addAll(this.build(cus));
+		this.task.setExecute(execute);
 
-		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
+		MethodDeclaration constructor = this.task.createConstructor();
+		this.task.addConstructor(constructor);
 
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
@@ -59,11 +82,11 @@ public class EExpressionStatement extends EStatement
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 
-	public List<Statement> build(Task task)
+	public List<Statement> build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
-		ExpressionStatement expr_stmt = ast.newExpressionStatement(this.expr.translate(task, true));
+		ExpressionStatement expr_stmt = ast.newExpressionStatement(this.expr.translate(cus));
 
 		return Arrays.asList((Statement)expr_stmt);
 	}

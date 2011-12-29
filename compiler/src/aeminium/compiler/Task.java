@@ -10,21 +10,20 @@ import aeminium.compiler.east.*;
 
 public class Task
 {
-	EAST east;
+	private final EAST east;
 
-	List<CompilationUnit> cus;
+	private final String type;
+	private final CompilationUnit cu;
+	private final TypeDeclaration decl;
 
-	CompilationUnit cu;
+	private String name;
+
 	MethodDeclaration execute;
-	TypeDeclaration decl;
 
 	Task parent;
 	List<Task> strongDependencies;
 	List<Task> weakDependencies;
 	List<Task> children;
-
-	String type;
-	String name;
 
 	/* only used when this task receives additional params (e.g.: is a method task) */
 	boolean isMethod;
@@ -34,7 +33,8 @@ public class Task
 
 	boolean isInvocation;
 
-	public Task(EAST east, String type, CompilationUnit original, List<CompilationUnit> cus)
+	@SuppressWarnings("unchecked")
+	public Task(EAST east, String type, CompilationUnit original)
 	{
 		this.east = east;
 
@@ -52,13 +52,24 @@ public class Task
 		this.thisType = null;
 
 		this.isInvocation = false;
+		
+		/* build */
+		AST ast = this.east.getAST();
 
-		this.build(original, cus);
+		this.cu = ast.newCompilationUnit();
+		this.cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, original.getPackage()));
+		this.cu.imports().addAll(ASTNode.copySubtrees(ast, original.imports()));
+
+		this.decl = ast.newTypeDeclaration();
+		this.decl.setName(ast.newSimpleName(this.type));
+		this.decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
+
+		this.cu.types().add(this.decl);
 	}
 
 	public Task newStrongDependency(String suffix)
 	{
-		Task task = new Task(this.east, this.type + "_" + suffix + this.strongDependencies.size(), this.cu, this.cus);
+		Task task = new Task(this.east, this.type + "_" + suffix + this.strongDependencies.size(), this.cu);
 		this.addStrongDependency(task);
 		return task;
 	}
@@ -72,7 +83,7 @@ public class Task
 
 	public Task newChild(String suffix)
 	{
-		Task task = new Task(this.east, this.type + "_" + suffix + this.children.size(), this.cu, this.cus);
+		Task task = new Task(this.east, this.type + "_" + suffix + this.children.size(), this.cu);
 		this.addChild(task);
 		return task;
 	}
@@ -91,25 +102,6 @@ public class Task
 		this.weakDependencies.add(task);
 	}
 
-	private void build(CompilationUnit original, List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
-
-		this.cus = cus;
-
-		this.cu = ast.newCompilationUnit();
-		this.cu.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, original.getPackage()));
-		this.cu.imports().addAll(ASTNode.copySubtrees(ast, original.imports()));
-
-		this.decl = ast.newTypeDeclaration();
-		this.decl.setName(ast.newSimpleName(this.type));
-		this.decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
-
-		this.cu.types().add(this.decl);
-
-		cus.add(this.cu);
-	}
-
 	public void setMethodTask(Type returnType, Type thisType, List<SingleVariableDeclaration> parameters)
 	{
 		this.isMethod = true;
@@ -118,16 +110,16 @@ public class Task
 		this.parameters = parameters;
 	}
 
-	public void setName(String name)
-	{
-		this.name = name;
-	}
-
 	public void setSuperClass(Type type)
 	{
 		this.decl.setSuperclassType(type);
 	}
 
+	public void setName(String name)
+	{
+		this.name = name;
+	}
+	
 	public String getName()
 	{
 		return this.name;
@@ -143,6 +135,7 @@ public class Task
 		return this.cu;
 	}
 
+	@SuppressWarnings("unchecked")
 	public MethodDeclaration createConstructor()
 	{
 		AST ast = this.east.getAST();
@@ -378,6 +371,7 @@ public class Task
 		return constructor;
 	}
 
+	@SuppressWarnings("unchecked")
 	public ClassInstanceCreation create()
 	{
 		AST ast = this.east.getAST();
@@ -391,6 +385,7 @@ public class Task
 		return creation;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addConstructor(MethodDeclaration constructor)
 	{
 		this.decl.bodyDeclarations().add(constructor);
@@ -402,6 +397,7 @@ public class Task
 		return this.execute;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void setExecute(Block body)
 	{
 		assert(this.execute == null);
@@ -430,6 +426,7 @@ public class Task
 		this.decl.bodyDeclarations().add(this.execute);
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addField(Type type, String name, boolean vol)
 	{
 		AST ast = this.east.getAST();

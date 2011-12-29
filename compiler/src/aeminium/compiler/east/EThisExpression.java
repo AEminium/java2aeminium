@@ -1,16 +1,13 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
 
 public class EThisExpression extends EExpression
 {
-	ThisExpression origin;
+	private final ThisExpression origin;
 	ITypeBinding binding;
 	
 	EThisExpression(EAST east, ThisExpression origin)
@@ -18,28 +15,49 @@ public class EThisExpression extends EExpression
 		super(east);
 
 		this.origin = origin;
-		this.binding = this.origin.resolveTypeBinding();
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
+	{
+		super.analyse();
+
+		this.binding = this.origin.resolveTypeBinding();
+		
+		// TODO/FIXME: this datagroup
+	}
+
+	@Override
+	public int optimize()
 	{
 		super.optimize();
-	}
+		this.root = false;
 
+		return 0;
+	}
+	
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("this");
+		else
+			this.task = parent;
+	}
+	
+	@SuppressWarnings("unchecked")
 	@Override
-	public Expression translate(Task parent, boolean read)
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
-		assert(this.isRoot());
+//		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
+		cus.add(this.task.getCompilationUnit());
+		
 		/* in self task */
-		this.task = parent.newStrongDependency("this");
-
 		this.task.addField(ast.newSimpleType(ast.newName(this.binding.getQualifiedName())), "ae_ret", true);
 
 		Block execute = ast.newBlock();
@@ -50,13 +68,13 @@ public class EThisExpression extends EExpression
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(task));
+		assign.setRightHandSide(this.build(cus));
 		execute.statements().add(ast.newExpressionStatement(assign));
 
-		task.setExecute(execute);
+		this.task.setExecute(execute);
 
-		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
+		MethodDeclaration constructor = this.task.createConstructor();
+		this.task.addConstructor(constructor);
 
 		/* in parent task */
 		FieldAccess access = ast.newFieldAccess();
@@ -70,22 +88,14 @@ public class EThisExpression extends EExpression
 		return ret;
 	}
 
-	public Expression build(Task task)
+	public Expression build(List<CompilationUnit> cus)
 	{
-		// TODO: read??
-
 		AST ast = this.east.getAST();
 
 		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(task.getPathToRoot());
+		access.setExpression(this.task.getPathToRoot());
 		access.setName(ast.newSimpleName("ae_this"));
 
 		return access;
-	}
-
-	@Override
-	public void setWriteTask(Task writer)
-	{
-		System.out.println("TODO: writing to \"this\" what to do?");
 	}
 }

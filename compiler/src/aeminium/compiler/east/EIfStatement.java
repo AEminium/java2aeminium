@@ -1,14 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.InfixExpression.Operator;
-
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.SignatureItemRead;
 
 public class EIfStatement extends EStatement
 {
@@ -30,34 +27,72 @@ public class EIfStatement extends EStatement
 	}
 	
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
-		this.expr.optimize();
-		this.then_stmt.optimize();
+		super.analyse();
+		this.expr.analyse();
+		this.then_stmt.analyse();
 
 		if (this.else_stmt != null)
-			this.else_stmt.optimize();
+			this.else_stmt.analyse();
+		
+		this.signature.addFrom(this.expr.getSignature());
+		this.signature.add(new SignatureItemRead(this.expr.getDataGroup()));
+		
+		this.signature.addFrom(this.then_stmt.getSignature());
+		
+		if (this.else_stmt != null)
+			this.signature.addFrom(this.else_stmt.getSignature());
 	}
 
 	@Override
-	public List<Statement> translate(Task parent)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.expr.optimize();
+		sum += this.then_stmt.optimize();
+		
+		if (this.else_stmt != null)
+			sum += this.else_stmt.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newChild("if");
+		else
+			this.task = parent;
+		
+		this.expr.preTranslate(this.task);
+		this.then_stmt.preTranslate(this.task);
+		
+		if (this.else_stmt != null)
+			this.else_stmt.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
 
-		this.task = parent.newChild("if");
-
+		cus.add(this.task.getCompilationUnit());
+		
 		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(task));
-		task.setExecute(execute);
+		execute.statements().addAll(this.build(cus));
+		this.task.setExecute(execute);
 
 		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
+		this.task.addConstructor(constructor);
 
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
@@ -70,14 +105,15 @@ public class EIfStatement extends EStatement
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 
-	public List<Statement> build(Task task)
+	@SuppressWarnings("unchecked")
+	public List<Statement> build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		IfStatement ifstmt = ast.newIfStatement();
-		ifstmt.setExpression(this.expr.translate(task, true));
+		ifstmt.setExpression(this.expr.translate(cus));
 
-		List<Statement> then_stmts = this.then_stmt.translate(task);
+		List<Statement> then_stmts = this.then_stmt.translate(cus);
 		if (then_stmts.size() > 1)
 		{
 			Block then_block = ast.newBlock();
@@ -88,7 +124,7 @@ public class EIfStatement extends EStatement
 
 		if (this.else_stmt != null)
 		{
-			List<Statement> else_stmts = this.else_stmt.translate(task);
+			List<Statement> else_stmts = this.else_stmt.translate(cus);
 			if (else_stmts.size() > 1)
 			{
 				Block else_block = ast.newBlock();

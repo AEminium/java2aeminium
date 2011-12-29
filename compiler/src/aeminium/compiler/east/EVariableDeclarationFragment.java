@@ -2,58 +2,102 @@ package aeminium.compiler.east;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.*;
-import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.LocalDataGroup;
+import aeminium.compiler.datagroup.SignatureItemMerge;
+import aeminium.compiler.datagroup.SignatureItemRead;
+import aeminium.compiler.datagroup.SignatureItemWrite;
 
 public class EVariableDeclarationFragment extends EASTDependentNode
 {
-	VariableDeclarationFragment origin;
-	EExpression expr;
-	ESimpleName var;
+	private final VariableDeclarationFragment origin;
+	private final EExpression expr;
+	private final ESimpleName name;
 
 	IBinding binding;
+
+	Type type;
 
 	EVariableDeclarationFragment(EAST east, VariableDeclarationFragment origin)
 	{
 		super(east);
 		this.origin = origin;
 	
-		this.var = this.east.extend(origin.getName());
-
+		this.name = this.east.extend(origin.getName());
+		this.name.setDataGroup(new LocalDataGroup(this));
+		
 		if (origin.getInitializer() != null)
 			this.expr = this.east.extend(origin.getInitializer());
+		else
+			this.expr = null;
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 	
-		this.var.optimize();
+		this.binding = this.origin.resolveBinding();
+		this.east.putNode(this.east.resolveName(this.binding), this.name);
+
+		this.name.analyse();
 
 		if (this.expr != null)
-			this.expr.optimize();
+		{
+			this.expr.analyse();
 
-		this.binding = this.origin.resolveBinding();
+			this.signature.addFrom(this.expr.getSignature());
+	
+			this.signature.add(new SignatureItemRead(this.expr.getDataGroup()));
+			this.signature.add(new SignatureItemWrite(this.name.getDataGroup()));
+			this.signature.add(new SignatureItemMerge(this.name.getDataGroup(), this.expr.getDataGroup()));
+		}
 	}
 
-	public List<Statement> translate(Task parent, Type type)
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+	
+		sum += this.name.optimize();
+
+		if (this.expr != null)
+			sum += this.expr.optimize();
+
+		return sum;
+	}
+	
+	public void preTranslate(EVariableDeclarationStatement parent)
+	{
+		if (this.isRoot())
+			this.task = parent.task.newChild("declfrag");
+		else
+			this.task = parent.task;
+		
+		this.type = parent.getType();
+		
+		this.name.preTranslate(this.task);
+		
+		if (this.expr != null)
+			this.expr.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<Statement> translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent, type);
+			return this.build(cus);
 
-		this.task = parent.newStrongDependency("declfrag");
+		cus.add(this.task.getCompilationUnit());
 
 		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(task, type));
+		execute.statements().addAll(this.build(cus));
 		task.setExecute(execute);
 
 		MethodDeclaration constructor = task.createConstructor();
@@ -71,17 +115,11 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		return new ArrayList<Statement>();
 	}
 
-	public List<Statement> build(Task task, Type type)
+	public List<Statement> build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
-		task.addField(type, this.origin.getName().toString(), true);
-
-		if (this.expr != null)
-			this.var.addWeakDependency(this.expr);
-
-		this.var.setTask(task);
-		this.east.putNode(this.east.resolveName(this.binding), this.var);
+		task.addField(this.type, this.origin.getName().toString(), true);
 
 		List<Statement> stmts = new ArrayList<Statement>();
 
@@ -89,9 +127,8 @@ public class EVariableDeclarationFragment extends EASTDependentNode
 		{
 			Assignment assign = ast.newAssignment();
 
-			assign.setRightHandSide(this.expr.translate(task, true));
-			assign.setLeftHandSide(this.var.translate(task, false));
-			this.var.setWriteTask(task);
+			assign.setRightHandSide(this.expr.translate(cus));
+			assign.setLeftHandSide(this.name.translate(cus));
 
 			stmts.add(ast.newExpressionStatement(assign));
 		}

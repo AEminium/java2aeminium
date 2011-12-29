@@ -4,21 +4,21 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 
-import aeminium.compiler.east.*;
 import aeminium.compiler.Task;
+import aeminium.compiler.datagroup.DataGroup;
+import aeminium.compiler.datagroup.SignatureItemInvocation;
 
 public class EMethodInvocation extends EExpression
 {
-	MethodInvocation origin;
+	private final MethodInvocation origin;
 
-	EExpression expr;
-	List<EExpression> args;
+	private final EExpression expr;
+	private final List<EExpression> args;
 
+	EMethodDeclaration declaration;
 	ITypeBinding type;
 	IMethodBinding binding;
-	EMethodDeclaration declaration;
 	
 	EMethodInvocation(EAST east, MethodInvocation origin)
 	{
@@ -31,38 +31,73 @@ public class EMethodInvocation extends EExpression
 
 		for (Object arg : origin.arguments())
 			this.args.add(this.east.extend((Expression) arg));
-		
-		// TODO: add internal dependencies (System.out, and other statics here)?
 	}
 
 	@Override
-	public void optimize()
+	public void analyse()
 	{
-		super.optimize();
+		super.analyse();
 
-		this.expr.optimize();
+		this.expr.analyse();
 		
 		for (EExpression arg : this.args)
-			arg.optimize(); 
+			arg.analyse(); 
 		
-		this.declaration = (EMethodDeclaration) this.east.getNode(this.east.resolveName(this.origin.resolveMethodBinding()));
 		this.binding = this.origin.resolveMethodBinding();
 		this.type = this.origin.resolveTypeBinding();
+		this.declaration = (EMethodDeclaration) this.east.getNode(this.east.resolveName(this.binding));
+
+
+		this.signature.addFrom(this.expr.getSignature());
+		for (EExpression arg : this.args)
+			this.signature.addFrom(arg.getSignature());
+		
+		this.signature.add(new SignatureItemInvocation(this));
+		/*
+		 * DO NOT add arguments (or even "this") as a read signature
+		 * after replacing arguments they will have their respective read/writes
+		 * if they occur at all
+		*/
 	}
 
 	@Override
-	public Expression translate(Task parent, boolean reads)
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.expr.optimize();
+		for (EExpression arg : this.args)
+			sum += arg.optimize();
+		
+		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.isRoot())
+			this.task = parent.newStrongDependency("invoke");
+
+		this.expr.preTranslate(this.task);
+		
+		for (EExpression arg : this.args)
+			arg.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression translate(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		assert(this.isRoot());
 
 		if (!this.isRoot())
-			return this.build(parent);
+			return this.build(cus);
+
+		cus.add(this.task.getCompilationUnit());
 
 		/* in self task */
-		this.task = parent.newStrongDependency("invoke");
-
 		Type ret_type = this.east.buildTypeFromBinding(this.type);
 
 		if (!this.isSequential())
@@ -79,7 +114,7 @@ public class EMethodInvocation extends EExpression
 		}
 
 		Block execute = ast.newBlock();
-		execute.statements().add(ast.newExpressionStatement(this.build(task)));
+		execute.statements().add(ast.newExpressionStatement(this.build(cus)));
 		task.setExecute(execute);
 
 		MethodDeclaration constructor = task.createConstructor();
@@ -109,60 +144,48 @@ public class EMethodInvocation extends EExpression
 		return method == null || !method.isAEminium();
 	}
 
-	public Expression buildSequential(Task task)
+	@SuppressWarnings("unchecked")
+	public Expression buildSequential(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		MethodInvocation invoke = ast.newMethodInvocation();
-		invoke.setExpression(this.expr.translate(task, true));
+		invoke.setExpression(this.expr.translate(cus));
 
 		for (EExpression arg : this.args)
-			invoke.arguments().add(arg.translate(task, true));
-
-		// TODO: What about static sequential calls?
-		this.expr.setWriteTask(task);
-
-		for (EExpression arg : this.args)
-			arg.setWriteTask(task);
+			invoke.arguments().add(arg.translate(cus));
 
 		return invoke;
 	}
 
-	public Expression build(Task task)
+	@SuppressWarnings("unchecked")
+	public Expression build(List<CompilationUnit> cus)
 	{
 		AST ast = this.east.getAST();
 
 		if (this.isSequential())
-			return this.buildSequential(task);
+			return this.buildSequential(cus);
 
 		String method_name = this.east.resolveName(this.binding);
 		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
 
 		ClassInstanceCreation create = ast.newClassInstanceCreation();
-		create.setType(ast.newSimpleType(ast.newSimpleName(method.task.getType())));	
+		create.setType(ast.newSimpleType(ast.newSimpleName(method.getTask().getType())));	
 		
 		create.arguments().add(ast.newThisExpression());
 
 		if (!method.isStatic())
-			create.arguments().add(this.expr.translate(task, true));
+			create.arguments().add(this.expr.translate(cus));
 
 		for (EExpression arg : this.args)
-			create.arguments().add(arg.translate(task, true));
-
-		// TODO check if method read/write operations on the owner object (this) and on the arguments
-		// assuming worst case of always write
-		if (!method.isStatic())
-			this.expr.setWriteTask(task);
-
-		for (EExpression arg : this.args)
-			arg.setWriteTask(task);
+			create.arguments().add(arg.translate(cus));
 
 		return create;
 	}
 
 	@Override
-	public void setWriteTask(Task writer)
+	public DataGroup getDataGroup()
 	{
-		// nothing to do here
+		return this.declaration.getReturnDataGroup();
 	}
 }

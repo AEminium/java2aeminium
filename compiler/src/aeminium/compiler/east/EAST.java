@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.eclipse.jdt.core.dom.*;
-import aeminium.compiler.east.*;
+
+import aeminium.compiler.datagroup.ConstantDataGroup;
 
 public class EAST
 {
-	AST ast;
-	HashMap<String, ECompilationUnit> units;
-	HashMap<String, EASTNode> nodes;
+	private final AST ast;
+	private final HashMap<String, ECompilationUnit> units;
+	private final HashMap<String, EASTNode> nodes;
 
 	public EAST()
 	{
@@ -20,10 +21,26 @@ public class EAST
 		this.nodes = new HashMap<String, EASTNode>();	
 	}
 
-	public void optimize()
+	public void analyse()
 	{
 		for (ECompilationUnit unit : this.units.values())
-			unit.optimize();
+			unit.analyse();
+	}
+
+	public int optimize()
+	{
+		int sum = 0;
+
+		for (ECompilationUnit unit : this.units.values())
+			sum += unit.optimize();
+		
+		return sum;
+	}
+	
+	public void preTranslate()
+	{
+		for (ECompilationUnit unit : this.units.values())
+			unit.preTranslate();
 	}
 
 	public List<CompilationUnit> translate()
@@ -36,6 +53,7 @@ public class EAST
 		return units;
 	}
 
+	
 	public AST getAST()
 	{
 		return this.ast;
@@ -55,7 +73,7 @@ public class EAST
 		if (decl instanceof TypeDeclaration)
 			return new ETypeDeclaration(this, (TypeDeclaration) decl); 
 	
-		System.err.println("Invalid AbstractTypeDeclaration: " + decl.getClass().toString());
+		System.err.println("TODO: Invalid AbstractTypeDeclaration: " + decl.getClass().toString());
 		return null;
 	}
 
@@ -161,6 +179,7 @@ public class EAST
 				id = "var_" + type.getQualifiedName() + "_" + method.getName() + "_" + var.getVariableId();
 			} else
 				id = "var_" + type.getQualifiedName() + "_" + var.getVariableId();
+			
 		} else if (binding instanceof IMethodBinding)
 		{
 			IMethodBinding method = (IMethodBinding) binding;
@@ -191,8 +210,8 @@ public class EAST
 		if (binding.isPrimitive())
 			return this.ast.newPrimitiveType(PrimitiveType.toCode(binding.getName()));
 
-		// TODO
-		System.err.println("Binding: TODO: complex types");
+		// TODO Binding complex types
+		System.err.println("TODO: Binding complex types");
 		return null;
 	}
 

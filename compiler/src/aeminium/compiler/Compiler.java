@@ -39,10 +39,11 @@ public class Compiler
 		this.sourcePath[0] = source;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void run() throws IOException
 	{
-		List<String> files = this.walk(new File(this.source));
 		EAST east = new EAST();
+		List<String> files = this.walk(new File(this.source));
 
 		for (String path : files)
 		{
@@ -64,7 +65,15 @@ public class Compiler
 			east.extend(cu);
 		}
 
-		east.optimize();
+		east.analyse();
+		
+		int optimizations;
+		do {
+			optimizations = east.optimize();
+			System.out.println("Optimized: "+optimizations);
+		} while (optimizations > 0);
+		
+		east.preTranslate();
 
 		// Save units
 		for (CompilationUnit unit : east.translate())
