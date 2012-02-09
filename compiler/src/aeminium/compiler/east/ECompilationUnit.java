@@ -1,69 +1,47 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 public class ECompilationUnit extends EASTNode
 {
-	private final CompilationUnit origin;
-	private final List<EAbstractTypeDeclaration> types;
-
-	ECompilationUnit(EAST east, CompilationUnit origin)
+	protected final ArrayList<ETypeDeclaration> types;
+		
+	public ECompilationUnit(EAST east, CompilationUnit original)
 	{
-		super(east);
+		super(east, original);
+		
+		this.east.addOriginalCU(this);
 
-		this.origin = origin;
-		this.types = new ArrayList<EAbstractTypeDeclaration>();
-
-		for (Object type : origin.types())
-			this.types.add(this.east.extend((AbstractTypeDeclaration) type));
+		this.types = new ArrayList<ETypeDeclaration>();
+		for (Object type : original.types())
+			this.types.add(ETypeDeclaration.create(this.east, (TypeDeclaration) type, this));
 	}
-	
+
+	/* Factory */
+	public static ECompilationUnit create(EAST east, CompilationUnit original)
+	{
+		return new ECompilationUnit(east, original);
+	}
+
 	@Override
-	public void analyse()
+	public CompilationUnit getOriginal()
 	{
-		for (EAbstractTypeDeclaration type : this.types)
-			type.analyse();
+		return (CompilationUnit) this.original;
 	}
 
-	@Override 
-	public int optimize()
+	@Override
+	public void checkSignatures()
 	{
-		int sum = 0;
-		
-		for (EAbstractTypeDeclaration type : this.types)
-			sum += type.optimize();
-		
-		return sum;
+		for (ETypeDeclaration type : this.types)
+			type.checkSignatures();
 	}
-	
-	public void preTranslate()
-	{
-		for (EAbstractTypeDeclaration type : this.types)
-			type.preTranslate();
-	}
-	
-	@SuppressWarnings("unchecked")
-	public void translate(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
 
-		CompilationUnit unit = ast.newCompilationUnit();
-		
-		unit.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, this.origin.getPackage()));
-		unit.imports().addAll(ASTNode.copySubtrees(ast, this.origin.imports()));
-
-		for (EAbstractTypeDeclaration type : this.types)
-			unit.types().add(type.translate(cus));
-
-		cus.add(unit);
-	}
-	
-	public String getQualifiedName()
+	public void checkDependencies()
 	{
-		String name = ((AbstractTypeDeclaration) this.origin.types().get(0)).getName().toString();
-		return this.origin.getPackage().getName().toString() + "." + name;
+		for (ETypeDeclaration type : this.types)
+			type.checkDependencies();
 	}
 }

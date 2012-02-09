@@ -1,78 +1,77 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Statement;
 
-import aeminium.compiler.Task;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SimpleDataGroup;
 
-public class EBlock extends EStatement
-{
-	private final Block origin;
-	private final List<EStatement> stmts;
-
-	EBlock(EAST east, Block origin)
+public class EBlock extends EStatement implements EASTDataNode
+{	
+	protected final DataGroup datagroup;
+	
+	protected final ArrayList<EStatement> stmts;
+	
+	public EBlock(EAST east, Block original, EASTDataNode scope, EMethodDeclaration method)
 	{
-		super(east);
-
-		this.origin = origin;
+		super(east, original, scope, method);
+		
+		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("{}"));
+		
 		this.stmts = new ArrayList<EStatement>();
-
-		for (Object stmt : origin.statements())
-			this.stmts.add(this.east.extend((Statement) stmt));
+		for (Object stmt : original.statements())
+			this.stmts.add(EStatement.create(this.east, (Statement) stmt, this, method));
 	}
 
-	@Override
-	public void analyse()
+	/* Factory */
+	public static EBlock create(EAST east, Block block, EASTDataNode scope, EMethodDeclaration method)
 	{
-		super.analyse();
-
-		for (EStatement stmt : this.stmts)
-			stmt.analyse();
-
-		for (EStatement stmt : this.stmts)
-			this.signature.addFrom(stmt.getSignature());
-	}
-
-	@Override
-	public int optimize()
-	{
-		int sum = super.optimize();
-		
-		for (EStatement stmt : this.stmts)
-			sum += stmt.optimize();
-		
-		return sum;
+		return new EBlock(east, block, scope, method);
 	}
 	
 	@Override
-	public void preTranslate(Task parent)
+	public DataGroup getDataGroup()
 	{
-		// TODO: this.task
+		return this.datagroup;
+	}
+
+	@Override
+	public Block getOriginal()
+	{
+		return (Block) this.original;
+	}
+
+	@Override
+	public void checkSignatures()
+	{
 		for (EStatement stmt : this.stmts)
-			stmt.preTranslate(parent);
+			stmt.checkSignatures();
 	}
 	
 	@Override
-	public List<Statement> translate(List<CompilationUnit> cus)
+	public Signature getFullSignature()
 	{
-		System.err.println("TODO: EBlock translate");
-		return null;
+		Signature sig = new Signature();
+		
+		sig.addAll(this.signature);
+		
+		for (EStatement stmt : this.stmts)
+			sig.addAll(stmt.getFullSignature());
+
+		return sig;
 	}
 
-	@SuppressWarnings("unchecked")
-	public Block build(Task parent, List<CompilationUnit> cus)
+	@Override
+	public void checkDependencies(DependencyStack stack)
 	{
-		AST ast = this.east.getAST();
-		Block block = ast.newBlock();
-
 		for (EStatement stmt : this.stmts)
-		{
-			if (stmt.isRoot())
-				block.statements().addAll(stmt.translate(cus));
-		}
-
-		return block;
+			stmt.checkDependencies(stack);
+		
+		// TODO/FIXME: add the stmts to the children?
+		// Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 	}
 }

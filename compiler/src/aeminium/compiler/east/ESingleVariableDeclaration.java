@@ -1,79 +1,97 @@
 package aeminium.compiler.east;
 
-import java.util.List;
+import java.util.Set;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
-import aeminium.compiler.datagroup.LocalDataGroup;
-import aeminium.compiler.datagroup.SignatureItemMerge;
-import aeminium.compiler.datagroup.SignatureItemRead;
-import aeminium.compiler.datagroup.SignatureItemWrite;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.*;
 
-public class ESingleVariableDeclaration extends EASTDependentNode
+public class ESingleVariableDeclaration extends EASTExecutableNode implements EASTDataNode
 {
-	private final SingleVariableDeclaration origin;
-	private final EExpression expr;
-	private final ESimpleName name;
-
-	IBinding binding;
-
-	ESingleVariableDeclaration(EAST east, SingleVariableDeclaration origin)
-	{
-		super(east);
-		this.origin = origin;
+	protected final EASTDataNode scope;
+	protected final DataGroup datagroup;
 	
-		this.name = this.east.extend(origin.getName());
+	protected final ESimpleNameDeclaration name;
+	protected final EExpression expr;
+	
+	public ESingleVariableDeclaration(EAST east, SingleVariableDeclaration original, EASTDataNode scope)
+	{
+		super(east, original);
 
-		if (origin.getInitializer() != null)
-			this.expr = this.east.extend(origin.getInitializer());
-		else
+		this.scope = scope;
+		
+		/* FIXME: maybe this should append something to the datagroup */
+		this.datagroup = scope.getDataGroup();
+		
+		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this);
+		
+		if (original.getInitializer() == null)
 			this.expr = null;
+		else
+			this.expr = EExpression.create(this.east, original.getInitializer(), this);
 	}
 
 	@Override
-	public void analyse()
+	public DataGroup getDataGroup()
 	{
-		this.binding = this.origin.resolveBinding();
-		this.east.putNode(this.east.resolveName(this.binding), this.name);
+		return this.datagroup;
+	}
 
-		super.analyse();
-	
-		this.name.analyse();
-		this.name.setDataGroup(new LocalDataGroup(this));
+	@Override
+	public SingleVariableDeclaration getOriginal()
+	{
+		return (SingleVariableDeclaration) this.original;
+	}
+
+	public static ESingleVariableDeclaration create(EAST east, SingleVariableDeclaration param, EASTDataNode scope)
+	{
+		return new ESingleVariableDeclaration(east, param, scope);
+	}
+
+	@Override
+	public void checkSignatures()
+	{
+		this.name.checkSignatures();
 		
 		if (this.expr != null)
 		{
-			this.expr.analyse();
+			this.expr.checkSignatures();
 			
-			this.signature.addFrom(this.expr.getSignature());
-
-			this.signature.add(new SignatureItemRead(this.expr.getDataGroup()));
-			this.signature.add(new SignatureItemWrite(this.name.getDataGroup()));
-			this.signature.add(new SignatureItemMerge(this.name.getDataGroup(), this.expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemWrite(this.name.getDataGroup()));
+			this.signature.addItem(new SignatureItemMerge(this.name.getDataGroup(), this.expr.getDataGroup()));
 		}
+	}
+	
+	@Override
+	public Signature getFullSignature()
+	{
+		Signature sig = new Signature();
+		
+		sig.addAll(this.signature);
+		sig.addAll(this.name.getFullSignature());
+		
+		if (this.expr != null)
+			sig.addAll(this.expr.getFullSignature());
+		
+		return sig;
 	}
 
 	@Override
-	public int optimize()
+	public void checkDependencies(DependencyStack stack)
 	{
-		int sum = super.optimize();
-	
-		sum += this.name.optimize();
-
 		if (this.expr != null)
-			sum += this.expr.optimize();
-
-		return sum;
-	}
-
-	public void preTranslate(EMethodDeclaration owner)
-	{
-		this.name.preTranslate(owner.getTask());		
-	}
-	
-	public void translate(List<CompilationUnit> cus)
-	{
-		// TODO
-		System.out.println("TODO: SingleVariableDecl translate (initializer expr)");
+			this.expr.checkDependencies(stack);
+		
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+		
+		for (EASTExecutableNode node : deps)
+		{
+			if (node.equals(this.expr))
+				this.strongDependencies.add(node);
+			else
+				this.weakDependencies.add(node);
+		}
 	}
 }

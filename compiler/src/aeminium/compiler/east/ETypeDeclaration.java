@@ -1,82 +1,85 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
-public class ETypeDeclaration extends EAbstractTypeDeclaration
+import aeminium.compiler.signature.SimpleDataGroup;
+
+public class ETypeDeclaration extends EASTNode
 {
-	private final TypeDeclaration origin;
-	private final List<EFieldDeclaration> fields;
-	private final List<EMethodDeclaration> methods;
+	protected final ECompilationUnit cu;
+	
+	protected final ArrayList<EFieldDeclaration> fields;
+	protected final ArrayList<EMethodDeclaration> methods;
 
-	ETypeDeclaration(EAST east, TypeDeclaration origin)
+	/**
+	 * used in static contexts
+	 */
+	protected final SimpleDataGroup staticDataGroup;
+	
+	/**
+	 * used as a placeholder for object contexts
+	 */
+	protected final SimpleDataGroup thisDataGroup;
+	
+	protected final ITypeBinding binding;
+	
+	public ETypeDeclaration(EAST east, TypeDeclaration original, ECompilationUnit cu)
 	{
-		super(east);
-		this.origin = origin;
+		super(east, original);
 
-		/* FIXME: not suported yet */
-		assert(!origin.isInterface());
-		assert(origin.getSuperclassType() == null);
-
+		this.cu = cu;
+		
+		this.binding = original.resolveBinding();
+		this.east.addNode(this.binding, this);
+		
+		this.staticDataGroup = new SimpleDataGroup("static " + original.getName());
+		this.thisDataGroup = new SimpleDataGroup("this " + original.getName());
+		
 		this.fields = new ArrayList<EFieldDeclaration>();
-		for (Object field : origin.getFields())
-			this.fields.add(this.east.extend((FieldDeclaration) field));
+		for (Object field : original.getFields())
+			this.fields.add(EFieldDeclaration.create(this.east, (FieldDeclaration) field, this));
 
 		this.methods = new ArrayList<EMethodDeclaration>();
-		for (Object method : origin.getMethods())
-			this.methods.add(this.east.extend((MethodDeclaration) method));
+		for (Object method : original.getMethods())
+			this.methods.add(EMethodDeclaration.create(this.east, (MethodDeclaration) method, this));
+
 	}
 
-	@Override
-	public void analyse()
+	/* Factory */
+	public static ETypeDeclaration create(EAST east, TypeDeclaration original, ECompilationUnit cu)
 	{
-		for (EFieldDeclaration field : this.fields)
-			field.analyse();
-
-		for (EMethodDeclaration method : this.methods)
-			method.analyse();
+		return new ETypeDeclaration(east, original, cu);
 	}
 	
 	@Override
-	public int optimize()
+	public TypeDeclaration getOriginal()
 	{
-		int sum = 0;
-		
-		for (EFieldDeclaration field : this.fields)
-			sum += field.optimize();
-
-		for (EMethodDeclaration method : this.methods)
-			sum += method.optimize();
-		
-		return sum;
+		return (TypeDeclaration) this.original;
 	}
 	
-	public void preTranslate()
+	@Override
+	public void checkSignatures()
 	{
 		for (EFieldDeclaration field : this.fields)
-			field.preTranslate();
-
+			field.checkSignatures();
+		
 		for (EMethodDeclaration method : this.methods)
-			method.preTranslate();
+			method.checkSignatures();
 	}
-	
-	@SuppressWarnings("unchecked")
-	public TypeDeclaration translate(List<CompilationUnit> cus)
+
+	public void checkDependencies()
 	{
-		AST ast = this.east.getAST();
-
-		TypeDeclaration type = ast.newTypeDeclaration();
-		type.setName((SimpleName) ASTNode.copySubtree(ast, this.origin.getName()));
-
+		// TODO/FIXME how to handle dependencies between constructors and field initializers?
+		
 		for (EFieldDeclaration field : this.fields)
-			type.bodyDeclarations().add(field.translate(cus));
-
+			field.checkDependencies();
+		
 		for (EMethodDeclaration method : this.methods)
-			type.bodyDeclarations().add(method.translate(cus));
-
-		return type;
+			method.checkDependencies();
 	}
-
 }

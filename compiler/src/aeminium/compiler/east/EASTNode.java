@@ -1,26 +1,24 @@
 package aeminium.compiler.east;
 
-import aeminium.compiler.datagroup.Signature;
+import org.eclipse.jdt.core.dom.ASTNode;
 
 public abstract class EASTNode
 {
+	protected final ASTNode original;
 	protected final EAST east;
-	protected final Signature signature;
-
-	EASTNode(EAST east)
+	
+	public EASTNode(EAST east, ASTNode original)
 	{
 		this.east = east;
-
-		this.signature = new Signature();
-	}
-
-	public Signature getSignature()
-	{
-		return this.signature;
+		this.original = original;
 	}
 	
-	public abstract void analyse();
-	public abstract int optimize();
-	// public abstract void preTranslate();
-	// public abstract void translate();
+	public EAST getEAST()
+	{
+		return this.east;
+	}
+	
+	public abstract ASTNode getOriginal();	
+	
+	public abstract void checkSignatures();
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="aeminium-benchmark" basedir="." default="run">
+<project name="aeminium-tests" basedir="." default="run">
 
 	<!-- aeminium.compiler -->
 	<property name="compiler.src.dir" value="compiler/src" />
@@ -14,11 +14,11 @@
 	<property name="runtime.lib.dir" value="runtime/lib" />
 	<property name="runtime.jar" value="runtime/runtime.jar" />
 
-	<!-- aeminium.benchmark -->
-	<property name="benchmark.src.dir" value="benchmark/src" />
-	<property name="benchmark.target.dir" value="benchmark/target" />
-	<property name="benchmark.build.dir" value="benchmark/build" />
-	<property name="benchmark.lib.dir" value="benchmark/lib" />
+	<!-- aeminium.tests -->
+	<property name="tests.src.dir" value="tests/src" />
+	<property name="tests.target.dir" value="tests/target" />
+	<property name="tests.build.dir" value="tests/build" />
+	<property name="tests.lib.dir" value="tests/lib" />
 
 	<path id="compiler.classpath">
 		<fileset dir="${compiler.lib.dir}" includes="**/*.jar" />
@@ -28,9 +28,9 @@
 		<fileset dir="${runtime.lib.dir}" includes="**/*.jar" />
 	</path>
 
-	<path id="benchmark.classpath">
-		<fileset dir="${benchmark.lib.dir}" includes="**/*.jar" />
-		<pathelement location="${benchmark.build.dir}" />
+	<path id="tests.classpath">
+		<fileset dir="${tests.lib.dir}" includes="**/*.jar" />
+		<pathelement location="${tests.build.dir}" />
 	</path>
 
 	<target name="compile.compiler.classes">
@@ -50,13 +50,6 @@
             <zipfileset src="jar-in-jar-loader.zip"/>
 
             <fileset dir="${compiler.build.dir}"/>
-
-			<!--
-            <zipfileset dir="${compiler.lib.dir}" includes="commons-logging-1.1.1.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="commons-lang-2.5.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="commons-configuration-1.6.jar"/>
-            <zipfileset dir="${compiler.lib.dir}" includes="commons-collections-3.2.1.jar"/>
-			-->
 
             <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.osgi_3.6.2.R36x_v20110210.jar"/>
             <zipfileset dir="${compiler.lib.dir}" includes="org.eclipse.jdt.core_3.6.2.v_A76_R36x.jar"/>
@@ -92,30 +85,30 @@
 
 	<target name="translate.tests" depends="compile.compiler,compile.runtime">
 		<delete>
-			<fileset dir="${benchmark.target.dir}" includes="**"/>
+			<fileset dir="${tests.target.dir}" includes="**"/>
 		</delete>
 		<java jar="${compiler.jar}" fork="true">
-			<arg value="${benchmark.src.dir}" />
-			<arg value="${benchmark.target.dir}" />
+			<arg value="${tests.src.dir}" />
+			<arg value="${tests.target.dir}" />
 			<jvmarg value="-ea" />
 		</java>
 	</target>
 
 	<target name="precompile.tests" depends="translate.tests">
-		<copy todir="${benchmark.target.dir}/aeminium/runtime" >
+		<copy todir="${tests.target.dir}/aeminium/runtime" >
 			<fileset dir="${compiler.dist.dir}/"/>
 		</copy>
-		<copy file="${runtime.jar}" todir="${benchmark.lib.dir}" />
+		<copy file="${runtime.jar}" todir="${tests.lib.dir}" />
 
-		<mkdir dir="${benchmark.build.dir}" />
+		<mkdir dir="${tests.build.dir}" />
 	</target>
 
 	<target name="compile.tests" depends="precompile.tests">
-		<javac srcdir="${benchmark.target.dir}" destdir="${benchmark.build.dir}" classpathref="benchmark.classpath" includeantruntime="false" debug="true"/>
+		<javac srcdir="${tests.target.dir}" destdir="${tests.build.dir}" classpathref="tests.classpath" includeantruntime="false" debug="true"/>
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<java classname="aeminium.benchmark.tests.Integrate" classpathref="benchmark.classpath" dir="${benchmark.build.dir}" fork="true"/>
+		<java classname="aeminium.compiler.tests.Simple" classpathref="tests.classpath" dir="${tests.build.dir}" fork="true"/>
 	</target>
 
 </project>

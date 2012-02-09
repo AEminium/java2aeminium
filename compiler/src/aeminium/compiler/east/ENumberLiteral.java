@@ -1,47 +1,58 @@
 package aeminium.compiler.east;
 
-import java.util.List;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 
-import org.eclipse.jdt.core.dom.*;
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.ConstantDataGroup;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SimpleDataGroup;
 
 public class ENumberLiteral extends EExpression
 {
-	NumberLiteral origin;
-
-	ENumberLiteral(EAST east, NumberLiteral origin)
+	protected final DataGroup datagroup;
+	
+	public ENumberLiteral(EAST east, NumberLiteral original, EASTDataNode scope)
 	{
-		super(east);
-
-		this.origin = origin;
-		this.datagroup = new ConstantDataGroup(this);
+		super(east, original, scope);
+		
+		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
-	@Override
-	public void analyse()
+	/* factory */
+	public static ENumberLiteral create(EAST east, NumberLiteral original, EASTDataNode scope)
 	{
-		super.analyse();
-	}
-
-	@Override
-	public int optimize()
-	{
-		this.root = false;
-		return 0;
+		return new ENumberLiteral(east, original, scope);
 	}
 	
 	@Override
-	public void preTranslate(Task parent)
+	public DataGroup getDataGroup()
 	{
-		// Nothing to do here
+		return this.datagroup;
 	}
 
 	@Override
-	public Expression translate(List<CompilationUnit> cus)
+	public NumberLiteral getOriginal()
 	{
-		AST ast = this.east.getAST();
-
-		return (NumberLiteral) ASTNode.copySubtree(ast, this.origin);
+		return (NumberLiteral) this.original;
 	}
+
+	@Override
+	public void checkSignatures()
+	{
+		// Nothing
+	}
+
+	@Override
+	public Signature getFullSignature()
+	{
+		// Nothing
+		return new Signature();
+	}
+
+	@Override
+	public void checkDependencies(DependencyStack stack)
+	{
+		// Nothing
+	}
+
 }

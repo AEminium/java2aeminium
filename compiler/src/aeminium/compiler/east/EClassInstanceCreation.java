@@ -1,121 +1,106 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
-import org.eclipse.jdt.core.dom.*;
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.SignatureItem;
-import aeminium.compiler.datagroup.SignatureItemRead;
-import aeminium.compiler.datagroup.SignatureItemWrite;
-import aeminium.compiler.datagroup.TemporaryDataGroup;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.Type;
+
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SignatureItemDeferred;
+import aeminium.compiler.signature.SignatureItemWrite;
+import aeminium.compiler.signature.SimpleDataGroup;
 
 public class EClassInstanceCreation extends EExpression
 {
-	ClassInstanceCreation origin;
-	List<EExpression> args;
-
-	EClassInstanceCreation(EAST east, ClassInstanceCreation origin)
+	protected final DataGroup datagroup;
+	
+	protected final Type type;
+	protected final IMethodBinding constructor;
+	
+	protected final ArrayList<EExpression> arguments;
+	
+	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope)
 	{
-		super(east);
-
-		this.origin = origin;
-		this.args = new ArrayList<EExpression>();
-
-		for (Object arg : origin.arguments())
-			this.args.add(this.east.extend((Expression) arg));
+		super(east, original, scope);
+		
+		this.type = original.getType();
+		this.constructor = original.resolveConstructorBinding();
+		
+		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("new " + this.type.toString()));
+		
+		this.arguments = new ArrayList<EExpression>();
+		for (Object arg : original.arguments())
+			this.arguments.add(EExpression.create(east, (Expression) arg, this));
 	}
 
-	@Override
-	public void analyse()
+	/* factory */
+	public static EClassInstanceCreation create(EAST east, ClassInstanceCreation original, EASTDataNode scope)
 	{
-		super.analyse();
-
-		for (EExpression arg : this.args)
-			arg.analyse();
-
-		// TODO check if the constructor being used has @AEminium
-		// if not, this call must be serialized, or at least run a serial version in a task that is paralell.
-
-		this.datagroup = new TemporaryDataGroup(this);
-		
-		for (EExpression arg : this.args)
-		{
-			this.signature.addFrom(arg.getSignature());
-			this.signature.add(new SignatureItemRead(arg.getDataGroup()));
-		}
-		
-		this.signature.add(new SignatureItemWrite(this.getDataGroup()));
- 	}
-
-	@Override
-	public void preTranslate(Task parent)
-	{
-		if (this.isRoot())
-			this.task = parent.newStrongDependency("class");
-		else
-			this.task = parent;
-		
-		for (EExpression arg : this.args)
-			arg.preTranslate(this.task);
+		return new EClassInstanceCreation(east, original, scope);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public Expression translate(List<CompilationUnit> cus)
+	public DataGroup getDataGroup()
 	{
-		AST ast = this.east.getAST();
-
-		assert(this.isRoot());
-
-		if (!this.isRoot())
-			return this.build(cus);
-
-		cus.add(this.task.getCompilationUnit());
-		
-		/* in self task */
-		this.task.addField((Type) ASTNode.copySubtree(ast, this.origin.getType()), "ae_ret", true);
-
-		Block execute = ast.newBlock();
-
-		FieldAccess this_ret = ast.newFieldAccess();
-		this_ret.setExpression(ast.newThisExpression());
-		this_ret.setName(ast.newSimpleName("ae_ret"));
-
-		Assignment assign = ast.newAssignment();
-		assign.setLeftHandSide(this_ret);
-		assign.setRightHandSide(this.build(cus));
-		execute.statements().add(ast.newExpressionStatement(assign));
-
-		this.task.setExecute(execute);
-
-		MethodDeclaration constructor = this.task.createConstructor();
-		this.task.addConstructor(constructor);
-
-		/* in parent task */
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName(this.task.getName()));
-
-		FieldAccess ret = ast.newFieldAccess();
-		ret.setExpression(access);
-		ret.setName(ast.newSimpleName("ae_ret"));
-
-		return ret;
+		return this.datagroup;
 	}
 
-	@SuppressWarnings("unchecked")
-	public Expression build(List<CompilationUnit> cus)
+	@Override
+	public ClassInstanceCreation getOriginal()
 	{
-		AST ast = this.east.getAST();
+		return (ClassInstanceCreation) this.original;
+	}
+	
+	@Override
+	public void checkSignatures()
+	{
+		for (EExpression arg : this.arguments)
+			arg.checkSignatures();
 
-		ClassInstanceCreation create = ast.newClassInstanceCreation();
-		create.setType((Type) ASTNode.copySubtree(ast, this.origin.getType()));
+		EMethodDeclaration method = ((EMethodDeclaration) this.east.getNode(this.constructor));
+		
+		ArrayList<DataGroup> datagroupsArgs = new ArrayList<DataGroup>();
+		for (EExpression arg : this.arguments)
+			datagroupsArgs.add(arg.getDataGroup());
+		
+		this.signature.addItem(new SignatureItemWrite(this.getDataGroup()));
+		this.signature.addItem(new SignatureItemDeferred(method, this.getDataGroup(), null, datagroupsArgs));
+	}
+	
+	@Override
+	public Signature getFullSignature()
+	{
+		Signature sig = new Signature();
+		
+		sig.addAll(this.signature);
+		
+		for (EExpression arg : this.arguments)
+			sig.addAll(arg.getFullSignature());
 
-		// TODO calculate constructor read/write operations on parameters and "globals" (statics)
-		for (EExpression arg: this.args)
-			create.arguments().add(arg.translate(cus));
+		return sig;
+	}
 
-		return create;
+	@Override
+	public void checkDependencies(DependencyStack stack)
+	{
+		for (EExpression arg : this.arguments)
+			arg.checkDependencies(stack);
+		
+		this.signature.closure();
+		
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+		
+		for (EASTExecutableNode node : deps)
+		{
+			if (this.arguments.contains(node))
+				this.strongDependencies.add(node);
+			else
+				this.weakDependencies.add(node);
+		}
 	}
 }

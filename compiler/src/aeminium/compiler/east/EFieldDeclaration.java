@@ -1,72 +1,69 @@
 package aeminium.compiler.east;
 
-import java.util.List;
+import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.Modifier.*;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.Signature;
 
 public class EFieldDeclaration extends EBodyDeclaration
 {
-	private final EAST east;
-	private final FieldDeclaration origin;
-
-	EFieldDeclaration(EAST east, FieldDeclaration origin)
-	{
-		super(east);
-
-		this.east = east;
-		this.origin = origin;
-	}
-
-	@Override
-	public void analyse()
-	{
-		/* TODO: FieldDeclaration. analyse */
-	}
-
-	@Override
-	public int optimize()
-	{
-		/* TODO: FieldDeclaration.optimize */
-		return 0;
-	}
+	protected final ETypeDeclaration type;
+	protected final Type dataType;
+	protected final ArrayList<EVariableDeclarationFragment> fragments;
 	
-	public void preTranslate()
+	public EFieldDeclaration(EAST east, FieldDeclaration original, ETypeDeclaration type)
 	{
-		/* TODO: FieldDeclaration.preTranslate */
-		System.err.println("TODO: FieldDeclaration.preTranslate");
-	}
-	
-	@SuppressWarnings("unchecked")
-	public FieldDeclaration translate(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
+		super(east, original, type);
+
+		this.type = type;
+		this.dataType = original.getType();
+
+		this.fragments = new ArrayList<EVariableDeclarationFragment>();
 		
-		FieldDeclaration field = (FieldDeclaration) ASTNode.copySubtree(ast, this.origin);
+		for (Object frag : original.fragments())
+			this.fragments.add(EVariableDeclarationFragment.create(this.east, (VariableDeclarationFragment) frag, this, this.dataType));
+	}
 
-		Modifier priv = EFieldDeclaration.getModifier(field, ModifierKeyword.PRIVATE_KEYWORD);
-		Modifier pub = EFieldDeclaration.getModifier(field, ModifierKeyword.PUBLIC_KEYWORD);
-		Modifier vol = EFieldDeclaration.getModifier(field, ModifierKeyword.VOLATILE_KEYWORD);
-		Modifier fin = EFieldDeclaration.getModifier(field, ModifierKeyword.FINAL_KEYWORD);
-
-		if (priv != null)
-			field.modifiers().remove(priv);
-
-		if (pub == null)
-			field.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-
-		if (vol == null && fin == null)
-			field.modifiers().add(ast.newModifier(ModifierKeyword.VOLATILE_KEYWORD));
-
-		return field;
+	/* Factory */
+	public static EFieldDeclaration create(EAST east, FieldDeclaration original, ETypeDeclaration type)
+	{
+		return new EFieldDeclaration(east, original, type);
 	}
 	
-	public static Modifier getModifier(FieldDeclaration field, ModifierKeyword kw)
+	@Override
+	public FieldDeclaration getOriginal()
 	{
-		for (Object mod : field.modifiers())
-			if (((Modifier) mod).getKeyword() == kw)
-				return ((Modifier) mod);
+		return (FieldDeclaration) this.original;
+	}
+	
+	@Override
+	public void checkSignatures()
+	{
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.checkSignatures();
+	}
 
-		return null;
+	@Override
+	public Signature getFullSignature()
+	{
+		Signature sig = new Signature();
+		
+		sig.addAll(this.signature);
+		
+		for (EVariableDeclarationFragment frag : this.fragments)
+			sig.addAll(frag.getFullSignature());
+
+		return sig;
+	}
+	
+	@Override
+	public void checkDependencies(DependencyStack stack)
+	{
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.checkDependencies(stack);
 	}
 }

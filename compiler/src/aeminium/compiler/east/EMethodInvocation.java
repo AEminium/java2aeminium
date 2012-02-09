@@ -1,191 +1,121 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.DataGroup;
-import aeminium.compiler.datagroup.SignatureItemInvocation;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SignatureItemDeferred;
+import aeminium.compiler.signature.SimpleDataGroup;
 
 public class EMethodInvocation extends EExpression
 {
-	private final MethodInvocation origin;
-
-	private final EExpression expr;
-	private final List<EExpression> args;
-
-	EMethodDeclaration declaration;
-	ITypeBinding type;
-	IMethodBinding binding;
+	protected final IMethodBinding binding;
 	
-	EMethodInvocation(EAST east, MethodInvocation origin)
+	protected final DataGroup datagroup;
+
+	protected final EExpression expr;
+	protected final ArrayList<EExpression> arguments;
+	
+	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope)
 	{
-		super(east);
-
-		this.origin = origin;
-
-		this.expr = this.east.extend(origin.getExpression());
-		this.args = new ArrayList<EExpression>();
-
-		for (Object arg : origin.arguments())
-			this.args.add(this.east.extend((Expression) arg));
+		super(east, original, scope);
+		
+		this.binding = original.resolveMethodBinding();
+		
+		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("invoke " + original.getName().toString()));
+		
+		if (original.getExpression() == null)
+			this.expr = null;
+		else
+			this.expr = EExpression.create(this.east, original.getExpression(), scope);
+		
+		this.arguments = new ArrayList<EExpression>();
+		for (Object arg : original.arguments())
+			this.arguments.add(EExpression.create(this.east, (Expression) arg, scope));
 	}
 
-	@Override
-	public void analyse()
+	/* factory */
+	public static EMethodInvocation create(EAST east, MethodInvocation invoke, EASTDataNode scope)
 	{
-		super.analyse();
-
-		this.expr.analyse();
-		
-		for (EExpression arg : this.args)
-			arg.analyse(); 
-		
-		this.binding = this.origin.resolveMethodBinding();
-		this.type = this.origin.resolveTypeBinding();
-		this.declaration = (EMethodDeclaration) this.east.getNode(this.east.resolveName(this.binding));
-
-
-		this.signature.addFrom(this.expr.getSignature());
-		for (EExpression arg : this.args)
-			this.signature.addFrom(arg.getSignature());
-		
-		this.signature.add(new SignatureItemInvocation(this));
-		/*
-		 * DO NOT add arguments (or even "this") as a read signature
-		 * after replacing arguments they will have their respective read/writes
-		 * if they occur at all
-		*/
-	}
-
-	@Override
-	public int optimize()
-	{
-		int sum = super.optimize();
-		
-		sum += this.expr.optimize();
-		for (EExpression arg : this.args)
-			sum += arg.optimize();
-		
-		return sum;
+		return new EMethodInvocation(east, invoke, scope);
 	}
 	
 	@Override
-	public void preTranslate(Task parent)
+	public MethodInvocation getOriginal()
 	{
-		if (this.isRoot())
-			this.task = parent.newStrongDependency("invoke");
-
-		this.expr.preTranslate(this.task);
-		
-		for (EExpression arg : this.args)
-			arg.preTranslate(this.task);
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Override
-	public Expression translate(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
-
-		assert(this.isRoot());
-
-		if (!this.isRoot())
-			return this.build(cus);
-
-		cus.add(this.task.getCompilationUnit());
-
-		/* in self task */
-		Type ret_type = this.east.buildTypeFromBinding(this.type);
-
-		if (!this.isSequential())
-		{
-			this.task.setInvocation();
-
-			if (ret_type instanceof PrimitiveType)
-				ret_type = this.east.boxPrimitiveType((PrimitiveType) ret_type);
-
-			ParameterizedType caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody")));
-			caller_type.typeArguments().add((Type) ASTNode.copySubtree(ast, ret_type));
-
-			this.task.setSuperClass(caller_type);
-		}
-
-		Block execute = ast.newBlock();
-		execute.statements().add(ast.newExpressionStatement(this.build(cus)));
-		task.setExecute(execute);
-
-		MethodDeclaration constructor = task.createConstructor();
-		task.addConstructor(constructor);
-
-		/* in parent task */
-		if ((ret_type instanceof PrimitiveType) &&
-			((PrimitiveType) ret_type).getPrimitiveTypeCode() == PrimitiveType.VOID)
-			return null;
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName(this.task.getName()));
-
-		FieldAccess ret = ast.newFieldAccess();
-		ret.setExpression(access);
-		ret.setName(ast.newSimpleName("ae_ret"));
-
-		return ret;
-	}
-
-	public boolean isSequential()
-	{
-		String method_name = this.east.resolveName(this.binding);
-		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
-
-		return method == null || !method.isAEminium();
-	}
-
-	@SuppressWarnings("unchecked")
-	public Expression buildSequential(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
-
-		MethodInvocation invoke = ast.newMethodInvocation();
-		invoke.setExpression(this.expr.translate(cus));
-
-		for (EExpression arg : this.args)
-			invoke.arguments().add(arg.translate(cus));
-
-		return invoke;
-	}
-
-	@SuppressWarnings("unchecked")
-	public Expression build(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
-
-		if (this.isSequential())
-			return this.buildSequential(cus);
-
-		String method_name = this.east.resolveName(this.binding);
-		EMethodDeclaration method = (EMethodDeclaration) this.east.getNode(method_name);
-
-		ClassInstanceCreation create = ast.newClassInstanceCreation();
-		create.setType(ast.newSimpleType(ast.newSimpleName(method.getTask().getType())));	
-		
-		create.arguments().add(ast.newThisExpression());
-
-		if (!method.isStatic())
-			create.arguments().add(this.expr.translate(cus));
-
-		for (EExpression arg : this.args)
-			create.arguments().add(arg.translate(cus));
-
-		return create;
+		return (MethodInvocation) this.original;
 	}
 
 	@Override
 	public DataGroup getDataGroup()
 	{
-		return this.declaration.getReturnDataGroup();
+		return this.datagroup;
+	}
+	
+	@Override
+	public void checkSignatures()
+	{
+		if (this.expr != null)
+			this.expr.checkSignatures();
+		
+		for (EExpression arg : this.arguments)
+			arg.checkSignatures();
+		
+		EMethodDeclaration method = ((EMethodDeclaration) this.east.getNode(this.binding));
+		
+		ArrayList<DataGroup> dgsArgs = new ArrayList<DataGroup>();
+		for (EExpression arg : this.arguments)
+			dgsArgs.add(arg.getDataGroup());
+		
+		DataGroup dgExpr = this.expr == null ? null : this.expr.getDataGroup();
+
+		this.signature.addItem(new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs));
+	}
+
+	@Override
+	public Signature getFullSignature()
+	{
+		Signature sig = new Signature();
+
+		sig.addAll(this.signature);
+		
+		if (this.expr != null)
+			sig.addAll(this.expr.getFullSignature());
+		
+		for (EExpression arg : this.arguments)
+			sig.addAll(arg.getFullSignature());
+
+		return sig;
+	}
+	
+	@Override
+	public void checkDependencies(DependencyStack stack)
+	{
+		if (this.expr != null)
+			this.expr.checkDependencies(stack);
+		
+		for (EExpression arg : this.arguments)
+			arg.checkDependencies(stack);
+		
+		Signature closure = this.signature.closure();
+		
+		System.out.println("Closure: ");
+		System.out.println(closure);
+		
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
+		
+		for (EASTExecutableNode node : deps)
+		{
+			if (node.equals(this.expr) || this.arguments.contains(node))
+				this.strongDependencies.add(node);
+			else
+				this.weakDependencies.add(node);
+		}
 	}
 }

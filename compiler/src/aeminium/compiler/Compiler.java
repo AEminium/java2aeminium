@@ -13,7 +13,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.eclipse.jdt.core.dom.*;
-import aeminium.compiler.east.*;
+
+import aeminium.compiler.east.EAST;
+import aeminium.compiler.east.ECompilationUnit;
 
 public class Compiler
 {
@@ -24,12 +26,8 @@ public class Compiler
 	String[] classPath;
 	String[] sourcePath;
 
-	Map<String, ECompilationUnit> units;
-
 	Compiler(String source, String target)
 	{
-		this.units = new HashMap<String, ECompilationUnit>();
-
 		this.source = source;
 		this.target = target;
 
@@ -62,21 +60,16 @@ public class Compiler
 
 			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
-			east.extend(cu);
+			ECompilationUnit.create(east, cu);
 		}
 
-		east.analyse();
+		east.checkSignatures();
+		east.checkDependencies();
 		
-		int optimizations;
-		do {
-			optimizations = east.optimize();
-			System.out.println("Optimized: "+optimizations);
-		} while (optimizations > 0);
+		// TODO work here
 		
-		east.preTranslate();
-
 		// Save units
-		for (CompilationUnit unit : east.translate())
+		/*for (CompilationUnit unit : east.translate())
 		{
 			AST ast = east.getAST();
 
@@ -89,7 +82,7 @@ public class Compiler
 			unit.imports().add(list);
 
 			this.save(unit);
-		}
+		}*/
 	}
 
 	/**

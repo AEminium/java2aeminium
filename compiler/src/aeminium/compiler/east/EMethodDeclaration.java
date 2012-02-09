@@ -1,224 +1,132 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
-import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
-
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.ReturnDataGroup;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SignatureItem;
+import aeminium.compiler.signature.SignatureItemRead;
+import aeminium.compiler.signature.SimpleDataGroup;
 
 public class EMethodDeclaration extends EBodyDeclaration
 {
-	private final MethodDeclaration origin;
+	protected final IMethodBinding binding;
+
+	protected final ArrayList<ESingleVariableDeclaration> parameters;
+	protected final EBlock body;
 	
-	private final EBlock body;
-	private final List<ESingleVariableDeclaration> parameters;
-
-	private final String name;
-	private final boolean aeminium;
-
-	private IMethodBinding binding;
-	private Task task;
-
-	private final ReturnDataGroup returnDatagroup;
+	protected final DataGroup returnDataGroup;
 	
-	EMethodDeclaration(EAST east, MethodDeclaration origin)
+	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type)
 	{
-		super(east);
+		super(east, original, type);
+		
+		this.returnDataGroup = this.getDataGroup().append(new SimpleDataGroup("ret " + original.getName().toString()));
 
-		this.origin = origin;
-
-		AbstractTypeDeclaration parent = (AbstractTypeDeclaration) this.origin.getParent();
-		this.name = parent.getName().toString() + "_" + this.origin.getName().toString();
-
-		if (this.getModifier("@AEminium") != null)
-		{
-			this.origin.modifiers().remove(this.getModifier("@AEminium"));
-			this.aeminium = true;
-		} else
-			this.aeminium = false;
-
-		Block block = origin.getBody();
-		assert(block != null);
-
-		this.body = this.east.extend(block);
-
+		this.binding = original.resolveBinding();
+		
+		this.east.addNode(this.binding, this);
+		
 		this.parameters = new ArrayList<ESingleVariableDeclaration>();
-		for (Object param : this.origin.parameters())
-			this.parameters.add(this.east.extend((SingleVariableDeclaration) param));
+		for (Object param : original.parameters())
+			this.parameters.add(ESingleVariableDeclaration.create(this.east, (SingleVariableDeclaration) param, this));
+		
+		this.body = EBlock.create(this.east, (Block) original.getBody(), this, this);
+	}
 
-		this.returnDatagroup = new ReturnDataGroup(this);
+	/* factory */
+	public static EMethodDeclaration create(EAST east, MethodDeclaration method, ETypeDeclaration type)
+	{
+		return new EMethodDeclaration(east, method, type);
 	}
 
 	@Override
-	public void analyse()
+	public MethodDeclaration getOriginal()
 	{
-		this.binding = this.origin.resolveBinding();
-		this.east.putNode(this.east.resolveName(origin.resolveBinding()), this);
-
+		return (MethodDeclaration) this.original;
+	}
+	
+	@Override
+	public void checkSignatures()
+	{
 		for (ESingleVariableDeclaration param : this.parameters)
-			param.analyse();
-
-		this.body.analyse();
-
-		this.signature.addFrom(this.body.getSignature());
-		// TODO: add from parameters?
+			param.checkSignatures();
 		
-		System.err.println("Signature for " + this.origin.getName());
-		System.err.println(this.signature);
+		this.body.checkSignatures();
 	}
 
 	@Override
-	public int optimize()
+	public Signature getFullSignature()
 	{
-		int sum = this.body.optimize();
-
+		Signature sig = new Signature();
+		
+		sig.addAll(this.signature);
+		
 		for (ESingleVariableDeclaration param : this.parameters)
-			sum += param.optimize();
-		
-		return sum;
-	}
+			sig.addAll(param.getFullSignature());
 
-	public void preTranslate()
-	{
-		if (this.aeminium)
-		{
-			this.task = new Task(this.east, this.name, (CompilationUnit) this.origin.getRoot());
-			this.body.preTranslate(this.task);
+		sig.addAll(this.body.getFullSignature());
 		
-			for (ESingleVariableDeclaration param : this.parameters)
-				param.preTranslate(this);	
-		}
+		return sig;
 	}
 	
-	public MethodDeclaration translate(List<CompilationUnit> cus)
+	public Signature undefer(DataGroup dgRet, DataGroup dgThis, ArrayList<DataGroup> dgsArgs)
 	{
-		AST ast = this.east.getAST();
+		Signature sig = new Signature();
+		
+		for (int i = 0; i < this.parameters.size(); i++)
+			if (this.parameters.get(i).getOriginal().getType().isPrimitiveType())
+				sig.addItem(new SignatureItemRead(dgsArgs.get(i)));
 
-		if (this.aeminium)
+		outerLoop: for (SignatureItem item : this.getFullSignature().getItems())
 		{
-			this.buildClass(cus);
+			// don't propagate local variable changes
+			if (item.isLocalTo(this.body.getDataGroup()))
+				continue;
 
-			if (this.isMain())
-				return this.buildMain();
+			SignatureItem _item = item;
+
+			for (int i = 0; i < this.parameters.size(); i++)
+			{
+				// This item refers a read/write/merge to a parameter passed in by copy (native)
+				// it has no implications on outer dependencies and can be cut out
+				if (this.parameters.get(i).getOriginal().getType().isPrimitiveType()
+					&& item.isLocalTo(this.parameters.get(i).name.getDataGroup()))
+					continue outerLoop;
+
+				_item = _item.replace(this.parameters.get(i).name.getDataGroup(), dgsArgs.get(i));
+			}
+			
+			if (!this.isStatic())
+				_item = _item.replace(this.type.thisDataGroup, dgThis);
+
+			if (!this.isVoid())
+				_item = _item.replace(this.returnDataGroup, dgRet);
+			
+			sig.addItem(_item);
 		}
-
-		return (MethodDeclaration) ASTNode.copySubtree(ast, this.origin);
+		
+		return sig;
 	}
 
-	public boolean isMain()
+	@Override
+	public void checkDependencies(DependencyStack stack)
 	{
-		return (this.getModifier("static") != null) && this.origin.getName().toString().equals("main");
-	}
-
-	@SuppressWarnings("unchecked")
-	public void buildClass(List<CompilationUnit> cus)
-	{
-		Type this_type = null;
-		if (!this.isStatic())
-			this_type = this.east.buildTypeFromBinding(this.binding.getDeclaringClass());
-
-		Type ret_type = this.origin.getReturnType2();
-		if (ret_type instanceof PrimitiveType)
-		{
-			PrimitiveType ret_primitive = (PrimitiveType)ret_type;
-
-			if (ret_primitive.getPrimitiveTypeCode() != PrimitiveType.VOID)
-				ret_type = this.east.boxPrimitiveType(ret_primitive);
-		}
-
-		this.task.setMethodTask(ret_type, this_type, this.origin.parameters());
-
+		// is this needed?
 		for (ESingleVariableDeclaration param : this.parameters)
-			param.translate(cus);
-
-		task.setExecute(this.body.build(this.task, cus));
-
-		/* Create the constructor */
-		MethodDeclaration constructor = this.task.createConstructor();
-		this.task.addConstructor(constructor);
+			param.checkDependencies(stack);
 		
-		cus.add(this.task.getCompilationUnit());
-	}
-
-	@SuppressWarnings("unchecked")
-	public MethodDeclaration buildMain()
-	{
-		AST ast = this.east.getAST();
-		MethodDeclaration method = ast.newMethodDeclaration();
-		
-		method.setName((SimpleName) ASTNode.copySubtree(ast, this.origin.getName()));
-		method.parameters().addAll(ASTNode.copySubtrees(ast, this.origin.parameters()));
-
-		method.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
-		method.modifiers().add(ast.newModifier(ModifierKeyword.STATIC_KEYWORD));
-
-		Block body = ast.newBlock();
-
-		// AeminiumHelper.init();
-		MethodInvocation init = ast.newMethodInvocation();
-		init.setExpression(ast.newSimpleName("AeminiumHelper"));
-		init.setName(ast.newSimpleName("init"));
-
-		body.statements().add(ast.newExpressionStatement(init));
-
-		ClassInstanceCreation creation = ast.newClassInstanceCreation();
-		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getType())));
-		creation.arguments().add(ast.newNullLiteral());
-
-		for (Object arg : this.origin.parameters())
-			creation.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));
-
-		body.statements().add(ast.newExpressionStatement(creation));
-
-		// AeminiumHelper.shutdown();
-		MethodInvocation shutdown = ast.newMethodInvocation();
-		shutdown.setExpression(ast.newSimpleName("AeminiumHelper"));
-		shutdown.setName(ast.newSimpleName("shutdown"));
-
-		body.statements().add(ast.newExpressionStatement(shutdown));
-
-		method.setBody(body);
-
-		return method;
-	}
-
-	/**
-	 * Gets a modifier from a list by its common name
-	 * @param name The common name of the modifier (e.g.: "public", "static", "@AEminium")
-	 */
-	public IExtendedModifier getModifier(String name)
-	{
-		for (Object modifier : this.origin.modifiers())
-			if (modifier.toString().equals(name))
-				return (IExtendedModifier) modifier;
-
-		return null;
-	}
-
-	public boolean isAEminium()
-	{
-		return this.aeminium;
-	}
-
-	public boolean isStatic()
-	{
-		return this.getModifier("static") != null;
-	}
-
-	public Task getTask()
-	{
-		assert (this.task != null);
-		return this.task;
+		this.body.checkDependencies(stack);
 	}
 	
-	public ReturnDataGroup getReturnDataGroup()
+	public boolean isVoid()
 	{
-		return this.returnDatagroup;
+		return this.getOriginal().getReturnType2().toString().equals("void");
 	}
 }

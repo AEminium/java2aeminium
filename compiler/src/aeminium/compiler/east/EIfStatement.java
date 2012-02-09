@@ -1,139 +1,90 @@
 package aeminium.compiler.east;
 
-import java.util.List;
-import java.util.Arrays;
+import java.util.Set;
 
-import org.eclipse.jdt.core.dom.*;
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.SignatureItemRead;
+import org.eclipse.jdt.core.dom.IfStatement;
+
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SignatureItemRead;
 
 public class EIfStatement extends EStatement
 {
-	IfStatement origin;
-	EExpression expr;
-	EStatement then_stmt;
-	EStatement else_stmt;
-
-	EIfStatement(EAST east, IfStatement origin)
-	{
-		super(east);
-		this.origin = origin;
-
-		this.expr = this.east.extend((Expression) origin.getExpression());
-		this.then_stmt = this.east.extend(origin.getThenStatement());
-
-		if (this.origin.getElseStatement() != null)
-			this.else_stmt = this.east.extend(origin.getElseStatement());
-	}
+	protected final EExpression expr;
+	protected final EStatement thenStmt;
+	protected final EStatement elseStmt;
 	
-	@Override
-	public void analyse()
+	public EIfStatement(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method)
 	{
-		super.analyse();
-		this.expr.analyse();
-		this.then_stmt.analyse();
+		super(east, original, scope, method);
 
-		if (this.else_stmt != null)
-			this.else_stmt.analyse();
+		this.expr = EExpression.create(this.east, original.getExpression(), scope);
+		this.thenStmt = EStatement.create(this.east, original.getThenStatement(), scope, method);
 		
-		this.signature.addFrom(this.expr.getSignature());
-		this.signature.add(new SignatureItemRead(this.expr.getDataGroup()));
-		
-		this.signature.addFrom(this.then_stmt.getSignature());
-		
-		if (this.else_stmt != null)
-			this.signature.addFrom(this.else_stmt.getSignature());
-	}
-
-	@Override
-	public int optimize()
-	{
-		int sum = super.optimize();
-		
-		sum += this.expr.optimize();
-		sum += this.then_stmt.optimize();
-		
-		if (this.else_stmt != null)
-			sum += this.else_stmt.optimize();
-		
-		return sum;
-	}
-	
-	@Override
-	public void preTranslate(Task parent)
-	{
-		if (this.isRoot())
-			this.task = parent.newChild("if");
+		if (original.getElseStatement() == null)
+			this.elseStmt = null;
 		else
-			this.task = parent;
+			this.elseStmt = EStatement.create(this.east, original.getElseStatement(), scope, method);
+	}
+
+	/* factory */
+	public static EIfStatement create(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method)
+	{
+		return new EIfStatement(east, original, scope, method);
+	}
+
+	@Override
+	public IfStatement getOriginal()
+	{
+		return (IfStatement) this.original;
+	}
+
+	@Override
+	public void checkSignatures()
+	{
+		this.expr.checkSignatures();
 		
-		this.expr.preTranslate(this.task);
-		this.then_stmt.preTranslate(this.task);
+		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
 		
-		if (this.else_stmt != null)
-			this.else_stmt.preTranslate(this.task);
+		this.thenStmt.checkSignatures();
+		
+		if (this.elseStmt != null)
+			this.elseStmt.checkSignatures();
+	}
+
+	@Override
+	public Signature getFullSignature()
+	{
+		Signature sig = new Signature();
+
+		sig.addAll(this.signature);
+		sig.addAll(this.expr.getFullSignature());
+		sig.addAll(this.thenStmt.getFullSignature());
+		
+		if (this.elseStmt != null)
+			sig.addAll(this.elseStmt.getFullSignature());
+
+		return sig;
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public List<Statement> translate(List<CompilationUnit> cus)
+	public void checkDependencies(DependencyStack stack)
 	{
-		AST ast = this.east.getAST();
-
-		assert(this.isRoot());
-
-		if (!this.isRoot())
-			return this.build(cus);
-
-		cus.add(this.task.getCompilationUnit());
+		this.expr.checkDependencies(stack);
 		
-		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(cus));
-		this.task.setExecute(execute);
-
-		MethodDeclaration constructor = task.createConstructor();
-		this.task.addConstructor(constructor);
-
-		FieldAccess task_access = ast.newFieldAccess();
-		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName(this.task.getName()));
-
-		Assignment assign = ast.newAssignment();
-		assign.setLeftHandSide(task_access);
-		assign.setRightHandSide(this.task.create());
-
-		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
-	}
-
-	@SuppressWarnings("unchecked")
-	public List<Statement> build(List<CompilationUnit> cus)
-	{
-		AST ast = this.east.getAST();
-
-		IfStatement ifstmt = ast.newIfStatement();
-		ifstmt.setExpression(this.expr.translate(cus));
-
-		List<Statement> then_stmts = this.then_stmt.translate(cus);
-		if (then_stmts.size() > 1)
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+		
+		for (EASTExecutableNode node : deps)
 		{
-			Block then_block = ast.newBlock();
-			then_block.statements().addAll(then_stmts);
-			ifstmt.setThenStatement(then_block);
-		} else
-			ifstmt.setThenStatement(then_stmts.get(0));
-
-		if (this.else_stmt != null)
-		{
-			List<Statement> else_stmts = this.else_stmt.translate(cus);
-			if (else_stmts.size() > 1)
-			{
-				Block else_block = ast.newBlock();
-				else_block.statements().addAll(then_stmts);
-				ifstmt.setElseStatement(else_block);
-			} else
-				ifstmt.setElseStatement(else_stmts.get(0));
+			if (node.equals(this.expr))
+				this.strongDependencies.add(node);
+			else
+				this.weakDependencies.add(node);
 		}
-
-		return Arrays.asList((Statement)ifstmt);
+		
+		this.thenStmt.checkDependencies(stack);
+		
+		if (this.elseStmt != null)
+			this.elseStmt.checkDependencies(stack);
 	}
 }

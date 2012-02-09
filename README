@@ -1,20 +1,8 @@
-Benchmarking suite for the AEminium runtime.
-
-Developed in distinct phases:
-
-* Compiler
-	A java to java compiler that translates regular java (within limitations) to
-	AEminium Tasks and Runtime
-
-* Benchmark
-	An automated benchmarking script that lauches several sets of tests.
-	
 TODO:
-	conditional expression
-	
-	IfStatement and loops
-		handle return/continue/break
-		handle runtime variable dependency resolving
+	all EStatements and EExpressions
 
-	Read/Write dependencies
-		Update the weakDependecies of the SimpleName when a task is schedule (write permissions aswell as multiple reads)
+	register named nodes @ constructor phase
+	add node signatures @ the constructor phase
+	
+
+

@@ -1,105 +1,87 @@
 package aeminium.compiler.east;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Set;
 
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
-import aeminium.compiler.Task;
+import aeminium.compiler.DependencyStack;
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.Signature;
 
-public class EVariableDeclarationStatement extends EStatement
+public class EVariableDeclarationStatement extends EStatement implements EASTDataNode
 {
-	private final VariableDeclarationStatement origin;
-	private final List<EVariableDeclarationFragment> frags;
-
-	EVariableDeclarationStatement(EAST east, VariableDeclarationStatement origin)
+	protected final Type dataType;
+	protected final ArrayList<EVariableDeclarationFragment> fragments;
+	
+	protected final DataGroup datagroup;
+	
+	public EVariableDeclarationStatement(EAST east, VariableDeclarationStatement original, EASTDataNode scope, EMethodDeclaration method)
 	{
-		super(east);
+		super(east, original, scope, method);
 
-		this.origin = origin;
-		this.frags = new ArrayList<EVariableDeclarationFragment>();
-
-		for (Object frag : origin.fragments())
-			this.frags.add(this.east.extend((VariableDeclarationFragment) frag));
-	}
-
-	@Override
-	public void analyse()
-	{
-		for (EVariableDeclarationFragment frag : this.frags)
-			frag.analyse();
+		this.datagroup = scope.getDataGroup();
+		this.dataType = original.getType();
 		
-		for (EVariableDeclarationFragment frag : this.frags)
-			this.signature.addFrom(frag.getSignature());
+		this.fragments = new ArrayList<EVariableDeclarationFragment>();
+		for (Object frag : original.fragments())
+			this.fragments.add(EVariableDeclarationFragment.create(this.east, (VariableDeclarationFragment) frag, scope, this.dataType));
 	}
-
-	@Override
-	public int optimize()
+	
+	/* factory */
+	public static EVariableDeclarationStatement create(EAST east, VariableDeclarationStatement stmt, EASTDataNode scope, EMethodDeclaration method)
 	{
-		int sum = super.optimize();
-
-		for (EVariableDeclarationFragment frag : this.frags)
-			sum += frag.optimize();
-		
-		return sum;
+		return new EVariableDeclarationStatement(east, stmt, scope, method);
 	}
 	
 	@Override
-	public void preTranslate(Task parent)
+	public DataGroup getDataGroup()
 	{
-		if (this.isRoot())
-			this.task = parent.newChild("decl");
-		else
-			this.task = parent;
+		return this.datagroup;
+	}
+
+	@Override
+	public VariableDeclarationStatement getOriginal()
+	{
+		return (VariableDeclarationStatement) this.original;
+	}
 		
-		for (EVariableDeclarationFragment frag : this.frags)
-			frag.preTranslate(this);
+	@Override
+	public void checkSignatures()
+	{
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.checkSignatures();
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public List<Statement> translate(List<CompilationUnit> cus)
+	public Signature getFullSignature()
 	{
-		AST ast = this.east.getAST();
-
-		assert(this.isRoot());
-
-		if (!this.isRoot())
-			return this.build(cus);
-
-		cus.add(this.task.getCompilationUnit());
+		Signature sig = new Signature();
 		
-		Block execute = ast.newBlock();
-		execute.statements().addAll(this.build(cus));
-		this.task.setExecute(execute);
+		sig.addAll(this.signature);
+		
+		for (EVariableDeclarationFragment frag : this.fragments)
+			sig.addAll(frag.getFullSignature());
 
-		MethodDeclaration constructor = this.task.createConstructor();
-		this.task.addConstructor(constructor);
-
-		FieldAccess task_access = ast.newFieldAccess();
-		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName(this.task.getName()));
-
-		Assignment assign = ast.newAssignment();
-		assign.setLeftHandSide(task_access);
-		assign.setRightHandSide(this.task.create());
-
-		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
+		return sig;
 	}
-
-	public List<Statement> build(List<CompilationUnit> cus)
+	
+	@Override
+	public void checkDependencies(DependencyStack stack)
 	{
-		List<Statement> stmts = new ArrayList<Statement>();
-
-		for (EVariableDeclarationFragment frag : this.frags)
-			stmts.addAll(frag.translate(cus));
-
-		return stmts;
-	}
-
-	public Type getType()
-	{
-		return this.origin.getType();
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.checkDependencies(stack);
+		
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+		
+		for (EASTExecutableNode node : deps)
+		{
+			if (this.fragments.contains(node))
+				this.strongDependencies.add(node);
+			else
+				this.weakDependencies.add(node);
+		}
 	}
 }

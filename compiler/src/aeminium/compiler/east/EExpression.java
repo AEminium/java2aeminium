@@ -1,26 +1,36 @@
 package aeminium.compiler.east;
 
-import java.util.List;
-
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.Task;
-import aeminium.compiler.datagroup.DataGroup;
-
-public abstract class EExpression extends EASTDependentNode
+public abstract class EExpression extends EASTExecutableNode implements EASTDataNode
 {
-	protected DataGroup datagroup;
-
-	EExpression(EAST east)
+	protected final EASTDataNode scope;
+	
+	public EExpression(EAST east, Expression original, EASTDataNode scope)
 	{
-		super(east);
+		super(east, original);
+		
+		this.scope = scope;
 	}
-
-	public abstract void preTranslate(Task parent);
-	public abstract Expression translate(List<CompilationUnit> cus);
-
-	public DataGroup getDataGroup()
+	
+	public static EExpression create(EAST east, Expression expr, EASTDataNode scope)
 	{
-		return this.datagroup;
+		if (expr instanceof MethodInvocation)
+			return EMethodInvocation.create(east, (MethodInvocation) expr, scope);
+		
+		if (expr instanceof SimpleName)
+			return ESimpleNameExpression.create(east, (SimpleName) expr, scope);
+		
+		if (expr instanceof ClassInstanceCreation)
+			return EClassInstanceCreation.create(east, (ClassInstanceCreation) expr, scope);
+		
+		if (expr instanceof NumberLiteral)
+			return ENumberLiteral.create(east, (NumberLiteral) expr, scope);
+		
+		if (expr instanceof InfixExpression)
+			return EInfixExpression.create(east, (InfixExpression) expr, scope);
+		
+		System.err.println("Not implemented error: " + expr.getClass().getName());
+		return null;
 	}
 }
