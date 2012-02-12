@@ -22,6 +22,9 @@ public class EMethodInvocation extends EExpression
 	protected final EExpression expr;
 	protected final ArrayList<EExpression> arguments;
 	
+	/* checkSignature */
+	protected SignatureItemDeferred deferred;
+	
 	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope)
 	{
 		super(east, original, scope);
@@ -75,7 +78,8 @@ public class EMethodInvocation extends EExpression
 		
 		DataGroup dgExpr = this.expr == null ? null : this.expr.getDataGroup();
 
-		this.signature.addItem(new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs));
+		this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs);
+		this.signature.addItem(this.deferred);
 	}
 
 	@Override
@@ -103,11 +107,8 @@ public class EMethodInvocation extends EExpression
 		for (EExpression arg : this.arguments)
 			arg.checkDependencies(stack);
 		
-		Signature closure = this.signature.closure();
-		
-		System.out.println("Closure: ");
-		System.out.println(closure);
-		
+		Signature closure = this.deferred.closure();
+
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
 		
 		for (EASTExecutableNode node : deps)
@@ -117,5 +118,19 @@ public class EMethodInvocation extends EExpression
 			else
 				this.weakDependencies.add(node);
 		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		if (this.expr != null)
+			sum += this.expr.optimize();
+		
+		for (EExpression arg : this.arguments)
+			sum += arg.optimize();
+		
+		return sum;
 	}
 }

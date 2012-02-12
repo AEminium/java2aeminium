@@ -65,6 +65,10 @@ public class Compiler
 
 		east.checkSignatures();
 		east.checkDependencies();
+
+		int n;
+		while ((n = east.optimize()) > 0)
+			System.out.println("Optimized: " + n);
 		
 		// TODO work here
 		

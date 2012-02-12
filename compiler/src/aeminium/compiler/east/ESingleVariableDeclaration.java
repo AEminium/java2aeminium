@@ -70,7 +70,6 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 		Signature sig = new Signature();
 		
 		sig.addAll(this.signature);
-		sig.addAll(this.name.getFullSignature());
 		
 		if (this.expr != null)
 			sig.addAll(this.expr.getFullSignature());
@@ -93,5 +92,16 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 			else
 				this.weakDependencies.add(node);
 		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		if (this.expr != null)
+			sum += this.expr.optimize();
+
+		return sum;
 	}
 }

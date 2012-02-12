@@ -3,7 +3,6 @@ package aeminium.compiler.east;
 import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.signature.DataGroup;
-import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SimpleDataGroup;
 
 public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
@@ -47,10 +46,5 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	public void checkSignatures()
 	{
 		// Nothing
-	}
-	
-	public Signature getFullSignature()
-	{
-		return new Signature();
 	}
 }

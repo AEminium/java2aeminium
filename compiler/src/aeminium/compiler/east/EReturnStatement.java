@@ -18,7 +18,10 @@ public class EReturnStatement extends EStatement
 	{
 		super(east, original, scope, method);
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope);
+		if (original.getExpression() == null)
+			this.expr = null;
+		else
+			this.expr = EExpression.create(this.east, original.getExpression(), scope);
 	}
 
 	/* factory */
@@ -36,11 +39,14 @@ public class EReturnStatement extends EStatement
 	@Override
 	public void checkSignatures()
 	{
-		this.expr.checkSignatures();
-		
-		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
-		this.signature.addItem(new SignatureItemWrite(this.method.returnDataGroup));
-		this.signature.addItem(new SignatureItemMerge(this.method.returnDataGroup, this.expr.getDataGroup()));
+		if (this.expr != null)
+		{
+			this.expr.checkSignatures();
+			
+			this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemWrite(this.method.returnDataGroup));
+			this.signature.addItem(new SignatureItemMerge(this.method.returnDataGroup, this.expr.getDataGroup()));
+		}
 	}
 
 	@Override
@@ -49,7 +55,9 @@ public class EReturnStatement extends EStatement
 		Signature sig = new Signature();
 		
 		sig.addAll(this.signature);
-		sig.addAll(this.expr.getFullSignature());
+		
+		if (this.expr != null)
+			sig.addAll(this.expr.getFullSignature());
 
 		return sig;
 	}
@@ -67,5 +75,16 @@ public class EReturnStatement extends EStatement
 			else
 				this.weakDependencies.add(node);
 		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		if (this.expr != null)
+			sum += this.expr.optimize();
+
+		return sum;
 	}
 }

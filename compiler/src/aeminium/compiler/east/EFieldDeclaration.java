@@ -66,4 +66,15 @@ public class EFieldDeclaration extends EBodyDeclaration
 		for (EVariableDeclarationFragment frag : this.fragments)
 			frag.checkDependencies(stack);
 	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		for (EVariableDeclarationFragment frag : this.fragments)
+			sum += frag.optimize();
+		
+		return sum;
+	}
 }

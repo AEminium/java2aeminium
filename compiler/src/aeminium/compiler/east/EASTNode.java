@@ -18,7 +18,7 @@ public abstract class EASTNode
 		return this.east;
 	}
 	
-	public abstract ASTNode getOriginal();	
+	public abstract ASTNode getOriginal();
 	
 	public abstract void checkSignatures();
 }

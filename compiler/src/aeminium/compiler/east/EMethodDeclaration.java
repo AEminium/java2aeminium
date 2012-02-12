@@ -129,4 +129,22 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		return this.getOriginal().getReturnType2().toString().equals("void");
 	}
+
+	public EBlock getBody()
+	{
+		return this.body;
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		for (ESingleVariableDeclaration param : this.parameters)
+			sum += param.optimize();
+		
+		sum += this.body.optimize();
+		
+		return sum;
+	}
 }

@@ -82,4 +82,17 @@ public class ETypeDeclaration extends EASTNode
 		for (EMethodDeclaration method : this.methods)
 			method.checkDependencies();
 	}
+
+	public int optimize()
+	{
+		int sum = 0;
+		
+		for (EFieldDeclaration field : this.fields)
+			sum += field.optimize();
+		
+		for (EMethodDeclaration method : this.methods)
+			sum += method.optimize();
+		
+		return sum;
+	}
 }

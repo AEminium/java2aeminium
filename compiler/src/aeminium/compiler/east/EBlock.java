@@ -74,4 +74,15 @@ public class EBlock extends EStatement implements EASTDataNode
 		// TODO/FIXME: add the stmts to the children?
 		// Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 	}
+
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		for (EStatement stmt : this.stmts)
+			sum += stmt.optimize();
+		
+		return sum;
+	}
 }

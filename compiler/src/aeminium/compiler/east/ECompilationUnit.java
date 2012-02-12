@@ -44,4 +44,14 @@ public class ECompilationUnit extends EASTNode
 		for (ETypeDeclaration type : this.types)
 			type.checkDependencies();
 	}
+
+	public int optimize()
+	{
+		int sum = 0;
+		
+		for (ETypeDeclaration type : this.types)
+			sum += type.optimize();
+		
+		return sum;
+	}
 }

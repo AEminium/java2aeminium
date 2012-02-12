@@ -52,4 +52,14 @@ public class EAST
 		for (ECompilationUnit cu : this.originalCUs)
 			cu.checkDependencies();
 	}
+
+	public int optimize()
+	{
+		int sum = 0;
+		
+		for (ECompilationUnit cu : this.originalCUs)
+			sum += cu.optimize();
+		
+		return sum;
+	}
 }

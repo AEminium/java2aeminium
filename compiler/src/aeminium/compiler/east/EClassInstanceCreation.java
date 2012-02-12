@@ -24,6 +24,9 @@ public class EClassInstanceCreation extends EExpression
 	
 	protected final ArrayList<EExpression> arguments;
 	
+	/* checkSignature */
+	protected SignatureItemDeferred deferred;
+	
 	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope)
 	{
 		super(east, original, scope);
@@ -68,8 +71,9 @@ public class EClassInstanceCreation extends EExpression
 		for (EExpression arg : this.arguments)
 			datagroupsArgs.add(arg.getDataGroup());
 		
+		this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), null, datagroupsArgs);
+		this.signature.addItem(this.deferred);
 		this.signature.addItem(new SignatureItemWrite(this.getDataGroup()));
-		this.signature.addItem(new SignatureItemDeferred(method, this.getDataGroup(), null, datagroupsArgs));
 	}
 	
 	@Override
@@ -91,9 +95,9 @@ public class EClassInstanceCreation extends EExpression
 		for (EExpression arg : this.arguments)
 			arg.checkDependencies(stack);
 		
-		this.signature.closure();
+		Signature closure = this.deferred.closure();
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
 		
 		for (EASTExecutableNode node : deps)
 		{
@@ -102,5 +106,16 @@ public class EClassInstanceCreation extends EExpression
 			else
 				this.weakDependencies.add(node);
 		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		for (EExpression arg : this.arguments)
+			sum += arg.optimize();
+		
+		return sum;
 	}
 }

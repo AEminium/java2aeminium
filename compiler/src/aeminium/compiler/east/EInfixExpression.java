@@ -85,4 +85,15 @@ public class EInfixExpression extends EExpression
 				this.weakDependencies.add(node);
 		}
 	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.left.optimize();
+		sum += this.right.optimize();
+		
+		return sum;
+	}
 }

@@ -1,6 +1,11 @@
 package aeminium.compiler.signature;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
+
 import aeminium.compiler.east.EMethodDeclaration;
 
 public class SignatureItemDeferred extends SignatureItem
@@ -81,27 +86,48 @@ public class SignatureItemDeferred extends SignatureItem
 		return this.method.undefer(this.dgRet, this.dgThis, this.dgsArgs);
 	}
 
-	public Signature filter(Signature sig)
+	public Signature closure()
 	{
-		Signature filtered = new Signature();
+		Queue<SignatureItemDeferred> queue = new ArrayDeque<SignatureItemDeferred>();
+		HashSet<SignatureItem> items = new HashSet<SignatureItem>();
 		
-		// don't propagate local variable changes
-		for (SignatureItem item : sig.getItems())
-		{
-			boolean local = item.isLocalTo(this.method.getDataGroup());
-			
-			if (local && this.dgRet != null && item.isLocalTo(this.dgRet))
-				local = false;
+		queue.add((SignatureItemDeferred) this);
 
-			for (DataGroup arg : this.dgsArgs)
-				if (local && item.isLocalTo(arg))
-					local = false;
+		SignatureItemDeferred next;
+		while ((next = queue.poll()) != null)
+		{
+			Set<SignatureItem> subitems = next.getUndeferredSignature().getItems();
 			
-			if (!local)
-				filtered.addItem(item);
+			// don't process this item again
+			items.add(next);
+			
+			for (SignatureItem item : subitems)
+			{
+				if (item instanceof SignatureItemDeferred)
+				{
+					if (items.add(item))
+						queue.add((SignatureItemDeferred) item);
+				} else
+				{
+					boolean local = item.isLocalTo(this.method.getBody().getDataGroup());
+					boolean ret = this.dgRet == null ? false : item.isLocalTo(this.dgRet);
+					boolean param = false;
+
+					for (DataGroup arg : this.dgsArgs)
+						param |= item.isLocalTo(arg);
+					
+					if (!local || ret || param)
+						items.add(item);
+				}
+			}
 		}
 		
-		return filtered;
+		Signature closure = new Signature();
+		for (SignatureItem item : items)
+			if (!(item instanceof SignatureItemDeferred))
+				closure.addItem(item);
+		
+		return closure;
 	}
 	
 	@Override

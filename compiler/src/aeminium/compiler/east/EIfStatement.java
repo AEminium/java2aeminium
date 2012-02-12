@@ -82,9 +82,36 @@ public class EIfStatement extends EStatement
 				this.weakDependencies.add(node);
 		}
 		
-		this.thenStmt.checkDependencies(stack);
+		if (this.elseStmt == null)
+		{
+			this.thenStmt.checkDependencies(stack);
+
+			this.children.add(this.thenStmt);
+		} else
+		{
+			DependencyStack copy = stack.fork();
+
+			this.thenStmt.checkDependencies(stack);
+			this.elseStmt.checkDependencies(copy);
+
+			stack.join(copy, this);
+			
+			this.children.add(this.thenStmt);
+			this.children.add(this.elseStmt);
+		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+		
+		sum += this.expr.optimize();
+		sum += this.thenStmt.optimize();
 		
 		if (this.elseStmt != null)
-			this.elseStmt.checkDependencies(stack);
+			sum += this.elseStmt.optimize();
+		
+		return sum;
 	}
 }

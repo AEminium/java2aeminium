@@ -71,7 +71,6 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		Signature sig = new Signature();
 		
 		sig.addAll(this.signature);
-		sig.addAll(this.name.getFullSignature());
 		sig.addAll(this.expr.getFullSignature());
 		
 		return sig;
@@ -92,5 +91,16 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 			else
 				this.weakDependencies.add(node);
 		}
+	}
+	
+	@Override
+	public int optimize()
+	{
+		int sum = super.optimize();
+
+		if (this.expr != null)
+			sum += this.expr.optimize();
+
+		return sum;
 	}
 }

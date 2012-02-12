@@ -30,4 +30,32 @@ public abstract class EASTExecutableNode extends EASTNode
 	public abstract Signature getFullSignature();
 
 	public abstract void checkDependencies(DependencyStack stack);
+	
+	public int optimize()
+	{
+		this.simplifyDependencies();
+		
+		System.out.println("NODE: " + this);
+		System.out.println(this.signature);
+		
+		System.out.println("Dependencies");
+		
+		for (EASTExecutableNode node : this.strongDependencies)
+			System.out.println("STRONG: " + node);
+		
+		for (EASTExecutableNode node : this.weakDependencies)
+			System.out.println("WEAK: " + node);
+
+		for (EASTExecutableNode node : this.children)
+			System.out.println("CHILD: " + node);
+
+		System.out.println();
+		
+		return 0;
+	}
+	
+	public void simplifyDependencies()
+	{
+		// TODO simplifyDependencies()
+	}
 }
