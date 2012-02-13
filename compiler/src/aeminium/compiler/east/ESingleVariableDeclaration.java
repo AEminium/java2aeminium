@@ -6,6 +6,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.*;
+import aeminium.compiler.task.Task;
 
 public class ESingleVariableDeclaration extends EASTExecutableNode implements EASTDataNode
 {
@@ -52,8 +53,6 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	@Override
 	public void checkSignatures()
 	{
-		this.name.checkSignatures();
-		
 		if (this.expr != null)
 		{
 			this.expr.checkSignatures();
@@ -81,17 +80,16 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	public void checkDependencies(DependencyStack stack)
 	{
 		if (this.expr != null)
+		{
 			this.expr.checkDependencies(stack);
-		
+			this.strongDependencies.add(this.expr);
+		}
+
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-		{
-			if (node.equals(this.expr))
-				this.strongDependencies.add(node);
-			else
+			if (!node.equals(this.expr))
 				this.weakDependencies.add(node);
-		}
 	}
 	
 	@Override
@@ -103,5 +101,17 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 			sum += this.expr.optimize();
 
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "decl");
+		
+		if (this.expr != null)
+			this.expr.preTranslate(this.task);
 	}
 }

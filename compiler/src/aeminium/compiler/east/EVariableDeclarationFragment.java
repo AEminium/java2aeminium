@@ -11,6 +11,7 @@ import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemMerge;
 import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SignatureItemWrite;
+import aeminium.compiler.task.Task;
 
 public class EVariableDeclarationFragment extends EASTExecutableNode implements EASTDataNode
 {
@@ -53,8 +54,6 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	@Override
 	public void checkSignatures()
 	{
-		this.name.checkSignatures();
-		
 		if (this.expr != null)
 		{
 			this.expr.checkSignatures();
@@ -80,17 +79,16 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	public void checkDependencies(DependencyStack stack)
 	{
 		if (this.expr != null)
+		{
 			this.expr.checkDependencies(stack);
-		
+			this.strongDependencies.add(this.expr);
+		}
+
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-		{
-			if (node.equals(this.expr))
-				this.strongDependencies.add(node);
-			else
+			if (!node.equals(this.expr))
 				this.weakDependencies.add(node);
-		}
 	}
 	
 	@Override
@@ -102,5 +100,17 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 			sum += this.expr.optimize();
 
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "varfrag");
+		
+		if (this.expr != null)
+			this.expr.preTranslate(this.task);
 	}
 }

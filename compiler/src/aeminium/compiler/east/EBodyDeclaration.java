@@ -51,4 +51,9 @@ public abstract class EBodyDeclaration extends EASTExecutableNode implements EAS
 	{
 		return this.getModifier("static") != null;
 	}
+	
+	public ETypeDeclaration getType()
+	{
+		return this.type;
+	}
 }

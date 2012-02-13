@@ -41,10 +41,4 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	{
 		return new ESimpleNameDeclaration(east, original, scope);
 	}
-
-	@Override
-	public void checkSignatures()
-	{
-		// Nothing
-	}
 }

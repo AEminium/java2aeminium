@@ -6,6 +6,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
+import aeminium.compiler.task.Task;
 
 public class ESimpleNameExpression extends EExpression
 {
@@ -53,5 +54,20 @@ public class ESimpleNameExpression extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		// Nothing
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "literal");
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return true;
 	}
 }

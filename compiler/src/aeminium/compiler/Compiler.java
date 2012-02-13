@@ -2,8 +2,6 @@ package aeminium.compiler;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
@@ -70,12 +68,12 @@ public class Compiler
 		while ((n = east.optimize()) > 0)
 			System.out.println("Optimized: " + n);
 		
-		// TODO work here
+		east.preTranslate();
 		
 		// Save units
-		/*for (CompilationUnit unit : east.translate())
+		for (CompilationUnit unit : east.translate())
 		{
-			AST ast = east.getAST();
+			AST ast = unit.getAST();
 
 			ImportDeclaration helper = ast.newImportDeclaration();
 			helper.setName(ast.newName("aeminium.runtime.AeminiumHelper"));
@@ -86,7 +84,7 @@ public class Compiler
 			unit.imports().add(list);
 
 			this.save(unit);
-		}*/
+		}
 	}
 
 	/**

@@ -6,6 +6,7 @@ import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.task.Task;
 
 public class ENumberLiteral extends EExpression
 {
@@ -55,4 +56,18 @@ public class ENumberLiteral extends EExpression
 		// Nothing
 	}
 
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "literal");
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return true;
+	}
 }

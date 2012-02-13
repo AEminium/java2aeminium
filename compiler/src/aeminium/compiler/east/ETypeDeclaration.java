@@ -2,9 +2,13 @@ package aeminium.compiler.east;
 
 import java.util.ArrayList;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import aeminium.compiler.signature.SimpleDataGroup;
@@ -62,7 +66,6 @@ public class ETypeDeclaration extends EASTNode
 		return (TypeDeclaration) this.original;
 	}
 	
-	@Override
 	public void checkSignatures()
 	{
 		for (EFieldDeclaration field : this.fields)
@@ -94,5 +97,31 @@ public class ETypeDeclaration extends EASTNode
 			sum += method.optimize();
 		
 		return sum;
+	}
+
+	public void preTranslate()
+	{
+		for (EFieldDeclaration field : this.fields)
+			field.preTranslate();
+		
+		for (EMethodDeclaration method : this.methods)
+			method.preTranslate();
+	}
+
+	@SuppressWarnings("unchecked")
+	public TypeDeclaration translate(ArrayList<CompilationUnit> out)
+	{
+		AST ast = this.original.getAST();
+
+		TypeDeclaration type = ast.newTypeDeclaration();
+		type.setName((SimpleName) ASTNode.copySubtree(ast, this.getOriginal().getName()));
+
+		for (EFieldDeclaration field : this.fields)
+			type.bodyDeclarations().add(field.translate(out));
+
+		for (EMethodDeclaration method : this.methods)
+			type.bodyDeclarations().add(method.translate(out));
+
+		return type;
 	}
 }

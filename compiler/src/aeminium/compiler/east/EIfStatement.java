@@ -7,6 +7,7 @@ import org.eclipse.jdt.core.dom.IfStatement;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemRead;
+import aeminium.compiler.task.Task;
 
 public class EIfStatement extends EStatement
 {
@@ -74,13 +75,11 @@ public class EIfStatement extends EStatement
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
+		this.strongDependencies.add(this.expr);
+		
 		for (EASTExecutableNode node : deps)
-		{
-			if (node.equals(this.expr))
-				this.strongDependencies.add(node);
-			else
+			if (!node.equals(this.expr))
 				this.weakDependencies.add(node);
-		}
 		
 		if (this.elseStmt == null)
 		{
@@ -113,5 +112,20 @@ public class EIfStatement extends EStatement
 			sum += this.elseStmt.optimize();
 		
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "if");
+		
+		this.expr.preTranslate(this.task);
+		this.thenStmt.preTranslate(this.task);
+		
+		if (this.elseStmt != null)
+			this.elseStmt.preTranslate(this.task);
 	}
 }

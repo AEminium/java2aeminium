@@ -2,12 +2,15 @@ package aeminium.compiler.east;
 
 import java.util.ArrayList;
 
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
+import aeminium.compiler.task.FieldTask;
+import aeminium.compiler.task.Task;
 
 public class EFieldDeclaration extends EBodyDeclaration
 {
@@ -64,7 +67,10 @@ public class EFieldDeclaration extends EBodyDeclaration
 	public void checkDependencies(DependencyStack stack)
 	{
 		for (EVariableDeclarationFragment frag : this.fragments)
+		{
 			frag.checkDependencies(stack);
+			this.strongDependencies.add(frag);
+		}
 	}
 	
 	@Override
@@ -76,5 +82,28 @@ public class EFieldDeclaration extends EBodyDeclaration
 			sum += frag.optimize();
 		
 		return sum;
+	}
+	
+	public void preTranslate()
+	{
+		String name = this.type.getOriginal().getName() + "_" + this.getOriginal().getStartPosition();
+
+		this.preTranslate(FieldTask.create(this, name));		
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		this.task = parent;
+		
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.preTranslate(this.task);
+	}
+
+	public FieldDeclaration translate(ArrayList<CompilationUnit> out)
+	{
+		// TODO: EFieldDeclaration.translate();
+		System.err.println("TODO: EFieldDeclaration.translate()");
+		return null;
 	}
 }

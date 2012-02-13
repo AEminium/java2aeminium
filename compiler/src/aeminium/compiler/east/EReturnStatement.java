@@ -9,6 +9,7 @@ import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemMerge;
 import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SignatureItemWrite;
+import aeminium.compiler.task.Task;
 
 public class EReturnStatement extends EStatement
 {
@@ -65,16 +66,16 @@ public class EReturnStatement extends EStatement
 	@Override
 	public void checkDependencies(DependencyStack stack)
 	{
-		this.expr.checkDependencies(stack);
+		if (this.expr != null)
+		{
+			this.expr.checkDependencies(stack);
+			this.strongDependencies.add(this.expr);
+		}
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		for (EASTExecutableNode node : deps)
-		{
-			if (node.equals(this.expr))
-				this.strongDependencies.add(node);
-			else
+			if (!node.equals(this.expr))
 				this.weakDependencies.add(node);
-		}
 	}
 	
 	@Override
@@ -86,5 +87,17 @@ public class EReturnStatement extends EStatement
 			sum += this.expr.optimize();
 
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "ret");
+		
+		if (this.expr != null)
+			this.expr.preTranslate(this.task);
 	}
 }

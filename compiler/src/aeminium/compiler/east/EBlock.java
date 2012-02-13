@@ -9,6 +9,7 @@ import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.task.Task;
 
 public class EBlock extends EStatement implements EASTDataNode
 {	
@@ -84,5 +85,17 @@ public class EBlock extends EStatement implements EASTDataNode
 			sum += stmt.optimize();
 		
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "block");
+		
+		for (EStatement stmt : this.stmts)
+			stmt.preTranslate(this.task);
 	}
 }

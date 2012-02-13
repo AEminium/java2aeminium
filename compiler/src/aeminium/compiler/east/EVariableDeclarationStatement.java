@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
+import aeminium.compiler.task.Task;
 
 public class EVariableDeclarationStatement extends EStatement implements EASTDataNode
 {
@@ -72,17 +73,16 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	public void checkDependencies(DependencyStack stack)
 	{
 		for (EVariableDeclarationFragment frag : this.fragments)
-			frag.checkDependencies(stack);
-		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
 		{
-			if (this.fragments.contains(node))
-				this.strongDependencies.add(node);
-			else
-				this.weakDependencies.add(node);
+			frag.checkDependencies(stack);
+			this.strongDependencies.add(frag);
 		}
+
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+
+		for (EASTExecutableNode node : deps)
+			if (!this.fragments.contains(node))
+				this.weakDependencies.add(node);
 	}
 	
 	@Override
@@ -94,5 +94,17 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 			sum += frag.optimize();
 
 		return sum;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "varstmt");
+		
+		for (EVariableDeclarationFragment frag : this.fragments)
+			frag.preTranslate(this.task);
 	}
 }

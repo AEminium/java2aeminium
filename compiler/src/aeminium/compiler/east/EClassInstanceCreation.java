@@ -14,6 +14,7 @@ import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemDeferred;
 import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.task.Task;
 
 public class EClassInstanceCreation extends EExpression
 {
@@ -93,19 +94,18 @@ public class EClassInstanceCreation extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		for (EExpression arg : this.arguments)
+		{
 			arg.checkDependencies(stack);
+			this.strongDependencies.add(arg);
+		}
 		
 		Signature closure = this.deferred.closure();
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
 		
 		for (EASTExecutableNode node : deps)
-		{
-			if (this.arguments.contains(node))
-				this.strongDependencies.add(node);
-			else
+			if (!this.arguments.contains(node))
 				this.weakDependencies.add(node);
-		}
 	}
 	
 	@Override
@@ -117,5 +117,25 @@ public class EClassInstanceCreation extends EExpression
 			sum += arg.optimize();
 		
 		return sum;
+	}
+	
+	@Override
+	public int inline(EASTExecutableNode inlineTo)
+	{
+		// TODO inline ClassInstanceCreation
+		System.out.println("TODO: EClassInstanceCreation.inline()");
+		return 0;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "new");
+		
+		for (EExpression arg : this.arguments)
+			arg.preTranslate(this.task);
 	}
 }

@@ -12,6 +12,7 @@ import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemDeferred;
 import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.task.Task;
 
 public class EMethodInvocation extends EExpression
 {
@@ -102,22 +103,24 @@ public class EMethodInvocation extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		if (this.expr != null)
+		{
 			this.expr.checkDependencies(stack);
+			this.strongDependencies.add(this.expr);
+		}
 		
 		for (EExpression arg : this.arguments)
+		{
 			arg.checkDependencies(stack);
+			this.strongDependencies.add(arg);
+		}
 		
 		Signature closure = this.deferred.closure();
 
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
 		
 		for (EASTExecutableNode node : deps)
-		{
-			if (node.equals(this.expr) || this.arguments.contains(node))
-				this.strongDependencies.add(node);
-			else
+			if (!node.equals(this.expr) && !this.arguments.contains(node))
 				this.weakDependencies.add(node);
-		}
 	}
 	
 	@Override
@@ -132,5 +135,28 @@ public class EMethodInvocation extends EExpression
 			sum += arg.optimize();
 		
 		return sum;
+	}
+	
+	@Override
+	public int inline(EASTExecutableNode inlineTo)
+	{
+		// TODO inline ClassInstanceCreation
+		System.out.println("TODO: EMethodInvocation.inline()");
+		return 0;
+	}
+	
+	@Override
+	public void preTranslate(Task parent)
+	{
+		if (this.inlineTask)
+			this.task = parent;
+		else
+			this.task = parent.newSubTask(this, "invoke");
+		
+		if (this.expr != null)
+			this.expr.preTranslate(this.task);
+		
+		for (EExpression arg : this.arguments)
+			arg.preTranslate(this.task);
 	}
 }

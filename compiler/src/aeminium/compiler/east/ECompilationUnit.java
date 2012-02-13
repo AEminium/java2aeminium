@@ -2,7 +2,10 @@ package aeminium.compiler.east;
 
 import java.util.ArrayList;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 public class ECompilationUnit extends EASTNode
@@ -32,7 +35,6 @@ public class ECompilationUnit extends EASTNode
 		return (CompilationUnit) this.original;
 	}
 
-	@Override
 	public void checkSignatures()
 	{
 		for (ETypeDeclaration type : this.types)
@@ -53,5 +55,27 @@ public class ECompilationUnit extends EASTNode
 			sum += type.optimize();
 		
 		return sum;
+	}
+
+	public void preTranslate()
+	{
+		for (ETypeDeclaration type : this.types)
+			type.preTranslate();
+	}
+
+	@SuppressWarnings("unchecked")
+	public void translate(ArrayList<CompilationUnit> out)
+	{
+		AST ast = this.original.getAST();
+		
+		CompilationUnit unit = ast.newCompilationUnit();
+		
+		unit.setPackage((PackageDeclaration) ASTNode.copySubtree(ast, this.getOriginal().getPackage()));
+		unit.imports().addAll(ASTNode.copySubtrees(ast, this.getOriginal().imports()));
+
+		for (ETypeDeclaration type : this.types)
+			unit.types().add(type.translate(out));
+
+		out.add(unit);
 	}
 }

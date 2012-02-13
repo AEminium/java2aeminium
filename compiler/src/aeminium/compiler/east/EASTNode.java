@@ -1,6 +1,9 @@
 package aeminium.compiler.east;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+
 
 public abstract class EASTNode
 {
@@ -18,7 +21,15 @@ public abstract class EASTNode
 		return this.east;
 	}
 	
-	public abstract ASTNode getOriginal();
+	public AST getAST()
+	{
+		return this.original.getAST();
+	}
+
+	public CompilationUnit getCU()
+	{
+		return (CompilationUnit) this.original.getRoot();
+	}
 	
-	public abstract void checkSignatures();
+	public abstract ASTNode getOriginal();
 }
