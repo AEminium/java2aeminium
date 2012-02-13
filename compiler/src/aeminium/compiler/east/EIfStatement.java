@@ -1,8 +1,14 @@
 package aeminium.compiler.east;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
@@ -127,5 +133,29 @@ public class EIfStatement extends EStatement
 		
 		if (this.elseStmt != null)
 			this.elseStmt.preTranslate(this.task);
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Statement> build(List<CompilationUnit> out)
+	{		
+		AST ast = this.getAST();
+
+		IfStatement ifstmt = ast.newIfStatement();
+		
+		ifstmt.setExpression(this.expr.translate(out));
+
+		Block then_block = ast.newBlock();
+		then_block.statements().addAll(this.thenStmt.translate(out));
+		ifstmt.setThenStatement(then_block);
+
+		if (this.elseStmt != null)
+		{
+			Block else_block = ast.newBlock();
+			else_block.statements().addAll(this.elseStmt.translate(out));
+			ifstmt.setElseStatement(else_block);
+		}
+
+		return Arrays.asList((Statement)ifstmt);
 	}
 }

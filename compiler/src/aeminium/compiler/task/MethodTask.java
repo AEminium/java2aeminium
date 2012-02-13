@@ -2,9 +2,9 @@ package aeminium.compiler.task;
 
 import org.eclipse.jdt.core.dom.*;
 
-import aeminium.compiler.east.EAST;
 import aeminium.compiler.east.EMethodDeclaration;
 import aeminium.compiler.east.EMethodDeclarationParameter;
+import aeminium.compiler.east.EType;
 
 public class MethodTask extends Task
 {
@@ -42,7 +42,7 @@ public class MethodTask extends Task
 			caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBodyWithReturn")));
 
 			if (returnType instanceof PrimitiveType)
-				((ParameterizedType) caller_type).typeArguments().add(EAST.boxType((PrimitiveType) returnType));
+				((ParameterizedType) caller_type).typeArguments().add(EType.boxType((PrimitiveType) returnType));
 			else
 				((ParameterizedType) caller_type).typeArguments().add(ASTNode.copySubtree(ast, returnType));
 		}
@@ -119,6 +119,8 @@ public class MethodTask extends Task
 			body.statements().add(ast.newExpressionStatement(asgn));
 		}
 		
+		this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
+
 		super.fillConstructor(body);
 	}
 }

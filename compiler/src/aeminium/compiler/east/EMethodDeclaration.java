@@ -25,7 +25,7 @@ import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.MethodTask;
 import aeminium.compiler.task.Task;
 
-public class EMethodDeclaration extends EBodyDeclaration
+public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclaringNode
 {
 	protected final IMethodBinding binding;
 
@@ -140,7 +140,7 @@ public class EMethodDeclaration extends EBodyDeclaration
 	{
 		return this.body;
 	}
-	
+
 	@Override
 	public int optimize()
 	{
@@ -164,9 +164,14 @@ public class EMethodDeclaration extends EBodyDeclaration
 		this.body.preTranslate(this.task);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public MethodDeclaration translate(ArrayList<CompilationUnit> out)
 	{
 		out.add(this.task.translate());
+
+		MethodDeclaration execute = this.task.getExecute();
+		
+		execute.getBody().statements().addAll(this.body.translate(out));
 
 		if (this.isMain())
 			return this.buildMain();

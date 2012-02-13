@@ -3,15 +3,16 @@ package aeminium.compiler.east;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import aeminium.compiler.signature.*;
+import aeminium.compiler.task.Task;
 
-public class EMethodDeclarationParameter extends EASTNode implements EASTDataNode
+public class EMethodDeclarationParameter extends EASTNode implements EASTDeclaringNode
 {
-	protected final EASTDataNode scope;
+	protected final EASTDeclaringNode scope;
 	protected final DataGroup datagroup;
 	
 	protected final ESimpleNameDeclaration name;
 	
-	public EMethodDeclarationParameter(EAST east, SingleVariableDeclaration original, EASTDataNode scope)
+	public EMethodDeclarationParameter(EAST east, SingleVariableDeclaration original, EASTDeclaringNode scope)
 	{
 		super(east, original);
 
@@ -34,8 +35,14 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDataNod
 		return (SingleVariableDeclaration) this.original;
 	}
 
-	public static EMethodDeclarationParameter create(EAST east, SingleVariableDeclaration param, EASTDataNode scope)
+	public static EMethodDeclarationParameter create(EAST east, SingleVariableDeclaration param, EASTDeclaringNode scope)
 	{
 		return new EMethodDeclarationParameter(east, param, scope);
+	}
+
+	@Override
+	public Task getTask()
+	{
+		return this.scope.getTask();
 	}
 }

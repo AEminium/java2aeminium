@@ -1,8 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
@@ -106,5 +109,16 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 		
 		for (EVariableDeclarationFragment frag : this.fragments)
 			frag.preTranslate(this.task);
+	}
+	
+	@Override
+	public List<Statement> build(List<CompilationUnit> out)
+	{
+		List<Statement> stmts = new ArrayList<Statement>();
+
+		for (EVariableDeclarationFragment frag : this.fragments)
+			stmts.addAll(frag.translate(out));
+
+		return stmts;
 	}
 }

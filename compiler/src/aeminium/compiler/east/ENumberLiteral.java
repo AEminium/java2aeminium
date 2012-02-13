@@ -1,5 +1,11 @@
 package aeminium.compiler.east;
 
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 
 import aeminium.compiler.DependencyStack;
@@ -70,4 +76,13 @@ public class ENumberLiteral extends EExpression
 	{
 		return true;
 	}
+
+	@Override
+	public Expression build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+		
+		return (NumberLiteral) ASTNode.copySubtree(ast, this.getOriginal());
+	}
+
 }

@@ -1,9 +1,15 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 
@@ -158,5 +164,57 @@ public class EMethodInvocation extends EExpression
 		
 		for (EExpression arg : this.arguments)
 			arg.preTranslate(this.task);
+	}
+
+	@SuppressWarnings("unchecked")
+	public Expression translate(List<CompilationUnit> out)
+	{
+		if (this.inlineTask)
+			return this.build(out);
+		
+		out.add(this.task.translate());
+		
+		AST ast = this.getAST();
+		
+		/* in task */
+		this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(this.build(out)));
+
+		/* parent task */
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(access);
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+		
+		EMethodDeclaration method = this.getMethod();
+
+		ClassInstanceCreation create = ast.newClassInstanceCreation();
+		create.setType(ast.newSimpleType(ast.newSimpleName(method.getTask().getName())));	
+		
+		create.arguments().add(ast.newThisExpression());
+
+		if (!method.isStatic())
+			create.arguments().add(this.expr.translate(out));
+
+		for (EExpression arg : this.arguments)
+			create.arguments().add(arg.translate(out));
+
+		return create;
+	}
+	
+	public EMethodDeclaration getMethod()
+	{
+		return (EMethodDeclaration) this.east.getNode(this.binding);
 	}
 }

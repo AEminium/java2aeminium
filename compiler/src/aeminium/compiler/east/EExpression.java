@@ -1,16 +1,20 @@
 package aeminium.compiler.east;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.*;
 
 public abstract class EExpression extends EASTExecutableNode implements EASTDataNode
 {
 	protected final EASTDataNode scope;
+	protected final ITypeBinding binding;
 	
 	public EExpression(EAST east, Expression original, EASTDataNode scope)
 	{
 		super(east, original);
 		
 		this.scope = scope;
+		this.binding = original.resolveTypeBinding();
 	}
 	
 	public static EExpression create(EAST east, Expression expr, EASTDataNode scope)
@@ -33,4 +37,44 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;
 	}
+
+	@SuppressWarnings("unchecked")
+	public Expression translate(List<CompilationUnit> out)
+	{
+		if (this.inlineTask)
+			return this.build(out);
+		
+		out.add(this.task.translate());
+		
+		AST ast = this.getAST();
+		
+		/* in task */
+		FieldAccess this_ret = ast.newFieldAccess();
+		this_ret.setExpression(ast.newThisExpression());
+		this_ret.setName(ast.newSimpleName("ae_ret"));
+
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(this_ret);
+		assign.setRightHandSide(this.build(out));
+
+		this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(assign));
+		
+		/* parent task */
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(access);
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		return ret;
+	}
+	
+	public Type getType()
+	{
+		return EType.build(this.getAST(), this.binding);
+	}
+	
+	public abstract Expression build(List<CompilationUnit> out);
 }

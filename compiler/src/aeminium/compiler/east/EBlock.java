@@ -1,8 +1,10 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.DependencyStack;
@@ -70,10 +72,11 @@ public class EBlock extends EStatement implements EASTDataNode
 	public void checkDependencies(DependencyStack stack)
 	{
 		for (EStatement stmt : this.stmts)
+		{
 			stmt.checkDependencies(stack);
-		
-		// TODO/FIXME: add the stmts to the children?
-		// Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
+
+			this.children.add(stmt);
+		}
 	}
 
 	@Override
@@ -97,5 +100,19 @@ public class EBlock extends EStatement implements EASTDataNode
 		
 		for (EStatement stmt : this.stmts)
 			stmt.preTranslate(this.task);
+	}
+	
+	@Override
+	public List<Statement> build(List<CompilationUnit> out)
+	{
+		for (EASTExecutableNode node: this.children)
+			System.out.println("DEPENDECIES: " + node);
+		
+		ArrayList<Statement> stmts = new ArrayList<Statement>();
+		
+		for (EStatement stmt : this.stmts)
+			stmts.addAll(stmt.translate(out));
+		
+		return stmts;
 	}
 }

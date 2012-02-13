@@ -1,7 +1,17 @@
 package aeminium.compiler.east;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
@@ -13,7 +23,7 @@ import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.task.Task;
 
-public class EVariableDeclarationFragment extends EASTExecutableNode implements EASTDataNode
+public class EVariableDeclarationFragment extends EASTExecutableNode implements EASTDeclaringNode
 {
 	protected final EASTDataNode scope;
 	protected final Type dataType;
@@ -112,5 +122,49 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		
 		if (this.expr != null)
 			this.expr.preTranslate(this.task);
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<Statement> translate(List<CompilationUnit> out)
+	{
+		if (this.inlineTask)
+			return this.build(out);
+		
+		this.task.translate();
+		this.task.getExecute().getBody().statements().addAll(this.build(out));
+		
+		AST ast = this.getAST();
+		
+		FieldAccess task_access = ast.newFieldAccess();
+		task_access.setExpression(ast.newThisExpression());
+		task_access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(task_access);
+		assign.setRightHandSide(this.task.create());
+
+		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
+	}
+
+	private List<Statement> build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+
+		this.task.addField(this.dataType, this.getOriginal().getName().toString(), true);
+
+		List<Statement> stmts = new ArrayList<Statement>();
+
+		if (this.expr != null)
+		{
+			Assignment assign = ast.newAssignment();
+
+			assign.setRightHandSide(this.expr.translate(out));
+			System.out.println("FIXME: EVariableDeclarationFragment ");
+			assign.setLeftHandSide((SimpleName) ASTNode.copySubtree(ast, this.name.getOriginal()));
+
+			stmts.add(ast.newExpressionStatement(assign));
+		}
+
+		return stmts;
 	}
 }

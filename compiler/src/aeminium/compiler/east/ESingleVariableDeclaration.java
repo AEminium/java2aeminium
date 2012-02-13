@@ -8,7 +8,7 @@ import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.*;
 import aeminium.compiler.task.Task;
 
-public class ESingleVariableDeclaration extends EASTExecutableNode implements EASTDataNode
+public class ESingleVariableDeclaration extends EASTExecutableNode implements EASTDeclaringNode
 {
 	protected final EASTDataNode scope;
 	protected final DataGroup datagroup;

@@ -4,18 +4,19 @@ import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.task.Task;
 
 public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 {
-	protected final EASTDataNode scope;
+	protected final EASTDeclaringNode scope;
 
 	protected final DataGroup datagroup;
 	protected final IBinding binding;
-
-	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDataNode scope)
+	
+	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope)
 	{
 		super(east, original);
-		
+
 		this.scope = scope;
 		this.binding = original.resolveBinding();
 		
@@ -23,7 +24,13 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 
 		this.east.addNode(this.binding, this);
 	}
-
+	
+	/* Factory */
+	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDeclaringNode scope)
+	{
+		return new ESimpleNameDeclaration(east, original, scope);
+	}
+	
 	@Override
 	public SimpleName getOriginal()
 	{
@@ -35,10 +42,9 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	{
 		return this.datagroup;
 	}
-	
-	/* Factory */
-	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDataNode scope)
+
+	public Task getDeclaringTask()
 	{
-		return new ESimpleNameDeclaration(east, original, scope);
+		return this.scope.getTask();
 	}
 }

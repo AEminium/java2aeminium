@@ -7,7 +7,7 @@ import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
 import aeminium.compiler.east.EASTExecutableNode;
 
-public class Task
+public abstract class Task
 {
 	protected final EASTExecutableNode node;
 	protected final String name;
@@ -59,7 +59,7 @@ public class Task
 	{
 		this.subtasks++;
 		
-		return new Task(node, this.name + "_" + this.subtasks + "_" + suffix, this);
+		return SubTask.create(node, this.name + "_" + this.subtasks + "_" + suffix, this);
 	}
 	
 	@Override
@@ -96,10 +96,6 @@ public class Task
 	{
 		AST ast = this.node.getAST();
 		
-		// TODO/FIXME already added by CallerBody<X>
-		//if (!this.isInvocation)
-			this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
-
 		// this.ae_task = AeminiumHelper.createNonBlockingTask(this, AeminiumHelper.NO_HINTS);
 		Assignment task_asgn = ast.newAssignment();
 
@@ -145,6 +141,8 @@ public class Task
 
 		for (EASTExecutableNode node :  this.node.getChildren())
 		{
+			System.err.println("TASK: " +this.node + " CHILD: " + node);
+			
 			Task child = node.getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
@@ -194,7 +192,7 @@ public class Task
 				
 				FieldAccess dep_access = ast.newFieldAccess();
 				dep_access.setExpression(ast.newThisExpression());
-				dep_access.setName(ast.newSimpleName(dep.getName()));
+				dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
 
 				FieldAccess dep_task = ast.newFieldAccess();
 				dep_task.setExpression(dep_access);
@@ -276,6 +274,20 @@ public class Task
 		return path;
 	}
 
+	public Expression getPathToRoot()
+	{
+		AST ast = this.node.getAST();
+
+		if (this.parent == null)
+			return ast.newThisExpression();
+
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(this.parent.getPathToRoot());
+		access.setName(ast.newSimpleName("ae_parent"));
+
+		return access;
+	}
+	
 	@SuppressWarnings("unchecked")
 	protected void fillExecute()
 	{
@@ -319,5 +331,20 @@ public class Task
 		this.fillExecute();
 
 		return this.cu;
+	}
+
+	public MethodDeclaration getExecute()
+	{
+		return this.execute;
+	}
+	
+	public MethodDeclaration getConstructor()
+	{
+		return this.constructor;
+	}
+
+	public EASTExecutableNode getNode()
+	{
+		return this.node;
 	}
 }

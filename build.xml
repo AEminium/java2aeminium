@@ -108,7 +108,7 @@
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<java classname="aeminium.compiler.tests.Simple" classpathref="tests.classpath" dir="${tests.build.dir}" fork="true"/>
+		<java classname="aeminium.compiler.tests.Fibonacci" classpathref="tests.classpath" dir="${tests.build.dir}" fork="true"/>
 	</target>
 
 </project>

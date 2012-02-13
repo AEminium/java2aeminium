@@ -1,8 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
@@ -15,7 +18,7 @@ public class EInfixExpression extends EExpression
 {
 	protected final EExpression left;
 	protected final EExpression right;
-	protected final ArrayList<EExpression> extendend;
+	protected final ArrayList<EExpression> extended;
 	protected final Operator operator;
 	
 	protected final DataGroup datagroup;
@@ -30,11 +33,11 @@ public class EInfixExpression extends EExpression
 		this.left = EExpression.create(this.east, original.getLeftOperand(), scope);
 		this.right = EExpression.create(this.east, original.getRightOperand(), scope);
 		
-		this.extendend = new ArrayList<EExpression>();
+		this.extended = new ArrayList<EExpression>();
 
 		if (original.extendedOperands() != null)
 			for (Object ext : original.extendedOperands())
-				this.extendend.add(EExpression.create(this.east, (Expression) ext, scope));
+				this.extended.add(EExpression.create(this.east, (Expression) ext, scope));
 	}
 
 	/* factory */
@@ -61,7 +64,7 @@ public class EInfixExpression extends EExpression
 		this.left.checkSignatures();
 		this.right.checkSignatures();
 		
-		for (EExpression ext : this.extendend)
+		for (EExpression ext : this.extended)
 			ext.checkSignatures();
 		
 		this.signature.addItem(new SignatureItemRead(this.left.getDataGroup()));
@@ -79,7 +82,7 @@ public class EInfixExpression extends EExpression
 		sig.addAll(this.left.getFullSignature());
 		sig.addAll(this.right.getFullSignature());
 
-		for (EExpression ext : this.extendend)
+		for (EExpression ext : this.extended)
 			sig.addAll(ext.getFullSignature());
 		
 		return sig;
@@ -94,7 +97,7 @@ public class EInfixExpression extends EExpression
 		this.right.checkDependencies(stack);
 		this.strongDependencies.add(this.right);
 		
-		for (EExpression ext : this.extendend)
+		for (EExpression ext : this.extended)
 		{
 			ext.checkDependencies(stack);
 			this.strongDependencies.add(ext);
@@ -103,7 +106,7 @@ public class EInfixExpression extends EExpression
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.left.equals(node) && !this.right.equals(node) && !this.extendend.contains(node))
+			if (!this.left.equals(node) && !this.right.equals(node) && !this.extended.contains(node))
 				this.weakDependencies.add(node);
 	}
 	
@@ -115,7 +118,7 @@ public class EInfixExpression extends EExpression
 		sum += this.left.optimize();
 		sum += this.right.optimize();
 		
-		for (EExpression ext : this.extendend)
+		for (EExpression ext : this.extended)
 			sum += ext.optimize();
 		
 		return sum;
@@ -132,7 +135,24 @@ public class EInfixExpression extends EExpression
 		this.left.preTranslate(this.task);
 		this.right.preTranslate(this.task);
 		
-		for (EExpression ext : this.extendend)
+		for (EExpression ext : this.extended)
 			ext.preTranslate(this.task);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Expression build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+
+		InfixExpression infix = ast.newInfixExpression();
+		infix.setLeftOperand(this.left.translate(out));
+		infix.setRightOperand(this.right.translate(out));
+		infix.setOperator(this.getOriginal().getOperator());
+
+		for (EExpression ext: this.extended)
+			infix.extendedOperands().add(ext.translate(out));
+
+		return infix;
 	}
 }

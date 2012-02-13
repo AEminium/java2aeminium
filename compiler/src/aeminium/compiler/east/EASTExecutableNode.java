@@ -89,18 +89,19 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	public int inline(EASTExecutableNode inlineTo)
 	{
+		inlineTo.strongDependencies.addAll(this.strongDependencies);
+		inlineTo.weakDependencies.addAll(this.weakDependencies);
+		inlineTo.children.addAll(this.children);
+
+		inlineTo.strongDependencies.remove(this);
+		inlineTo.weakDependencies.remove(this);
+		inlineTo.children.remove(this);
+		
 		if (!this.inlineTask)
 		{
 			System.out.println("inlining: " + this);
 
 			this.inlineTask = true;
-
-			inlineTo.strongDependencies.addAll(this.strongDependencies);
-			inlineTo.weakDependencies.addAll(this.weakDependencies);
-			
-			inlineTo.strongDependencies.remove(this);
-			inlineTo.weakDependencies.remove(this);
-			
 			return 1;
 		}
 		

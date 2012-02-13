@@ -1,9 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.Type;
@@ -137,5 +139,13 @@ public class EClassInstanceCreation extends EExpression
 		
 		for (EExpression arg : this.arguments)
 			arg.preTranslate(this.task);
+	}
+	
+	@Override
+	public Expression build(List<CompilationUnit> out)
+	{
+		// TODO: EClassInstanceCreation.build();
+		System.err.println("TODO: EClassInstanceCreation.build()");
+		return null;
 	}
 }

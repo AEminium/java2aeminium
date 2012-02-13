@@ -78,23 +78,4 @@ public class EAST
 
 		return out;
 	}
-
-	public static SimpleType boxType(PrimitiveType type)
-	{
-		AST ast = type.getAST();
-		
-		HashMap<PrimitiveType.Code, String> primitives = new HashMap<PrimitiveType.Code, String>();
-
-		primitives.put(PrimitiveType.BYTE, "Byte");
-		primitives.put(PrimitiveType.SHORT, "Short");
-		primitives.put(PrimitiveType.INT, "Integer");
-		primitives.put(PrimitiveType.LONG, "Long");
-		primitives.put(PrimitiveType.FLOAT, "Float");
-		primitives.put(PrimitiveType.DOUBLE, "Double");
-		primitives.put(PrimitiveType.CHAR, "Char");
-		primitives.put(PrimitiveType.BOOLEAN, "Boolean");
-		
-		String boxedName = primitives.get(type.getPrimitiveTypeCode());
-		return ast.newSimpleType(ast.newSimpleName(boxedName));
-	}
 }

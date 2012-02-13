@@ -1,5 +1,12 @@
 package aeminium.compiler.east;
 
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.SimpleName;
 
@@ -69,5 +76,20 @@ public class ESimpleNameExpression extends EExpression
 	public boolean isSimpleTask()
 	{
 		return true;
+	}
+
+	@Override
+	public Expression build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+
+		ESimpleNameDeclaration node = (ESimpleNameDeclaration) this.east.getNode(this.binding);
+
+		FieldAccess field = ast.newFieldAccess();
+
+		field.setExpression(this.task.getPathToTask(node.getDeclaringTask()));
+		field.setName((SimpleName) ASTNode.copySubtree(ast, this.getOriginal()));
+
+		return field;
 	}
 }

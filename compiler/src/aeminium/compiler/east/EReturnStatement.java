@@ -1,8 +1,20 @@
 package aeminium.compiler.east;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
@@ -71,7 +83,7 @@ public class EReturnStatement extends EStatement
 			this.expr.checkDependencies(stack);
 			this.strongDependencies.add(this.expr);
 		}
-		
+
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		for (EASTExecutableNode node : deps)
 			if (!node.equals(this.expr))
@@ -99,5 +111,46 @@ public class EReturnStatement extends EStatement
 		
 		if (this.expr != null)
 			this.expr.preTranslate(this.task);
+	}
+
+	@Override
+	public List<Statement> build(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+
+		FieldAccess ret = ast.newFieldAccess();
+		ret.setExpression(this.task.getPathToRoot());
+		ret.setName(ast.newSimpleName("ae_ret"));
+
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(ret);
+		assign.setRightHandSide(this.expr.translate(out)); 
+
+		// if the value is required, push it to the caller task
+		IfStatement ifstmt = ast.newIfStatement();
+		
+		FieldAccess caller_task = ast.newFieldAccess();
+		caller_task.setExpression(task.getPathToRoot());
+		caller_task.setName(ast.newSimpleName("ae_parent"));
+
+		InfixExpression cond = ast.newInfixExpression();
+		cond.setLeftOperand(caller_task);
+		cond.setOperator(Operator.NOT_EQUALS);
+		cond.setRightOperand(ast.newNullLiteral());
+
+		ifstmt.setExpression(cond);
+
+		Assignment push_assign = ast.newAssignment();
+
+		FieldAccess caller_ret = ast.newFieldAccess();
+		caller_ret.setExpression((Expression) ASTNode.copySubtree(ast, caller_task));
+		caller_ret.setName(ast.newSimpleName("ae_ret"));
+
+		push_assign.setLeftHandSide(caller_ret);
+		push_assign.setRightHandSide((Expression) ASTNode.copySubtree(ast, ret));
+
+		ifstmt.setThenStatement(ast.newExpressionStatement(push_assign));
+
+		return Arrays.asList(ast.newExpressionStatement(assign), ifstmt);
 	}
 }
