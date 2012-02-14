@@ -1,8 +1,7 @@
 TODO:
-	all EStatements and EExpressions
-
-	register named nodes @ constructor phase
-	add node signatures @ the constructor phase
-	
+	Merge EClassInstanceConstruction and EMethodInvocation under a common ECallerExpression
 
 
+	ant:
+		add runtime.jar creation task
+		add test.jar creation task

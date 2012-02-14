@@ -6,4 +6,4 @@
 !jar-in-jar-loader.zip
 !/compiler/
 !/runtime/
-!/benchmark/
+!/tests/
