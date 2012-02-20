@@ -9,10 +9,8 @@
 	<property name="compiler.jar" value="compiler/compiler.jar" />
 
 	<!-- aeminium.runtime -->
-	<property name="runtime.src.dir" value="runtime/src" />
-	<property name="runtime.build.dir" value="runtime/build" />
-	<property name="runtime.lib.dir" value="runtime/lib" />
-	<property name="runtime.jar" value="runtime/runtime.jar" />
+	<property name="runtime.dir" value="runtime/src" />
+	<property name="runtime.jar" value="runtime/AeminiumRuntime.jar" />
 
 	<!-- aeminium.tests -->
 	<property name="tests.src.dir" value="tests/src" />
@@ -22,10 +20,6 @@
 
 	<path id="compiler.classpath">
 		<fileset dir="${compiler.lib.dir}" includes="**/*.jar" />
-	</path>
-
-	<path id="runtime.classpath">
-		<fileset dir="${runtime.lib.dir}" includes="**/*.jar" />
 	</path>
 
 	<path id="tests.classpath">
@@ -65,23 +59,9 @@
         </jar>
     </target>
 
-	<target name="compile.runtime.classes">
-		<mkdir dir="${runtime.build.dir}"/>
-		<javac srcdir="${runtime.src.dir}" destdir="${runtime.build.dir}" classpathref="runtime.classpath" includeantruntime="false" debug="true"/>
+	<target name="compile.runtime" depends="">
+		<ant dir="runtime" target="jar-release"/>
 	</target>
-
-	<target name="compile.runtime" depends="compile.runtime.classes">
-		<jar destfile="${runtime.jar}">
-            <manifest>
-                <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
-                <attribute name="Class-Path" value=" ."/>
-                <attribute name="Rsrc-Class-Path" value="./"/>
-            </manifest>
-            <zipfileset src="jar-in-jar-loader.zip"/>
-
-            <fileset dir="${runtime.build.dir}"/>
-        </jar>
-    </target>
 
 	<target name="translate.tests" depends="compile.compiler,compile.runtime">
 		<delete>
