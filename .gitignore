@@ -3,6 +3,7 @@
 *.jar
 */build
 !.gitignore
+!.gitmodules
 !jar-in-jar-loader.zip
 !/compiler/
 !/runtime/
