@@ -1,5 +1,6 @@
 package aeminium.compiler.task;
 
+import aeminium.compiler.east.EClassInstanceCreation;
 import aeminium.compiler.east.EExpression;
 import aeminium.compiler.east.EMethodInvocation;
 
@@ -12,7 +13,8 @@ public abstract class ExpressionSubTask extends SubTask
 
 	public static ExpressionSubTask create(EExpression node, String name, Task parent)
 	{
-		if (node instanceof EMethodInvocation)
+		if ((node instanceof EMethodInvocation && ((EMethodInvocation) node).isAeminium()) ||
+			(node instanceof EClassInstanceCreation && ((EClassInstanceCreation) node).isAeminium()))
 			return CallerExpressionSubTask.create(node, name, parent);
 		
 		return RegularExpressionSubTask.create(node, name, parent);

@@ -22,8 +22,8 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		if (expr instanceof MethodInvocation)
 			return EMethodInvocation.create(east, (MethodInvocation) expr, scope);
 		
-		if (expr instanceof SimpleName)
-			return ESimpleNameExpression.create(east, (SimpleName) expr, scope);
+		if (expr instanceof Name)
+			return ENameExpression.create(east, (Name) expr, scope);
 		
 		if (expr instanceof ClassInstanceCreation)
 			return EClassInstanceCreation.create(east, (ClassInstanceCreation) expr, scope);
@@ -33,6 +33,12 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		
 		if (expr instanceof InfixExpression)
 			return EInfixExpression.create(east, (InfixExpression) expr, scope);
+	
+		if (expr instanceof PrefixExpression)
+			return EPrefixExpression.create(east, (PrefixExpression) expr, scope);
+		
+		if (expr instanceof ParenthesizedExpression)
+			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope);
 		
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;
@@ -74,6 +80,11 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	public Type getType()
 	{
 		return EType.build(this.getAST(), this.binding);
+	}
+	
+	public boolean isVoid()
+	{
+		return this.getType().toString().equals("void");
 	}
 	
 	public abstract Expression build(List<CompilationUnit> out);

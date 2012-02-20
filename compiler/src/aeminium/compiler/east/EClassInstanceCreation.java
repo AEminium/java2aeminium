@@ -7,35 +7,30 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.Type;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemDeferred;
+import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.Task;
 
-public class EClassInstanceCreation extends EExpression
+public class EClassInstanceCreation extends EDeferredExpression
 {
 	protected final DataGroup datagroup;
 	
 	protected final Type type;
-	protected final IMethodBinding constructor;
 	
 	protected final ArrayList<EExpression> arguments;
 	
-	/* checkSignature */
-	protected SignatureItemDeferred deferred;
-	
 	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope)
 	{
-		super(east, original, scope);
+		super(east, original, scope, original.resolveConstructorBinding());
 		
 		this.type = original.getType();
-		this.constructor = original.resolveConstructorBinding();
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("new " + this.type.toString()));
 		
@@ -68,15 +63,40 @@ public class EClassInstanceCreation extends EExpression
 		for (EExpression arg : this.arguments)
 			arg.checkSignatures();
 
-		EMethodDeclaration method = ((EMethodDeclaration) this.east.getNode(this.constructor));
-		
-		ArrayList<DataGroup> datagroupsArgs = new ArrayList<DataGroup>();
+		ArrayList<DataGroup> dgsArgs = new ArrayList<DataGroup>();
 		for (EExpression arg : this.arguments)
-			datagroupsArgs.add(arg.getDataGroup());
+			dgsArgs.add(arg.getDataGroup());
 		
-		this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), null, datagroupsArgs);
-		this.signature.addItem(this.deferred);
-		this.signature.addItem(new SignatureItemWrite(this.getDataGroup()));
+		EMethodDeclaration method = this.getMethod();
+		
+		if (method != null)
+		{
+			this.deferred = new SignatureItemDeferred(this.getMethod(), this.getDataGroup(), null, dgsArgs);
+			this.signature.addItem(this.deferred);
+			this.signature.addItem(new SignatureItemWrite(this.getDataGroup()));
+		} else
+		{
+			Signature def = this.getDefaultSignature(this.getDataGroup(), dgsArgs);
+			this.signature.addAll(def);
+		}
+	
+	}
+	
+	protected Signature getDefaultSignature(DataGroup dgRet, ArrayList<DataGroup> dgsArgs)
+	{
+		/* Conservative approach */
+		Signature sig = new Signature();
+		
+		sig.addItem(new SignatureItemRead(this.getEAST().getExternalDataGroup()));
+		sig.addItem(new SignatureItemWrite(this.getEAST().getExternalDataGroup()));
+
+		for (DataGroup arg : dgsArgs)
+			sig.addItem(new SignatureItemRead(arg));
+		
+		if (dgRet != null)
+			sig.addItem(new SignatureItemWrite(dgRet));
+		
+		return sig;
 	}
 	
 	@Override
@@ -101,9 +121,13 @@ public class EClassInstanceCreation extends EExpression
 			this.strongDependencies.add(arg);
 		}
 		
-		Signature closure = this.deferred.closure();
+		Signature sig;
+		if (this.deferred != null)
+			sig = this.deferred.closure();
+		else
+			sig = this.signature;
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
 		
 		for (EASTExecutableNode node : deps)
 			if (!this.arguments.contains(node))

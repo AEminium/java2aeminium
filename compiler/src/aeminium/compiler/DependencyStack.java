@@ -42,8 +42,8 @@ public class DependencyStack
 				dependencies.add(this.writes.get(_from));
 		}
 		
-		dependencies.remove(from);
-
+		dependencies.remove(node);
+	
 		return dependencies;
 	}
 	
@@ -64,7 +64,7 @@ public class DependencyStack
 			this.writes.put(_to, node);
 		}
 
-		dependencies.remove(to);
+		dependencies.remove(node);
 
 		return dependencies;
 	}

@@ -5,15 +5,22 @@ import java.util.HashMap;
 
 import org.eclipse.jdt.core.dom.*;
 
+import aeminium.compiler.signature.DataGroup;
+import aeminium.compiler.signature.SimpleDataGroup;
+
 public class EAST
 {
 	private final HashMap<String, EASTNode> namedNodes;
 	private final ArrayList<ECompilationUnit> originalCUs;
 	
+	private final DataGroup externalDataGroup;
+	
 	public EAST()
 	{
 		this.namedNodes = new HashMap<String, EASTNode>();
 		this.originalCUs = new ArrayList<ECompilationUnit>();
+		
+		this.externalDataGroup = new SimpleDataGroup("external");
 	}
 	
 	public void addOriginalCU(ECompilationUnit cu)
@@ -77,5 +84,10 @@ public class EAST
 			cu.translate(out);
 
 		return out;
+	}
+
+	public DataGroup getExternalDataGroup()
+	{
+		return this.externalDataGroup;
 	}
 }

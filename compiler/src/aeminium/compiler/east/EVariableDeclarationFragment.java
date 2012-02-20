@@ -158,9 +158,8 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		{
 			Assignment assign = ast.newAssignment();
 
-			assign.setRightHandSide(this.expr.translate(out));
-			System.out.println("FIXME: EVariableDeclarationFragment ");
 			assign.setLeftHandSide((SimpleName) ASTNode.copySubtree(ast, this.name.getOriginal()));
+			assign.setRightHandSide(this.expr.translate(out));
 
 			stmts.add(ast.newExpressionStatement(assign));
 		}

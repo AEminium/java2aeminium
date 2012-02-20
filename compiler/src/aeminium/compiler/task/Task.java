@@ -141,8 +141,6 @@ public abstract class Task
 
 		for (EASTExecutableNode node :  this.node.getChildren())
 		{
-			System.err.println("TASK: " +this.node + " CHILD: " + node);
-			
 			Task child = node.getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));

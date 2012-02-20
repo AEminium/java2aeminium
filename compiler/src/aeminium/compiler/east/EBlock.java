@@ -105,9 +105,6 @@ public class EBlock extends EStatement implements EASTDataNode
 	@Override
 	public List<Statement> build(List<CompilationUnit> out)
 	{
-		for (EASTExecutableNode node: this.children)
-			System.out.println("DEPENDECIES: " + node);
-		
 		ArrayList<Statement> stmts = new ArrayList<Statement>();
 		
 		for (EStatement stmt : this.stmts)

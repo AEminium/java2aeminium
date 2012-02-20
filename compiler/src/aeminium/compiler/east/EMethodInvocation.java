@@ -4,38 +4,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IMethodBinding;
-import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemDeferred;
+import aeminium.compiler.signature.SignatureItemRead;
+import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.Task;
 
-public class EMethodInvocation extends EExpression
+public class EMethodInvocation extends EDeferredExpression
 {
-	protected final IMethodBinding binding;
-	
 	protected final DataGroup datagroup;
 
 	protected final EExpression expr;
 	protected final ArrayList<EExpression> arguments;
 	
-	/* checkSignature */
-	protected SignatureItemDeferred deferred;
-	
 	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope)
 	{
-		super(east, original, scope);
-		
-		this.binding = original.resolveMethodBinding();
+		super(east, original, scope, original.resolveMethodBinding());
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("invoke " + original.getName().toString()));
 		
@@ -54,7 +44,7 @@ public class EMethodInvocation extends EExpression
 	{
 		return new EMethodInvocation(east, invoke, scope);
 	}
-	
+		
 	@Override
 	public MethodInvocation getOriginal()
 	{
@@ -70,22 +60,48 @@ public class EMethodInvocation extends EExpression
 	@Override
 	public void checkSignatures()
 	{
-		if (this.expr != null)
+		if (!this.isStatic())
 			this.expr.checkSignatures();
 		
 		for (EExpression arg : this.arguments)
 			arg.checkSignatures();
-		
-		EMethodDeclaration method = ((EMethodDeclaration) this.east.getNode(this.binding));
-		
+			
 		ArrayList<DataGroup> dgsArgs = new ArrayList<DataGroup>();
 		for (EExpression arg : this.arguments)
 			dgsArgs.add(arg.getDataGroup());
 		
-		DataGroup dgExpr = this.expr == null ? null : this.expr.getDataGroup();
+		DataGroup dgExpr = this.isStatic() ? null : this.expr.getDataGroup();
 
-		this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs);
-		this.signature.addItem(this.deferred);
+		EMethodDeclaration method = this.getMethod();
+		if (method != null)
+		{
+			this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs);
+			this.signature.addItem(this.deferred);
+		} else
+		{
+			Signature def = this.getDefaultSignature(this.getDataGroup(), dgExpr, dgsArgs);
+			this.signature.addAll(def);
+		}
+	}
+
+	protected Signature getDefaultSignature(DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
+	{
+		/* Conservative approach */
+		Signature sig = new Signature();
+		
+		sig.addItem(new SignatureItemRead(this.getEAST().getExternalDataGroup()));
+		sig.addItem(new SignatureItemWrite(this.getEAST().getExternalDataGroup()));
+		
+		if (dgExpr != null)
+			sig.addItem(new SignatureItemRead(dgExpr));
+
+		for (DataGroup arg : dgsArgs)
+			sig.addItem(new SignatureItemRead(arg));
+		
+		if (dgRet != null)
+			sig.addItem(new SignatureItemWrite(dgRet));
+		
+		return sig;
 	}
 
 	@Override
@@ -95,7 +111,7 @@ public class EMethodInvocation extends EExpression
 
 		sig.addAll(this.signature);
 		
-		if (this.expr != null)
+		if (!this.isStatic())
 			sig.addAll(this.expr.getFullSignature());
 		
 		for (EExpression arg : this.arguments)
@@ -107,7 +123,7 @@ public class EMethodInvocation extends EExpression
 	@Override
 	public void checkDependencies(DependencyStack stack)
 	{
-		if (this.expr != null)
+		if (!this.isStatic())
 		{
 			this.expr.checkDependencies(stack);
 			this.strongDependencies.add(this.expr);
@@ -119,9 +135,13 @@ public class EMethodInvocation extends EExpression
 			this.strongDependencies.add(arg);
 		}
 		
-		Signature closure = this.deferred.closure();
+		Signature sig;
+		if (this.deferred != null)
+			sig = this.deferred.closure();
+		else
+			sig = this.signature;
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, closure);
+		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
 		
 		for (EASTExecutableNode node : deps)
 			if (!node.equals(this.expr) && !this.arguments.contains(node))
@@ -133,7 +153,7 @@ public class EMethodInvocation extends EExpression
 	{
 		int sum = super.optimize();
 
-		if (this.expr != null)
+		if (!this.isStatic())
 			sum += this.expr.optimize();
 		
 		for (EExpression arg : this.arguments)
@@ -158,36 +178,11 @@ public class EMethodInvocation extends EExpression
 		else
 			this.task = parent.newSubTask(this, "invoke");
 		
-		if (this.expr != null)
+		if (!this.isStatic())
 			this.expr.preTranslate(this.task);
 		
 		for (EExpression arg : this.arguments)
 			arg.preTranslate(this.task);
-	}
-
-	@SuppressWarnings("unchecked")
-	public Expression translate(List<CompilationUnit> out)
-	{
-		if (this.inlineTask)
-			return this.build(out);
-		
-		out.add(this.task.translate());
-		
-		AST ast = this.getAST();
-		
-		/* in task */
-		this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(this.build(out)));
-
-		/* parent task */
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("ae_" + this.task.getName()));
-
-		FieldAccess ret = ast.newFieldAccess();
-		ret.setExpression(access);
-		ret.setName(ast.newSimpleName("ae_ret"));
-
-		return ret;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -195,25 +190,44 @@ public class EMethodInvocation extends EExpression
 	public Expression build(List<CompilationUnit> out)
 	{
 		AST ast = this.getAST();
-		
-		EMethodDeclaration method = this.getMethod();
 
-		ClassInstanceCreation create = ast.newClassInstanceCreation();
-		create.setType(ast.newSimpleType(ast.newSimpleName(method.getTask().getName())));	
-		
-		create.arguments().add(ast.newThisExpression());
-
-		if (!method.isStatic())
-			create.arguments().add(this.expr.translate(out));
-
-		for (EExpression arg : this.arguments)
-			create.arguments().add(arg.translate(out));
-
-		return create;
-	}
+		if (this.isAeminium())
+		{
+			ClassInstanceCreation create = ast.newClassInstanceCreation();
+			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getName())));	
+			
+			create.arguments().add(ast.newThisExpression());
 	
-	public EMethodDeclaration getMethod()
+			if (!this.isStatic())
+				create.arguments().add(this.expr.translate(out));
+	
+			for (EExpression arg : this.arguments)
+				create.arguments().add(arg.translate(out));
+
+			return create;
+		} else
+		{
+			MethodInvocation invoke = ast.newMethodInvocation();
+			invoke.setName(ast.newSimpleName(this.binding.getName()));
+
+			if (!this.isStatic())
+				invoke.setExpression(this.expr.translate(out));
+			else if (this.expr != null)
+				invoke.setExpression((Expression) ASTNode.copySubtree(ast, this.expr.getOriginal()));
+
+			for (EExpression arg : this.arguments)
+				invoke.arguments().add(arg.translate(out));
+
+			return invoke;
+		}
+	}
+		
+	public boolean isStatic()
 	{
-		return (EMethodDeclaration) this.east.getNode(this.binding);
+		for (ModifierKeyword keyword : this.getModifiers())
+			if (keyword.toString().equals("static"))
+				return true;
+
+		return false;
 	}
 }

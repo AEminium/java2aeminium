@@ -32,6 +32,9 @@ public abstract class EStatement extends EASTExecutableNode
 		if (stmt instanceof IfStatement)
 			return EIfStatement.create(east, (IfStatement) stmt, scope, method);
 
+		if (stmt instanceof ExpressionStatement)
+			return EExpressionStatement.create(east, (ExpressionStatement) stmt, scope, method);
+		
 		System.err.println("Not implemented error: " + stmt.getClass().getName());
 
 		return null;

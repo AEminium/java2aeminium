@@ -99,8 +99,6 @@ public abstract class EASTExecutableNode extends EASTNode
 		
 		if (!this.inlineTask)
 		{
-			System.out.println("inlining: " + this);
-
 			this.inlineTask = true;
 			return 1;
 		}
@@ -112,7 +110,7 @@ public abstract class EASTExecutableNode extends EASTNode
 	{
 		// TODO simplifyDependencies()
 		// watch out for inlined tasks
-		System.err.println("TODO: EASTExecutableNode.simplifyDependencies()");
+		// System.err.println("TODO: EASTExecutableNode.simplifyDependencies()");
 	}
 	
 	public abstract void preTranslate(Task parent);

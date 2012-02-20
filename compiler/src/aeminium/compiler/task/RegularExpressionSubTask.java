@@ -23,7 +23,8 @@ public class RegularExpressionSubTask extends ExpressionSubTask
 	{
 		AST ast = this.node.getAST();
 		
-		this.addField(this.getNode().getType(), "ae_ret", true);
+		if (!this.getNode().isVoid())
+			this.addField(this.getNode().getType(), "ae_ret", true);
 		this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
 		
 		super.fillConstructor(body);

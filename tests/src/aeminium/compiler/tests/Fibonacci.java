@@ -10,9 +10,11 @@ public class Fibonacci
 			return f(n-1) + f(n-2);
 	}
 
-	@AEminium
-	public static int main(String[] args)
+	public static void main(String[] args)
 	{
-		return f(20);
+		System.out.println(f(1));
+		System.out.println(f(2));
+		System.out.println(f(3));
+		System.out.println(f(4));
 	}
 }

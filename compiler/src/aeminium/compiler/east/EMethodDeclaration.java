@@ -133,7 +133,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 	public boolean isMain()
 	{
-		return (this.getModifier("static") != null) && this.getOriginal().getName().toString().equals("main");
+		return this.getOriginal().getName().toString().equals("main") && this.isVoid() && this.isStatic();
 	}
 	
 	public EBlock getBody()
