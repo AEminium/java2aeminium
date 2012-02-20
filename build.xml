@@ -17,6 +17,11 @@
 	<property name="tests.target.dir" value="tests/target" />
 	<property name="tests.build.dir" value="tests/build" />
 	<property name="tests.lib.dir" value="tests/lib" />
+	<property name="tests.class" value="aeminium.compiler.tests.Fibonacci" />
+	<property name="tests.jar" value="tests/test.jar" />
+
+	<!-- aeminium.tests -->
+	<property name="profile.agentpath" value="/home/Tools/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849" />
 
 	<path id="compiler.classpath">
 		<fileset dir="${compiler.lib.dir}" includes="**/*.jar" />
@@ -24,6 +29,7 @@
 
 	<path id="tests.classpath">
 		<fileset dir="${tests.lib.dir}" includes="**/*.jar" />
+		<pathelement location="${runtime.jar}" />
 		<pathelement location="${tests.build.dir}" />
 	</path>
 
@@ -64,9 +70,9 @@
 	</target>
 
 	<target name="translate.tests" depends="compile.compiler,compile.runtime">
-		<delete>
-			<fileset dir="${tests.target.dir}" includes="**"/>
-		</delete>
+		<delete dir="${tests.target.dir}" />
+		<mkdir dir="${tests.target.dir}" />
+
 		<java jar="${compiler.jar}" fork="true">
 			<arg value="${tests.src.dir}" />
 			<arg value="${tests.target.dir}" />
@@ -84,11 +90,32 @@
 	</target>
 
 	<target name="compile.tests" depends="precompile.tests">
+		<delete dir="${tests.build.dir}" />
+		<mkdir dir="${tests.build.dir}" />
+
 		<javac srcdir="${tests.target.dir}" destdir="${tests.build.dir}" classpathref="tests.classpath" includeantruntime="false" debug="true"/>
+		<jar destfile="${tests.jar}">
+            <manifest>
+                <attribute name="Main-Class" value="${tests.class}"/>
+                <attribute name="Rsrc-Class-Path" value="./ ${runtime.jar}"/>
+            </manifest>
+
+            <zipfileset src="jar-in-jar-loader.zip"/>
+            <zipfileset src="${runtime.jar}"/>
+
+            <fileset dir="${tests.build.dir}"/>
+        </jar>
 	</target>
 
 	<target name="run" depends="compile.tests">
-		<java classname="aeminium.compiler.tests.Fibonacci" classpathref="tests.classpath" dir="${tests.build.dir}" fork="true"/>
+		<java jar="${tests.jar}" fork="true"/>
+	</target>
+
+	<target name="profile" depends="compile.tests">
+		<java jar="${tests.jar}" fork="true">
+			<jvmarg value="-agentpath:${profile.agentpath}" />
+			<jvmarg value="-Djprofiler.probeProvider=aeminium.runtime.profiler.AeminiumProbeProvider" />
+		</java>
 	</target>
 
 </project>
