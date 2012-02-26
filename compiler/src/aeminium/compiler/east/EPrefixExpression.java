@@ -52,7 +52,6 @@ public class EPrefixExpression extends EExpression
 		
 		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
 		this.signature.addItem(new SignatureItemWrite(this.datagroup));
-		
 	}
 
 	@Override

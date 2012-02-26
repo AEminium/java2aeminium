@@ -40,6 +40,15 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		if (expr instanceof ParenthesizedExpression)
 			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope);
 		
+		if (expr instanceof ArrayCreation)
+			return EArrayCreation.create(east, (ArrayCreation) expr, scope);
+		
+		if (expr instanceof ArrayInitializer)
+			return EArrayInitializer.create(east, (ArrayInitializer) expr, scope);
+		
+		if (expr instanceof ArrayAccess)
+			return EArrayAccess.create(east, (ArrayAccess) expr, scope);
+		
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;
 	}

@@ -37,6 +37,9 @@ public class EType
 		if (binding.isPrimitive())
 			return ast.newPrimitiveType(PrimitiveType.toCode(binding.getName()));
 
+		if (binding.isArray())
+			return ast.newArrayType(EType.build(ast, binding.getElementType()), binding.getDimensions());
+		
 		// TODO EType.build(AST ast, ITypeBinding binding)
 		System.err.println("EType.build(AST ast, ITypeBinding binding)");
 		return null;

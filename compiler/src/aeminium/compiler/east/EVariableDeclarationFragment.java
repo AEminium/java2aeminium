@@ -37,9 +37,14 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		super(east, original);
 
 		this.scope = scope;
-		this.dataType = dataType;
 		this.datagroup = scope.getDataGroup();
-	
+
+		AST ast = this.getAST();
+		if (original.getExtraDimensions() == 0)
+			this.dataType = dataType;
+		else
+			this.dataType = ast.newArrayType((Type) ASTNode.copySubtree(ast, dataType), original.getExtraDimensions());
+			
 		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this);
 		this.expr = EExpression.create(this.east, original.getInitializer(), this.scope);
 	}
