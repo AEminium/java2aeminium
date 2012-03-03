@@ -19,6 +19,18 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	
 	public static EExpression create(EAST east, Expression expr, EASTDataNode scope)
 	{
+		if (expr instanceof ArrayCreation)
+			return EArrayCreation.create(east, (ArrayCreation) expr, scope);
+		
+		if (expr instanceof ArrayInitializer)
+			return EArrayInitializer.create(east, (ArrayInitializer) expr, scope);
+		
+		if (expr instanceof ArrayAccess)
+			return EArrayAccess.create(east, (ArrayAccess) expr, scope);
+
+		if (expr instanceof Assignment)
+			return EAssignment.create(east, (Assignment) expr, scope);
+		
 		if (expr instanceof MethodInvocation)
 			return EMethodInvocation.create(east, (MethodInvocation) expr, scope);
 		
@@ -40,19 +52,25 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		if (expr instanceof ParenthesizedExpression)
 			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope);
 		
-		if (expr instanceof ArrayCreation)
-			return EArrayCreation.create(east, (ArrayCreation) expr, scope);
-		
-		if (expr instanceof ArrayInitializer)
-			return EArrayInitializer.create(east, (ArrayInitializer) expr, scope);
-		
-		if (expr instanceof ArrayAccess)
-			return EArrayAccess.create(east, (ArrayAccess) expr, scope);
-		
+		if (expr instanceof StringLiteral)
+			return EStringLiteral.create(east, (StringLiteral) expr, scope);
+				
+		if (expr instanceof ThisExpression)
+			return EThisExpression.create(east, (ThisExpression) expr, scope);
+				
+		if (expr instanceof FieldAccess)
+			return EFieldAccess.create(east, (FieldAccess) expr, scope);
+				
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;
 	}
 
+	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
 	@SuppressWarnings("unchecked")
 	public Expression translate(List<CompilationUnit> out)
 	{

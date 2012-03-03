@@ -30,6 +30,12 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 	}
 
 	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
+	@Override
 	public SingleVariableDeclaration getOriginal()
 	{
 		return (SingleVariableDeclaration) this.original;

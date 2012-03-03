@@ -43,6 +43,12 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 		return this.datagroup;
 	}
 
+	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
 	public Task getDeclaringTask()
 	{
 		return this.scope.getTask();

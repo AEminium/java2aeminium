@@ -80,9 +80,10 @@ public class EParenthesizedExpression extends EExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		sum += this.expr.optimize();
+		sum += super.optimize();
 
 		return sum;
 	}

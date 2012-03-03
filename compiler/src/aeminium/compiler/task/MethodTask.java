@@ -1,5 +1,7 @@
 package aeminium.compiler.task;
 
+import java.util.ArrayList;
+
 import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.east.EMethodDeclaration;
@@ -26,13 +28,13 @@ public class MethodTask extends Task
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public void fillConstructor(Block body)
+	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
 	{
 		EMethodDeclaration method = this.getNode();
 		AST ast = this.node.getAST();
 		
 		Type caller_type;
-		if (method.isVoid())
+		if (method.isConstructor() || method.isVoid())
 			caller_type = ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody"));
 		else
 		{
@@ -54,7 +56,7 @@ public class MethodTask extends Task
 			param.setType((Type) ASTNode.copySubtree(ast, caller_type));
 			param.setName(ast.newSimpleName("ae_parent"));
 
-			this.constructor.parameters().add(param);
+			constructor.parameters().add(param);
 
 			// this.ae_parent = ae_parent
 			this.addField((Type) ASTNode.copySubtree(ast, caller_type), "ae_parent", false);
@@ -82,7 +84,7 @@ public class MethodTask extends Task
 			param.setType((Type) ASTNode.copySubtree(ast, thisType));
 			param.setName(ast.newSimpleName("ae_this"));
 
-			this.constructor.parameters().add(param);
+			constructor.parameters().add(param);
 
 			// this.ae_this = ae_this
 			Assignment asgn = ast.newAssignment();
@@ -102,7 +104,7 @@ public class MethodTask extends Task
 			SingleVariableDeclaration decl = param.getOriginal();
 			
 			// add x parameter
-			this.constructor.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, decl));
+			constructor.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, decl));
 
 			// this.x = x
 			this.addField((Type) ASTNode.copySubtree(ast, decl.getType()), decl.getName().toString(), false);
@@ -121,6 +123,6 @@ public class MethodTask extends Task
 		
 		this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
 
-		super.fillConstructor(body);
+		super.fillConstructor(constructor, body, recursive, overrideTasks);
 	}
 }

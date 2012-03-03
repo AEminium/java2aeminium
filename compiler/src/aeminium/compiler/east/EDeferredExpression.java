@@ -3,6 +3,7 @@ package aeminium.compiler.east;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -47,7 +48,19 @@ public abstract class EDeferredExpression extends EExpression
 		AST ast = this.getAST();
 		
 		/* in task */
-		this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(this.build(out)));
+		if (!this.isAeminium() && !this.isVoid())
+		{
+			FieldAccess this_ret = ast.newFieldAccess();
+			this_ret.setExpression(ast.newThisExpression());
+			this_ret.setName(ast.newSimpleName("ae_ret"));
+	
+			Assignment assign = ast.newAssignment();
+			assign.setLeftHandSide(this_ret);
+			assign.setRightHandSide(this.build(out));
+
+			this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(assign));
+		} else
+			this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(this.build(out)));
 
 		/* parent task */
 		FieldAccess access = ast.newFieldAccess();

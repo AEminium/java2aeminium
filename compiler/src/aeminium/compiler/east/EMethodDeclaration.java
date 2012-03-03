@@ -107,12 +107,17 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 				_item = _item.replace(this.parameters.get(i).name.getDataGroup(), dgsArgs.get(i));
 			}
 			
-			if (!this.isStatic())
-				_item = _item.replace(this.type.thisDataGroup, dgThis);
-
-			if (!this.isVoid())
-				_item = _item.replace(this.returnDataGroup, dgRet);
-			
+			if (this.getOriginal().isConstructor())
+			{
+				_item = _item.replace(this.type.thisDataGroup, dgRet);
+			} else
+			{
+				if (!this.isStatic())
+					_item = _item.replace(this.type.thisDataGroup, dgThis);
+					
+				if (!this.isVoid())
+					_item = _item.replace(this.returnDataGroup, dgRet);
+			}
 			sig.addItem(_item);
 		}
 		
@@ -136,6 +141,11 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		return this.getOriginal().getName().toString().equals("main") && this.isVoid() && this.isStatic();
 	}
 	
+	public boolean isConstructor()
+	{
+		return this.getOriginal().isConstructor();
+	}
+	
 	public EBlock getBody()
 	{
 		return this.body;
@@ -144,8 +154,10 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
+		
 		sum += this.body.optimize();
+		sum += super.optimize();
 		
 		return sum;
 	}
@@ -231,6 +243,6 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		AST ast = this.getAST();
 		
 		// TODO: EMethodDeclaration Type from TypeDeclaration
-		return ast.newSimpleType(this.type.getOriginal().getName());
+		return ast.newSimpleType((SimpleName) ASTNode.copySubtree(ast, this.type.getOriginal().getName()));
 	}
 }

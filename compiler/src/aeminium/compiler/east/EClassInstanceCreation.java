@@ -4,18 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.DependencyStack;
-import aeminium.compiler.signature.DataGroup;
-import aeminium.compiler.signature.Signature;
-import aeminium.compiler.signature.SignatureItemDeferred;
-import aeminium.compiler.signature.SignatureItemRead;
-import aeminium.compiler.signature.SignatureItemWrite;
-import aeminium.compiler.signature.SimpleDataGroup;
+import aeminium.compiler.signature.*;
 import aeminium.compiler.task.Task;
 
 public class EClassInstanceCreation extends EDeferredExpression
@@ -137,10 +129,12 @@ public class EClassInstanceCreation extends EDeferredExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		for (EExpression arg : this.arguments)
 			sum += arg.optimize();
+		
+		sum += super.optimize();
 		
 		return sum;
 	}
@@ -165,11 +159,47 @@ public class EClassInstanceCreation extends EDeferredExpression
 			arg.preTranslate(this.task);
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	public Expression build(List<CompilationUnit> out)
 	{
-		// TODO: EClassInstanceCreation.build();
-		System.err.println("TODO: EClassInstanceCreation.build()");
-		return null;
+		AST ast = this.getAST();
+
+		System.err.println("TODO: Paralell ClassInstanceCreation");
+		
+		/*
+		if (this.isAeminium())
+		{
+			ClassInstanceCreation create = ast.newClassInstanceCreation();
+			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getName())));	
+			
+			create.arguments().add(ast.newThisExpression());
+	
+			if (!this.isStatic())
+				create.arguments().add(this.expr.translate(out));
+	
+			for (EExpression arg : this.arguments)
+				create.arguments().add(arg.translate(out));
+
+			return create;
+		
+		}
+		*/
+		
+		ClassInstanceCreation create = ast.newClassInstanceCreation();
+		create.setType(ast.newSimpleType(ast.newSimpleName(this.binding.getName())));
+
+		for (EExpression arg : this.arguments)
+			create.arguments().add(arg.translate(out));
+
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName("ae_ret"));
+		
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(access);
+		assign.setRightHandSide(create);
+		
+		return assign;
 	}
 }

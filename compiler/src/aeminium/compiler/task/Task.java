@@ -1,5 +1,6 @@
 package aeminium.compiler.task;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.*;
@@ -17,7 +18,7 @@ public abstract class Task
 	
 	protected final CompilationUnit cu;
 	protected final TypeDeclaration decl;
-	protected final MethodDeclaration constructor;
+	protected final ArrayList<MethodDeclaration> constructors;
 	protected final MethodDeclaration execute;
 	
 	@SuppressWarnings("unchecked")
@@ -45,8 +46,12 @@ public abstract class Task
 		this.decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
 
 		/* constructor */
-		this.constructor = ast.newMethodDeclaration();
-		this.decl.bodyDeclarations().add(this.constructor);
+		this.constructors = new ArrayList<MethodDeclaration>();
+		
+		MethodDeclaration defaultConstructor = ast.newMethodDeclaration();
+		this.constructors.add(defaultConstructor);
+		
+		this.decl.bodyDeclarations().add(defaultConstructor);
 		
 		/* public void execute(Runtime rt, Task task) throws Exception */
 		this.execute = ast.newMethodDeclaration();
@@ -92,7 +97,7 @@ public abstract class Task
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected void fillConstructor(Block body)
+	protected void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
 	{
 		AST ast = this.node.getAST();
 		
@@ -124,7 +129,8 @@ public abstract class Task
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getName()));
 			String name = "ae_" + dep.getName();
 
-			this.addField(type, name, false);
+			if (!recursive)
+				this.addField(type, name, false);
 
 			// this.ae_s1 = new ....()
 			Assignment child_asgn = ast.newAssignment();
@@ -146,7 +152,8 @@ public abstract class Task
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
 			String name = "ae_" + child.getName();
 
-			this.addField(type, name, false);
+			if (!recursive)
+				this.addField(type, name, false);
 		}
 
 		// AeminiumHelper.schedule(this.ae_task, ..., Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
@@ -156,20 +163,16 @@ public abstract class Task
 
 		schedule.arguments().add((Expression) ASTNode.copySubtree(ast, task_access));
 		
-		// this.ae_parent == null ? AeminiumHelper.NO_PARENT : this.ae_parent.ae_task
+		// this.ae_parent == null ? AeminiumHelper.NO_PARENT : ae_parent.ae_task
 		ConditionalExpression expr = ast.newConditionalExpression();
 		
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("ae_parent"));
-
 		InfixExpression inf = ast.newInfixExpression();
-		inf.setLeftOperand(access);
+		inf.setLeftOperand(ast.newSimpleName("ae_parent"));
 		inf.setRightOperand(ast.newNullLiteral());
 		inf.setOperator(InfixExpression.Operator.EQUALS);
 
 		FieldAccess parent_task = ast.newFieldAccess();
-		parent_task.setExpression((Expression) ASTNode.copySubtree(ast,access));
+		parent_task.setExpression(ast.newSimpleName("ae_parent"));
 		parent_task.setName(ast.newSimpleName("ae_task"));
 	
 		expr.setExpression(inf);
@@ -178,18 +181,56 @@ public abstract class Task
 
 		schedule.arguments().add(expr);
 
-		if (this.node.getStrongDependencies().size() > 0 || this.node.getWeakDependencies().size() > 0)
+		if (overrideTasks == null)
+		{
+			if (this.node.getStrongDependencies().size() > 0 || this.node.getWeakDependencies().size() > 0)
+			{
+				MethodInvocation asList = ast.newMethodInvocation();
+				asList.setExpression(ast.newName("java.util.Arrays"));
+				asList.setName(ast.newSimpleName("asList"));
+	
+				for (EASTExecutableNode node: this.node.getStrongDependencies())
+				{
+					Task dep = node.getTask();
+					
+					FieldAccess dep_access = ast.newFieldAccess();
+					dep_access.setExpression(ast.newThisExpression());
+					dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
+	
+					FieldAccess dep_task = ast.newFieldAccess();
+					dep_task.setExpression(dep_access);
+					dep_task.setName(ast.newSimpleName("ae_task"));
+	
+					asList.arguments().add(dep_task);
+				}
+	
+				for (EASTExecutableNode node : this.node.getWeakDependencies())
+				{
+					Task dep = node.getTask();
+					
+					if (this.isChildOf(dep))
+						continue;
+					
+					FieldAccess dep_task = ast.newFieldAccess();
+					dep_task.setExpression(this.getPathToTask(dep));
+					dep_task.setName(ast.newSimpleName("ae_task"));
+	
+					asList.arguments().add(dep_task);
+				}
+				
+				schedule.arguments().add(asList);
+			} else
+				schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
+		} else
 		{
 			MethodInvocation asList = ast.newMethodInvocation();
 			asList.setExpression(ast.newName("java.util.Arrays"));
 			asList.setName(ast.newSimpleName("asList"));
-
-			for (EASTExecutableNode node: this.node.getStrongDependencies())
+			
+			for (Task dep: overrideTasks)
 			{
-				Task dep = node.getTask();
-				
 				FieldAccess dep_access = ast.newFieldAccess();
-				dep_access.setExpression(ast.newThisExpression());
+				dep_access.setExpression(ast.newSimpleName("ae_parent"));
 				dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
 
 				FieldAccess dep_task = ast.newFieldAccess();
@@ -199,26 +240,14 @@ public abstract class Task
 				asList.arguments().add(dep_task);
 			}
 
-			for (EASTExecutableNode node : this.node.getWeakDependencies())
-			{
-				Task dep = node.getTask();
-				
-				FieldAccess dep_task = ast.newFieldAccess();
-				dep_task.setExpression(this.getPathToTask(dep));
-				dep_task.setName(ast.newSimpleName("ae_task"));
-
-				asList.arguments().add(dep_task);
-			}
-			
 			schedule.arguments().add(asList);
-		} else
-			schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
-
+		}
+		
 		body.statements().add(ast.newExpressionStatement(schedule));
 
-		this.constructor.setName(ast.newSimpleName(this.name));
-		this.constructor.setConstructor(true);
-		this.constructor.setBody(body);
+		constructor.setName(ast.newSimpleName(this.name));
+		constructor.setConstructor(true);
+		constructor.setBody(body);
 	}
 	
 	public Expression getPathToTask(Task target)
@@ -286,6 +315,15 @@ public abstract class Task
 		return access;
 	}
 	
+	public boolean isChildOf(Task other)
+	{
+		for (Task parent = this.parent; parent != null; parent = parent.parent)
+			if (parent == other)
+				return true;
+		
+		return false;
+	}
+	
 	@SuppressWarnings("unchecked")
 	protected void fillExecute()
 	{
@@ -325,7 +363,7 @@ public abstract class Task
 	
 	public CompilationUnit translate()
 	{
-		this.fillConstructor(this.node.getAST().newBlock());
+		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false, null);
 		this.fillExecute();
 
 		return this.cu;
@@ -336,9 +374,9 @@ public abstract class Task
 		return this.execute;
 	}
 	
-	public MethodDeclaration getConstructor()
+	public ArrayList<MethodDeclaration> getConstructors()
 	{
-		return this.constructor;
+		return this.constructors;
 	}
 
 	public EASTExecutableNode getNode()

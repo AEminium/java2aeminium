@@ -25,6 +25,12 @@ public abstract class EBodyDeclaration extends EASTExecutableNode implements EAS
 		return this.datagroup;
 	}
 	
+	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.type;
+	}
+	
 	public void checkDependencies()
 	{
 		DependencyStack stack = new DependencyStack();

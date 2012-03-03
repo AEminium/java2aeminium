@@ -111,6 +111,20 @@ public abstract class EASTExecutableNode extends EASTNode
 		// TODO simplifyDependencies()
 		// watch out for inlined tasks
 		// System.err.println("TODO: EASTExecutableNode.simplifyDependencies()");
+		Set<EASTExecutableNode> deps = new HashSet<EASTExecutableNode>();
+		deps.addAll(this.weakDependencies);
+		deps.addAll(this.strongDependencies);
+		
+		Set<EASTExecutableNode> temp_weak = new HashSet<EASTExecutableNode>(this.weakDependencies);
+		
+		for (EASTExecutableNode dep : deps)
+		{
+			temp_weak.remove(dep.weakDependencies);
+			temp_weak.remove(dep.strongDependencies);
+		}
+		
+		this.weakDependencies.clear();
+		this.weakDependencies.addAll(temp_weak);
 	}
 	
 	public abstract void preTranslate(Task parent);

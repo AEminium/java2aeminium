@@ -113,13 +113,15 @@ public class EInfixExpression extends EExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		sum += this.left.optimize();
 		sum += this.right.optimize();
 		
 		for (EExpression ext : this.extended)
 			sum += ext.optimize();
+		
+		sum += super.optimize();
 		
 		return sum;
 	}

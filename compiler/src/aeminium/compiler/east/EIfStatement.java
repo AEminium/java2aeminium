@@ -109,13 +109,15 @@ public class EIfStatement extends EStatement
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		sum += this.expr.optimize();
 		sum += this.thenStmt.optimize();
 		
 		if (this.elseStmt != null)
 			sum += this.elseStmt.optimize();
+		
+		sum += super.optimize();
 		
 		return sum;
 	}

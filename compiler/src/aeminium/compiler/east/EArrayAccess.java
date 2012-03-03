@@ -86,10 +86,11 @@ public class EArrayAccess extends EExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		sum += this.array.optimize();
 		sum += this.index.optimize();
+		sum += super.optimize();
 		
 		return sum;
 	}

@@ -1,6 +1,7 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -64,10 +65,11 @@ public class EExpressionStatement extends EStatement
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		sum += this.expr.optimize();
-
+		sum += super.optimize();
+		
 		return sum;
 	}
 	
@@ -85,8 +87,14 @@ public class EExpressionStatement extends EStatement
 	@Override
 	public List<Statement> build(List<CompilationUnit> out)
 	{
-		this.expr.translate(out);
+		AST ast = this.getAST();
+
+		Expression expr = this.expr.translate(out);
 		
-		return new ArrayList<Statement>();
+		if (expr instanceof FieldAccess)
+			return new ArrayList<Statement>();
+		
+		ExpressionStatement exprstmt = ast.newExpressionStatement(expr);
+		return Arrays.asList((Statement) exprstmt);
 	}
 }

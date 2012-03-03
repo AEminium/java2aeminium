@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 
@@ -24,12 +26,15 @@ public class EArrayCreation extends EExpression
 	protected final DataGroup datagroup;
 	protected final ArrayList<EExpression> dimensions;
 	protected final EArrayInitializer initializer;
+	protected final ArrayType type;
 	
 	public EArrayCreation(EAST east, ArrayCreation original, EASTDataNode scope)
 	{
 		super(east, original, scope);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("array"));
+		
+		this.type = original.getType();
 		
 		this.dimensions = new ArrayList<EExpression>();
 		for (Object dim : original.dimensions())
@@ -117,7 +122,7 @@ public class EArrayCreation extends EExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		for (EExpression dim : this.dimensions)
 			sum += dim.optimize();
@@ -128,6 +133,8 @@ public class EArrayCreation extends EExpression
 			sum += this.initializer.inline(this);
 		}
 		
+		sum += super.optimize();
+
 		return sum;
 	}
 	@Override
@@ -152,6 +159,8 @@ public class EArrayCreation extends EExpression
 		AST ast = this.getAST();
 		
 		ArrayCreation create = ast.newArrayCreation();
+		
+		create.setType((ArrayType) ASTNode.copySubtree(ast, this.type));
 		
 		for (EExpression dim : this.dimensions)
 			create.dimensions().add(dim.translate(out));

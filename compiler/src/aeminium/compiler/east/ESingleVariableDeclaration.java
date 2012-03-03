@@ -40,6 +40,12 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	}
 
 	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
+	@Override
 	public SingleVariableDeclaration getOriginal()
 	{
 		return (SingleVariableDeclaration) this.original;
@@ -95,11 +101,13 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		if (this.expr != null)
 			sum += this.expr.optimize();
 
+		sum += super.optimize();
+		
 		return sum;
 	}
 	

@@ -93,11 +93,13 @@ public class EReturnStatement extends EStatement
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		if (this.expr != null)
 			sum += this.expr.optimize();
 
+		sum += super.optimize();
+		
 		return sum;
 	}
 	

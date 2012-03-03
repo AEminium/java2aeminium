@@ -46,7 +46,11 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 			this.dataType = ast.newArrayType((Type) ASTNode.copySubtree(ast, dataType), original.getExtraDimensions());
 			
 		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this);
-		this.expr = EExpression.create(this.east, original.getInitializer(), this.scope);
+		
+		if (original.getInitializer() != null)
+			this.expr = EExpression.create(this.east, original.getInitializer(), this.scope);
+		else
+			this.expr = null;
 	}
 
 	@Override
@@ -65,7 +69,14 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	{
 		return this.datagroup;
 	}
-
+	
+	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
+	
 	@Override
 	public void checkSignatures()
 	{
@@ -109,11 +120,13 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		if (this.expr != null)
 			sum += this.expr.optimize();
 
+		sum += super.optimize();
+		
 		return sum;
 	}
 	

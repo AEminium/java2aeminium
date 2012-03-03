@@ -43,6 +43,12 @@ public class EBlock extends EStatement implements EASTDataNode
 	}
 
 	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
+	@Override
 	public Block getOriginal()
 	{
 		return (Block) this.original;
@@ -82,10 +88,12 @@ public class EBlock extends EStatement implements EASTDataNode
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		for (EStatement stmt : this.stmts)
 			sum += stmt.optimize();
+		
+		sum += super.optimize();
 		
 		return sum;
 	}

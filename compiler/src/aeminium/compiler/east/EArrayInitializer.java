@@ -98,11 +98,13 @@ public class EArrayInitializer extends EExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 		
 		for (EExpression expr : this.exprs)
 			sum += expr.optimize();
 		
+		sum += super.optimize();
+
 		return sum;
 	}
 	

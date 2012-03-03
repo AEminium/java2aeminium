@@ -12,7 +12,6 @@ import aeminium.compiler.east.EType;
 
 public class CallerExpressionSubTask extends ExpressionSubTask
 {
-
 	@SuppressWarnings("unchecked")
 	protected CallerExpressionSubTask(EExpression node, String name, Task parent)
 	{

@@ -151,13 +151,15 @@ public class EMethodInvocation extends EDeferredExpression
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		if (!this.isStatic())
 			sum += this.expr.optimize();
 		
 		for (EExpression arg : this.arguments)
 			sum += arg.optimize();
+		
+		sum += super.optimize();
 		
 		return sum;
 	}
@@ -184,6 +186,7 @@ public class EMethodInvocation extends EDeferredExpression
 		for (EExpression arg : this.arguments)
 			arg.preTranslate(this.task);
 	}
+	
 	
 	@SuppressWarnings("unchecked")
 	@Override

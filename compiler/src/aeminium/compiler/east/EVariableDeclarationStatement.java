@@ -47,6 +47,12 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	}
 
 	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this.scope.getTypeDeclaration();
+	}
+	
+	@Override
 	public VariableDeclarationStatement getOriginal()
 	{
 		return (VariableDeclarationStatement) this.original;
@@ -91,11 +97,12 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	@Override
 	public int optimize()
 	{
-		int sum = super.optimize();
+		int sum = 0;
 
 		for (EVariableDeclarationFragment frag : this.fragments)
 			sum += frag.optimize();
 
+		sum += super.optimize();
 		return sum;
 	}
 	
