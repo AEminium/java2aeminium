@@ -1,5 +1,6 @@
 package aeminium.compiler.east;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,7 +14,9 @@ public abstract class EASTExecutableNode extends EASTNode
 {
 	protected final Signature signature;
 	
-	protected final Set<EASTExecutableNode> strongDependencies;
+	/* here order matters so we can't use a set */
+	protected final ArrayList<EASTExecutableNode> strongDependencies;
+
 	protected final Set<EASTExecutableNode> weakDependencies;
 	protected final Set<EASTExecutableNode> children;
 	
@@ -29,14 +32,14 @@ public abstract class EASTExecutableNode extends EASTNode
 
 		this.signature = new Signature();
 		
-		this.strongDependencies = new HashSet<EASTExecutableNode>();
+		this.strongDependencies = new ArrayList<EASTExecutableNode>();
 		this.weakDependencies = new HashSet<EASTExecutableNode>();
 		this.children = new HashSet<EASTExecutableNode>();
 		
 		this.inlineTask = false;
 	}
 	
-	public Set<EASTExecutableNode> getStrongDependencies()
+	public ArrayList<EASTExecutableNode> getStrongDependencies()
 	{
 		return this.strongDependencies;
 	}

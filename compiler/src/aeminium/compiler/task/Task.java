@@ -183,34 +183,31 @@ public abstract class Task
 
 		if (overrideTasks == null)
 		{
-			if (this.node.getStrongDependencies().size() > 0 || this.node.getWeakDependencies().size() > 0)
+			/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
+			ArrayList<Task> deps = new ArrayList<Task>();
+			
+			for (EASTExecutableNode node : this.node.getStrongDependencies())
+			{
+				Task dep = node.getTask();
+				if (!deps.contains(dep))
+					deps.add(dep);
+			}
+			
+			for (EASTExecutableNode node : this.node.getWeakDependencies())
+			{
+				Task dep = node.getTask();
+				if (!deps.contains(dep) && this != dep && !this.isChildOf(dep))
+					deps.add(dep);
+			}
+			
+			if (deps.size() > 0)
 			{
 				MethodInvocation asList = ast.newMethodInvocation();
 				asList.setExpression(ast.newName("java.util.Arrays"));
 				asList.setName(ast.newSimpleName("asList"));
 	
-				for (EASTExecutableNode node: this.node.getStrongDependencies())
+				for (Task dep : deps)
 				{
-					Task dep = node.getTask();
-					
-					FieldAccess dep_access = ast.newFieldAccess();
-					dep_access.setExpression(ast.newThisExpression());
-					dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
-	
-					FieldAccess dep_task = ast.newFieldAccess();
-					dep_task.setExpression(dep_access);
-					dep_task.setName(ast.newSimpleName("ae_task"));
-	
-					asList.arguments().add(dep_task);
-				}
-	
-				for (EASTExecutableNode node : this.node.getWeakDependencies())
-				{
-					Task dep = node.getTask();
-					
-					if (this.isChildOf(dep))
-						continue;
-					
 					FieldAccess dep_task = ast.newFieldAccess();
 					dep_task.setExpression(this.getPathToTask(dep));
 					dep_task.setName(ast.newSimpleName("ae_task"));
