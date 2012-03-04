@@ -11,8 +11,6 @@ import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemDeferred;
-import aeminium.compiler.signature.SignatureItemRead;
-import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.Task;
 
@@ -79,29 +77,9 @@ public class EMethodInvocation extends EDeferredExpression
 			this.signature.addItem(this.deferred);
 		} else
 		{
-			Signature def = this.getDefaultSignature(this.getDataGroup(), dgExpr, dgsArgs);
+			Signature def = this.getEAST().getCompiler().getSignatureReader().getSignature(this.binding.getKey(), this.getDataGroup(), dgExpr, dgsArgs);
 			this.signature.addAll(def);
 		}
-	}
-
-	protected Signature getDefaultSignature(DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
-	{
-		/* Conservative approach */
-		Signature sig = new Signature();
-		
-		sig.addItem(new SignatureItemRead(this.getEAST().getExternalDataGroup()));
-		sig.addItem(new SignatureItemWrite(this.getEAST().getExternalDataGroup()));
-		
-		if (dgExpr != null)
-			sig.addItem(new SignatureItemRead(dgExpr));
-
-		for (DataGroup arg : dgsArgs)
-			sig.addItem(new SignatureItemRead(arg));
-		
-		if (dgRet != null)
-			sig.addItem(new SignatureItemWrite(dgRet));
-		
-		return sig;
 	}
 
 	@Override

@@ -7,6 +7,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -14,17 +15,21 @@ import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.east.EAST;
 import aeminium.compiler.east.ECompilationUnit;
+import aeminium.compiler.signature.SignatureReader;
 
 public class Compiler
 {
-	String source;
-	String target;
+	private final String source;
+	private final String target;
 
 	/* required for AST creation */
-	String[] classPath;
-	String[] sourcePath;
+	private final String[] classPath;
+	private final String[] sourcePath;
 
-	Compiler(String source, String target)
+	private final EAST east;
+	private final SignatureReader signatureReader;
+	
+	Compiler(String source, String target) throws FileNotFoundException
 	{
 		this.source = source;
 		this.target = target;
@@ -33,12 +38,14 @@ public class Compiler
 		this.classPath = System.getProperty("classpath", "").split(";");
 		this.sourcePath = new String[1];
 		this.sourcePath[0] = source;
+
+		this.east = new EAST(this);
+		this.signatureReader = new SignatureReader(this.east);
 	}
 
 	@SuppressWarnings("unchecked")
 	public void run() throws IOException
 	{
-		EAST east = new EAST();
 		List<String> files = this.walk(new File(this.source));
 
 		for (String path : files)
@@ -184,15 +191,19 @@ public class Compiler
 		if (args.length != 2)
 			System.err.println("java -jar Compiler source_dir target_dir");
 
-		Compiler compiler = new Compiler(args[0], args[1]);
-
 		try
 		{
+			Compiler compiler = new Compiler(args[0], args[1]);
 			compiler.run();
 		} catch (IOException e)
 		{
 			System.err.println("ERROR: " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+
+	public SignatureReader getSignatureReader()
+	{
+		return this.signatureReader;
 	}
 }

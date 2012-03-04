@@ -8,15 +8,21 @@ import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.SimpleDataGroup;
 
+import aeminium.compiler.Compiler;;
+
 public class EAST
 {
+	private final Compiler compiler;
+	
 	private final HashMap<String, EASTNode> namedNodes;
 	private final ArrayList<ECompilationUnit> originalCUs;
 	
 	private final DataGroup externalDataGroup;
 	
-	public EAST()
+	public EAST(Compiler compiler)
 	{
+		this.compiler = compiler;
+		
 		this.namedNodes = new HashMap<String, EASTNode>();
 		this.originalCUs = new ArrayList<ECompilationUnit>();
 		
@@ -89,5 +95,10 @@ public class EAST
 	public DataGroup getExternalDataGroup()
 	{
 		return this.externalDataGroup;
+	}
+
+	public Compiler getCompiler()
+	{
+		return this.compiler;
 	}
 }
