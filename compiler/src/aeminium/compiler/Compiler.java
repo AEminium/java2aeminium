@@ -16,6 +16,7 @@ import org.eclipse.jdt.core.dom.*;
 import aeminium.compiler.east.EAST;
 import aeminium.compiler.east.ECompilationUnit;
 import aeminium.compiler.signature.SignatureReader;
+import aeminium.compiler.translations.ForsToWhiles;
 
 public class Compiler
 {
@@ -65,9 +66,12 @@ public class Compiler
 
 			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
 
+			// Pre-compilation passes
+			cu = new ForsToWhiles().translate(cu);
+			
 			ECompilationUnit.create(east, cu);
 		}
-
+		
 		east.checkSignatures();
 		east.checkDependencies();
 
