@@ -21,7 +21,7 @@ public class SignatureReader
 	public final DataGroup externalDataGroup;
 	public final DataGroup parameterDataGroups[];
 	
-	public SignatureReader(EAST east) throws FileNotFoundException
+	public SignatureReader(EAST east)
 	{
 		this.signatures = new HashMap<String, Signature>();
 		
@@ -83,7 +83,13 @@ public class SignatureReader
             	s.nextLine();
             	this.signatures.put(key, sig);
             }
-        } finally
+        }
+        catch (FileNotFoundException e) {
+			System.err.println("WARNING: " + e.getMessage());
+			// this.signatures should be empty then.
+			assert(this.signatures.size() == 0);
+		}
+        finally
         {
             if (s != null)
             	s.close();
