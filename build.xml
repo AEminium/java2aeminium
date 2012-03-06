@@ -10,7 +10,7 @@
 
 	<!-- aeminium.runtime -->
 	<property name="runtime.dir" value="runtime/src" />
-	<property name="runtime.jar" value="runtime/AeminiumRuntime.jar" />
+	<property name="runtime.jar" value="runtime/dist/AeminiumRuntime.jar" />
 
 	<!-- aeminium.tests -->
 	<property name="tests.src.dir" value="tests/src" />
@@ -66,7 +66,7 @@
     </target>
 
 	<target name="compile.runtime" depends="">
-		<ant dir="runtime" target="jar-release"/>
+		<ant dir="runtime" target="jar"/>
 	</target>
 
 	<target name="translate.tests" depends="compile.compiler,compile.runtime">

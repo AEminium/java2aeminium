@@ -1,0 +1,47 @@
+9
+Ljava/lang/Math;.cos(D)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.sin(D)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.hypot(DD)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.atan2(DD)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.exp(D)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.cosh(D)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.sinh(D)D
+2
+R P 0
+W R
+
+Ljava/util/Random;.nextDouble()D
+3
+R T
+W T
+W R
+
+Ljava/io/PrintStream;.println(Ljava/lang/Object;)V
+2
+R P 0
+W T
+
