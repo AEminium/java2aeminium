@@ -12,7 +12,6 @@ import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemRead;
-import aeminium.compiler.signature.SignatureItemWrite;
 import aeminium.compiler.task.Task;
 
 public class EArrayAccess extends EExpression
@@ -51,8 +50,8 @@ public class EArrayAccess extends EExpression
 		this.array.checkSignatures();
 		this.index.checkSignatures();
 		
+		this.signature.addItem(new SignatureItemRead(this.array.getDataGroup()));
 		this.signature.addItem(new SignatureItemRead(this.index.getDataGroup()));
-		this.signature.addItem(new SignatureItemWrite(this.array.getDataGroup()));
 	}
 
 	@Override
@@ -101,7 +100,7 @@ public class EArrayAccess extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "array");
+			this.task = parent.newSubTask(this, "arrayidx");
 		
 		this.array.preTranslate(this.task);
 		this.index.preTranslate(this.task);

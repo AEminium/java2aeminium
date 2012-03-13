@@ -25,6 +25,8 @@ public abstract class EASTExecutableNode extends EASTNode
 	
 	/* preTranslate */
 	protected Task task;
+
+	private EASTExecutableNode inlinedTo;
 	
 	public EASTExecutableNode(EAST east, ASTNode original)
 	{
@@ -92,21 +94,32 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	public int inline(EASTExecutableNode inlineTo)
 	{
-		inlineTo.strongDependencies.addAll(this.strongDependencies);
-		inlineTo.weakDependencies.addAll(this.weakDependencies);
-		inlineTo.children.addAll(this.children);
+		if (this.inlineTask)
+			return 0;
+		
+		while (inlineTo.inlineTask)
+			inlineTo = inlineTo.inlinedTo;
+		
+		for (EASTExecutableNode dep : this.strongDependencies)
+			if (!inlineTo.strongDependencies.contains(dep))
+				inlineTo.strongDependencies.add(dep);
+
+		for (EASTExecutableNode dep : this.weakDependencies)
+			if (!inlineTo.weakDependencies.contains(dep))
+				inlineTo.weakDependencies.add(dep);
+
+		for (EASTExecutableNode dep : this.children)
+			if (!inlineTo.children.contains(dep))
+				inlineTo.children.add(dep);
 
 		inlineTo.strongDependencies.remove(this);
 		inlineTo.weakDependencies.remove(this);
 		inlineTo.children.remove(this);
 		
-		if (!this.inlineTask)
-		{
-			this.inlineTask = true;
-			return 1;
-		}
-		
-		return 0;
+		this.inlineTask = true;
+		this.inlinedTo = inlineTo;
+
+		return 1;
 	}
 
 	public void simplifyDependencies()

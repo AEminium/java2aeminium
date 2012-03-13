@@ -98,10 +98,11 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 			for (int i = 0; i < this.parameters.size(); i++)
 			{
-				// This item refers a read/write/merge to a parameter passed in by copy (native)
+				// This item refers a write/merge to a parameter passed in by copy (native)
 				// it has no implications on outer dependencies and can be cut out
 				if (this.parameters.get(i).getOriginal().getType().isPrimitiveType()
-					&& item.isLocalTo(this.parameters.get(i).name.getDataGroup()))
+					&& item.isLocalTo(this.parameters.get(i).name.getDataGroup())
+					&& !(item instanceof SignatureItemRead))
 					continue outerLoop;
 
 				_item = _item.replace(this.parameters.get(i).name.getDataGroup(), dgsArgs.get(i));
@@ -118,6 +119,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 				if (!this.isVoid())
 					_item = _item.replace(this.returnDataGroup, dgRet);
 			}
+
 			sig.addItem(_item);
 		}
 		
