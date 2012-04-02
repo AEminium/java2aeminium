@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.*;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemRead;
@@ -42,7 +43,7 @@ public class EWhileStatement extends EStatement
 		this.expr.checkSignatures();
 		this.body.checkSignatures();
 		
-		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.expr.getDataGroup()));
 	}
 
 	@Override
@@ -61,23 +62,20 @@ public class EWhileStatement extends EStatement
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
-		this.strongDependencies.add(this.expr);
+		this.dependency.addStrong(this.expr.dependency);
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
-				
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
+
 		DependencyStack copy = stack.fork();
 		this.body.checkDependencies(copy);
 
-		stack.join(copy, this);
+		stack.join(copy, this.dependency);
 
-		this.children.add(this.body);
+		this.dependency.addChild(this.body.dependency);
 
 		// TODO: this is only valid for the sequential translation used bellow
-		this.children.add(this);
+		this.dependency.addChild(this.dependency);
 	}
 
 	@Override
@@ -96,7 +94,7 @@ public class EWhileStatement extends EStatement
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "while");

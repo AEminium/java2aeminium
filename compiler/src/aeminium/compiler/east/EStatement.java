@@ -46,7 +46,7 @@ public abstract class EStatement extends EASTExecutableNode
 	@SuppressWarnings("unchecked")
 	public List<Statement> translate(List<CompilationUnit> out)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			return this.build(out);
 		
 		out.add(this.task.translate());

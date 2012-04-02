@@ -12,6 +12,7 @@ import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -74,11 +75,11 @@ public class EArrayCreation extends EExpression
 		{
 			this.initializer.checkSignatures();
 
-			this.signature.addItem(new SignatureItemRead(this.initializer.getDataGroup()));
+			this.signature.addItem(new SignatureItemRead(this.dependency, this.initializer.getDataGroup()));
 			this.signature.addItem(new SignatureItemMerge(this.datagroup, this.initializer.getDataGroup()));
 		}
 		
-		this.signature.addItem(new SignatureItemWrite(this.datagroup));
+		this.signature.addItem(new SignatureItemWrite(this.dependency, this.datagroup));
 	}
 
 	@Override
@@ -103,20 +104,17 @@ public class EArrayCreation extends EExpression
 		for (EExpression dim : this.dimensions)
 		{
 			dim.checkDependencies(stack);
-			this.strongDependencies.add(dim);
+			this.dependency.addStrong(dim.dependency);
 		}
 		
 		if (this.initializer != null)
 		{
 			this.initializer.checkDependencies(stack);
-			this.strongDependencies.add(this.initializer);
+			this.dependency.addStrong(this.initializer.dependency);
 		}
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!this.dimensions.contains(node) && !node.equals(this.initializer))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -140,7 +138,7 @@ public class EArrayCreation extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "array");

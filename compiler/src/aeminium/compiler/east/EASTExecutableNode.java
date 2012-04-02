@@ -1,11 +1,11 @@
 package aeminium.compiler.east;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 
+import aeminium.compiler.Dependency;
+import aeminium.compiler.NodeDependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.task.Task;
@@ -13,47 +13,22 @@ import aeminium.compiler.task.Task;
 public abstract class EASTExecutableNode extends EASTNode
 {
 	protected final Signature signature;
-	
-	/* here order matters so we can't use a set */
-	protected final ArrayList<EASTExecutableNode> strongDependencies;
+	public final NodeDependency dependency;
 
-	protected final Set<EASTExecutableNode> weakDependencies;
-	protected final Set<EASTExecutableNode> children;
-	
-	/* optimize */
-	protected boolean inlineTask;
-	
 	/* preTranslate */
 	protected Task task;
 
+	protected boolean inline = false; 
 	private EASTExecutableNode inlinedTo;
+	
+	protected boolean simple = false;
 	
 	public EASTExecutableNode(EAST east, ASTNode original)
 	{
 		super(east, original);
 
 		this.signature = new Signature();
-		
-		this.strongDependencies = new ArrayList<EASTExecutableNode>();
-		this.weakDependencies = new HashSet<EASTExecutableNode>();
-		this.children = new HashSet<EASTExecutableNode>();
-		
-		this.inlineTask = false;
-	}
-	
-	public ArrayList<EASTExecutableNode> getStrongDependencies()
-	{
-		return this.strongDependencies;
-	}
-	
-	public Set<EASTExecutableNode> getWeakDependencies()
-	{
-		return this.weakDependencies;
-	}
-
-	public Set<EASTExecutableNode> getChildren()
-	{
-		return this.children;
+		this.dependency = new NodeDependency(this);
 	}
 	
 	public Task getTask()
@@ -69,14 +44,17 @@ public abstract class EASTExecutableNode extends EASTNode
 	
 	public int optimize()
 	{
-		this.simplifyDependencies();
+		this.dependency.simplify();
 		
 		int sum = 0;
-		
-		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
-		nodes.addAll(this.strongDependencies);
 
-		if (this.strongDependencies.size() + this.weakDependencies.size() < 2)
+		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
+		
+		for (Dependency dep : this.dependency.getStrongDependencies())
+			if (dep instanceof NodeDependency)
+				nodes.add(((NodeDependency) dep).getNode());
+
+		if (this.dependency.getStrongDependencies().size() + this.dependency.getWeakDependencies().size() < 2)
 			for (EASTExecutableNode node : nodes)
 				sum += node.inline(this);
 		
@@ -89,59 +67,23 @@ public abstract class EASTExecutableNode extends EASTNode
 	
 	public boolean isSimpleTask()
 	{
-		return false;
+		return this.simple;
 	}
 
 	public int inline(EASTExecutableNode inlineTo)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			return 0;
 		
-		while (inlineTo.inlineTask)
+		while (inlineTo.inline)
 			inlineTo = inlineTo.inlinedTo;
-		
-		for (EASTExecutableNode dep : this.strongDependencies)
-			if (!inlineTo.strongDependencies.contains(dep))
-				inlineTo.strongDependencies.add(dep);
-
-		for (EASTExecutableNode dep : this.weakDependencies)
-			if (!inlineTo.weakDependencies.contains(dep))
-				inlineTo.weakDependencies.add(dep);
-
-		for (EASTExecutableNode dep : this.children)
-			if (!inlineTo.children.contains(dep))
-				inlineTo.children.add(dep);
-
-		inlineTo.strongDependencies.remove(this);
-		inlineTo.weakDependencies.remove(this);
-		inlineTo.children.remove(this);
-		
-		this.inlineTask = true;
+				
+		this.dependency.inlineTo(inlineTo.dependency);
+		this.inline = true;
 		this.inlinedTo = inlineTo;
 
 		return 1;
 	}
 
-	public void simplifyDependencies()
-	{
-		// TODO simplifyDependencies()
-		// watch out for inlined tasks
-		// System.err.println("TODO: EASTExecutableNode.simplifyDependencies()");
-		Set<EASTExecutableNode> deps = new HashSet<EASTExecutableNode>();
-		deps.addAll(this.weakDependencies);
-		deps.addAll(this.strongDependencies);
-		
-		Set<EASTExecutableNode> temp_weak = new HashSet<EASTExecutableNode>(this.weakDependencies);
-		
-		for (EASTExecutableNode dep : deps)
-		{
-			temp_weak.remove(dep.weakDependencies);
-			temp_weak.remove(dep.strongDependencies);
-		}
-		
-		this.weakDependencies.clear();
-		this.weakDependencies.addAll(temp_weak);
-	}
-	
 	public abstract void preTranslate(Task parent);
 }

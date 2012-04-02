@@ -56,16 +56,10 @@ public class EThisExpression extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "literal");
-	}
-	
-	@Override
-	public boolean isSimpleTask()
-	{
-		return true;
 	}
 
 	@Override

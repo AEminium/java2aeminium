@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.*;
 import aeminium.compiler.task.Task;
@@ -67,9 +68,9 @@ public class EInfixExpression extends EExpression
 		for (EExpression ext : this.extended)
 			ext.checkSignatures();
 		
-		this.signature.addItem(new SignatureItemRead(this.left.getDataGroup()));
-		this.signature.addItem(new SignatureItemRead(this.right.getDataGroup()));
-		this.signature.addItem(new SignatureItemWrite(this.datagroup));
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.left.getDataGroup()));
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.right.getDataGroup()));
+		this.signature.addItem(new SignatureItemWrite(this.dependency, this.datagroup));
 		
 	}
 
@@ -92,22 +93,19 @@ public class EInfixExpression extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.left.checkDependencies(stack);
-		this.strongDependencies.add(this.left);
+		this.dependency.addStrong(this.left.dependency);
 		
 		this.right.checkDependencies(stack);
-		this.strongDependencies.add(this.right);
+		this.dependency.addStrong(this.right.dependency);
 		
 		for (EExpression ext : this.extended)
 		{
 			ext.checkDependencies(stack);
-			this.strongDependencies.add(ext);
+			this.dependency.addStrong(ext.dependency);
 		}
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!this.left.equals(node) && !this.right.equals(node) && !this.extended.contains(node))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -129,7 +127,7 @@ public class EInfixExpression extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "infix");

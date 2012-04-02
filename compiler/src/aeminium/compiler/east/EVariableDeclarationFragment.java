@@ -15,6 +15,7 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -84,8 +85,8 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		{
 			this.expr.checkSignatures();
 			
-			this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
-			this.signature.addItem(new SignatureItemWrite(this.name.getDataGroup()));
+			this.signature.addItem(new SignatureItemRead(this.dependency, this.expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemWrite(this.dependency, this.name.getDataGroup()));
 			this.signature.addItem(new SignatureItemMerge(this.name.getDataGroup(), this.expr.getDataGroup()));
 		}
 	}
@@ -107,14 +108,11 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		if (this.expr != null)
 		{
 			this.expr.checkDependencies(stack);
-			this.strongDependencies.add(this.expr);
+			this.dependency.addStrong(this.expr.dependency);
 		}
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -133,7 +131,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "varfrag");
@@ -145,7 +143,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	@SuppressWarnings("unchecked")
 	public List<Statement> translate(List<CompilationUnit> out)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			return this.build(out);
 		
 		this.task.translate();

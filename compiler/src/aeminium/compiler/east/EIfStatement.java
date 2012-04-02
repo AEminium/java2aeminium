@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.Statement;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemRead;
@@ -51,7 +52,7 @@ public class EIfStatement extends EStatement
 	{
 		this.expr.checkSignatures();
 		
-		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.expr.getDataGroup()));
 		
 		this.thenStmt.checkSignatures();
 		
@@ -78,20 +79,16 @@ public class EIfStatement extends EStatement
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
+		this.dependency.addStrong(this.expr.dependency);
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		this.strongDependencies.add(this.expr);
-		
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 		
 		if (this.elseStmt == null)
 		{
 			this.thenStmt.checkDependencies(stack);
 
-			this.children.add(this.thenStmt);
+			this.dependency.addChild(this.thenStmt.dependency);
 		} else
 		{
 			DependencyStack copy = stack.fork();
@@ -99,10 +96,10 @@ public class EIfStatement extends EStatement
 			this.thenStmt.checkDependencies(stack);
 			this.elseStmt.checkDependencies(copy);
 
-			stack.join(copy, this);
+			stack.join(copy, this.dependency);
 			
-			this.children.add(this.thenStmt);
-			this.children.add(this.elseStmt);
+			this.dependency.addChild(this.thenStmt.dependency);
+			this.dependency.addChild(this.elseStmt.dependency);
 		}
 	}
 	
@@ -125,7 +122,7 @@ public class EIfStatement extends EStatement
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "if");

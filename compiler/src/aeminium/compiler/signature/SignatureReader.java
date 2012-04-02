@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.east.EAST;
 
 public class SignatureReader
@@ -58,12 +59,12 @@ public class SignatureReader
             		switch (type)
             		{
 	            		case 'R':
-	            			sig.addItem(new SignatureItemRead(this.readDataGroup(s)));
+	            			sig.addItem(new SignatureItemRead(null, this.readDataGroup(s)));
 	            			s.nextLine();
             			break;
 
 	            		case 'W':
-	            			sig.addItem(new SignatureItemWrite(this.readDataGroup(s)));	            		
+	            			sig.addItem(new SignatureItemWrite(null, this.readDataGroup(s)));	            		
 	            			s.nextLine();
 	            		break;
 	            		
@@ -112,10 +113,10 @@ public class SignatureReader
 		}
 	}
 	
-	public Signature getSignature(String key, DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
+	public Signature getSignature(Dependency dep, String key, DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
 	{
 		if (!this.signatures.containsKey(key))
-			return getDefaultSignature(dgRet, dgExpr, dgsArgs);
+			return getDefaultSignature(dep, dgRet, dgExpr, dgsArgs);
 		
 		Signature sig = this.signatures.get(key);
 		Signature real = new Signature();
@@ -124,6 +125,7 @@ public class SignatureReader
 		{
 			SignatureItem _item = item;
 			
+			_item = _item.setDependency(dep);
 			_item = _item.replace(this.returnDataGroup, dgRet);
 			_item = _item.replace(this.thisDataGroup, dgExpr);
 
@@ -136,22 +138,22 @@ public class SignatureReader
 		return real;
 	}
 	
-	public Signature getDefaultSignature(DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
+	public Signature getDefaultSignature(Dependency dep, DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
 	{		
 		/* Conservative approach */
 		Signature sig = new Signature();
 		
-		sig.addItem(new SignatureItemRead(this.externalDataGroup));
-		sig.addItem(new SignatureItemWrite(this.externalDataGroup));
+		sig.addItem(new SignatureItemRead(dep, this.externalDataGroup));
+		sig.addItem(new SignatureItemWrite(dep, this.externalDataGroup));
 		
 		if (dgExpr != null)
-			sig.addItem(new SignatureItemRead(dgExpr));
+			sig.addItem(new SignatureItemRead(dep, dgExpr));
 
 		for (DataGroup arg : dgsArgs)
-			sig.addItem(new SignatureItemRead(arg));
+			sig.addItem(new SignatureItemRead(dep, arg));
 		
 		if (dgRet != null)
-			sig.addItem(new SignatureItemWrite(dgRet));
+			sig.addItem(new SignatureItemWrite(dep, dgRet));
 		
 		return sig;
 	}

@@ -6,73 +6,30 @@ import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.east.EMethodDeclaration;
 import aeminium.compiler.east.EMethodDeclarationParameter;
-import aeminium.compiler.east.EType;
 
 public class MethodTask extends Task
 {
+	@SuppressWarnings("unchecked")
 	protected MethodTask(EMethodDeclaration node, String name)
 	{
 		super(node, name, null);
 		
-	}
-
-	public static MethodTask create(EMethodDeclaration node, String name)
-	{
-		return new MethodTask(node, name);
-	}
-	
-	public EMethodDeclaration getNode()
-	{
-		return (EMethodDeclaration) this.node;
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Override
-	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
-	{
-		EMethodDeclaration method = this.getNode();
 		AST ast = this.node.getAST();
+		MethodDeclaration schedule = ast.newMethodDeclaration();
+		schedule.setName(ast.newSimpleName("schedule"));
 		
-		Type caller_type;
-		if (method.isConstructor() || method.isVoid())
-			caller_type = ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody"));
-		else
-		{
-			Type returnType = method.getOriginal().getReturnType2();
-			this.addField(returnType, "ae_ret", true);
+		Block body = ast.newBlock();
 
-			caller_type = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBodyWithReturn")));
+		/* Invoker task as deps or NO_PARENT */
+		SingleVariableDeclaration deps = ast.newSingleVariableDeclaration();
+		ParameterizedType depsType = ast.newParameterizedType(ast.newSimpleType(ast.newName("java.util.Collection")));
+		depsType.typeArguments().add(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
 
-			if (returnType instanceof PrimitiveType)
-				((ParameterizedType) caller_type).typeArguments().add(EType.boxType((PrimitiveType) returnType));
-			else
-				((ParameterizedType) caller_type).typeArguments().add(ASTNode.copySubtree(ast, returnType));
-		}
-
-		// add ae_parent parameter
-		{
-			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
-
-			param.setType((Type) ASTNode.copySubtree(ast, caller_type));
-			param.setName(ast.newSimpleName("ae_parent"));
-
-			constructor.parameters().add(param);
-
-			// this.ae_parent = ae_parent
-			this.addField((Type) ASTNode.copySubtree(ast, caller_type), "ae_parent", false);
-
-			Assignment asgn = ast.newAssignment();
-
-			FieldAccess access = ast.newFieldAccess();
-			access.setExpression(ast.newThisExpression());
-			access.setName(ast.newSimpleName("ae_parent"));
-
-			asgn.setLeftHandSide(access);
-			asgn.setRightHandSide(ast.newSimpleName("ae_parent"));
-
-			body.statements().add(ast.newExpressionStatement(asgn));
-		}
-
+		deps.setType(depsType);
+		deps.setName(ast.newSimpleName("ae_deps"));
+		
+		schedule.parameters().add(deps);
+		
 		if (!this.getNode().isStatic())
 		{
 			Type thisType = this.getNode().getThisType();
@@ -84,7 +41,7 @@ public class MethodTask extends Task
 			param.setType((Type) ASTNode.copySubtree(ast, thisType));
 			param.setName(ast.newSimpleName("ae_this"));
 
-			constructor.parameters().add(param);
+			schedule.parameters().add(param);
 
 			// this.ae_this = ae_this
 			Assignment asgn = ast.newAssignment();
@@ -98,13 +55,13 @@ public class MethodTask extends Task
 
 			body.statements().add(ast.newExpressionStatement(asgn));
 		}
-
+		
 		for (EMethodDeclarationParameter param : this.getNode().getParameters())
 		{
 			SingleVariableDeclaration decl = param.getOriginal();
 			
 			// add x parameter
-			constructor.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, decl));
+			schedule.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, decl));
 
 			// this.x = x
 			this.addField((Type) ASTNode.copySubtree(ast, decl.getType()), decl.getName().toString(), false);
@@ -119,6 +76,52 @@ public class MethodTask extends Task
 			asgn.setRightHandSide((Name) ASTNode.copySubtree(ast, decl.getName()));
 
 			body.statements().add(ast.newExpressionStatement(asgn));
+		}
+		
+		MethodInvocation invoke = ast.newMethodInvocation();
+		invoke.setExpression(ast.newSimpleName("AeminiumHelper"));
+		invoke.setName(ast.newSimpleName("schedule"));
+		
+		FieldAccess task = ast.newFieldAccess();
+		task.setExpression(ast.newThisExpression());
+		task.setName(ast.newSimpleName("ae_task"));
+		
+		invoke.arguments().add(task);
+		
+		FieldAccess parent = ast.newFieldAccess();
+		parent.setExpression(ast.newSimpleName("AeminiumHelper"));
+		parent.setName(ast.newSimpleName("NO_PARENT"));
+
+		invoke.arguments().add(parent);
+		invoke.arguments().add(ast.newSimpleName("ae_deps"));
+
+		body.statements().add(ast.newExpressionStatement(invoke));
+		
+		schedule.setBody(body);
+
+		this.decl.bodyDeclarations().add(schedule);
+	}
+
+	public static MethodTask create(EMethodDeclaration node, String name)
+	{
+		return new MethodTask(node, name);
+	}
+	
+	public EMethodDeclaration getNode()
+	{
+		return (EMethodDeclaration) this.node;
+	}
+	
+	@Override
+	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
+	{
+		EMethodDeclaration method = this.getNode();
+		AST ast = this.node.getAST();
+		
+		if (!method.isConstructor() && !method.isVoid())
+		{
+			Type returnType = method.getOriginal().getReturnType2();
+			this.addField(returnType, "ae_ret", true);
 		}
 		
 		this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);

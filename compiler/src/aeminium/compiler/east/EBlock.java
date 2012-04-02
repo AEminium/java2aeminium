@@ -80,8 +80,7 @@ public class EBlock extends EStatement implements EASTDataNode
 		for (EStatement stmt : this.stmts)
 		{
 			stmt.checkDependencies(stack);
-
-			this.children.add(stmt);
+			this.dependency.addChild(stmt.dependency);
 		}
 	}
 
@@ -101,7 +100,7 @@ public class EBlock extends EStatement implements EASTDataNode
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "block");

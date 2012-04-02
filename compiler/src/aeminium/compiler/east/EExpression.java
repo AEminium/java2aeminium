@@ -74,7 +74,7 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	@SuppressWarnings("unchecked")
 	public Expression translate(List<CompilationUnit> out)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			return this.build(out);
 		
 		out.add(this.task.translate());

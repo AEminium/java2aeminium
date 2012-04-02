@@ -9,6 +9,7 @@ import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -59,11 +60,11 @@ public class EArrayInitializer extends EExpression
 		{
 			expr.checkSignatures();
 
-			this.signature.addItem(new SignatureItemRead(expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemRead(this.dependency, expr.getDataGroup()));
 			this.signature.addItem(new SignatureItemMerge(this.datagroup, expr.getDataGroup()));
 		}
 		
-		this.signature.addItem(new SignatureItemWrite(this.datagroup));
+		this.signature.addItem(new SignatureItemWrite(this.dependency, this.datagroup));
 	}
 
 	@Override
@@ -85,14 +86,11 @@ public class EArrayInitializer extends EExpression
 		for (EExpression expr : this.exprs)
 		{
 			expr.checkDependencies(stack);
-			this.strongDependencies.add(expr);
+			this.dependency.addStrong(expr.dependency);
 		}
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!this.exprs.contains(node))
-				this.weakDependencies.add(node);	
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 
 	@Override
@@ -111,7 +109,7 @@ public class EArrayInitializer extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "init");

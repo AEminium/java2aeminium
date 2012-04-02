@@ -7,10 +7,13 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
+import aeminium.compiler.signature.SignatureItem;
 import aeminium.compiler.signature.SignatureItemDeferred;
+import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.Task;
 
@@ -73,11 +76,14 @@ public class EMethodInvocation extends EDeferredExpression
 		EMethodDeclaration method = this.getMethod();
 		if (method != null)
 		{
-			this.deferred = new SignatureItemDeferred(method, this.getDataGroup(), dgExpr, dgsArgs);
+			this.deferred = new SignatureItemDeferred(this.deferredDependency, method, this.getDataGroup(), dgExpr, dgsArgs);
 			this.signature.addItem(this.deferred);
+			
+			for (int i = 0; i < method.parameters.size(); i++)
+				signature.addItem(new SignatureItemRead(this.dependency, dgsArgs.get(i)));
 		} else
 		{
-			Signature def = this.getEAST().getCompiler().getSignatureReader().getSignature(this.binding.getKey(), this.getDataGroup(), dgExpr, dgsArgs);
+			Signature def = this.getEAST().getCompiler().getSignatureReader().getSignature(this.deferredDependency, this.binding.getKey(), this.getDataGroup(), dgExpr, dgsArgs);
 			this.signature.addAll(def);
 		}
 	}
@@ -104,26 +110,29 @@ public class EMethodInvocation extends EDeferredExpression
 		if (!this.isStatic())
 		{
 			this.expr.checkDependencies(stack);
-			this.strongDependencies.add(this.expr);
+			this.dependency.addStrong(this.expr.dependency);
 		}
 		
 		for (EExpression arg : this.arguments)
 		{
 			arg.checkDependencies(stack);
-			this.strongDependencies.add(arg);
+			this.dependency.addStrong(arg.dependency);
 		}
 		
 		Signature sig;
 		if (this.deferred != null)
+		{
 			sig = this.deferred.closure();
-		else
+
+			for (SignatureItem item : this.signature.getItems())
+				if (!item.equals(this.deferred))
+					sig.addItem(item);
+		} else
 			sig = this.signature;
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
 		
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr) && !this.arguments.contains(node))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(sig);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -153,7 +162,7 @@ public class EMethodInvocation extends EDeferredExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "invoke");
@@ -174,18 +183,35 @@ public class EMethodInvocation extends EDeferredExpression
 
 		if (this.isAeminium())
 		{
-			ClassInstanceCreation create = ast.newClassInstanceCreation();
-			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getName())));	
+			MethodInvocation schedule = ast.newMethodInvocation();
+
+			FieldAccess function = ast.newFieldAccess();
+			function.setExpression(ast.newThisExpression());
+			function.setName(ast.newSimpleName("ae_deferred"));
 			
-			create.arguments().add(ast.newThisExpression());
+			schedule.setExpression(function);
+			
+			schedule.setName(ast.newSimpleName("schedule"));
+			
+			MethodInvocation deps = ast.newMethodInvocation();
+			deps.setExpression(ast.newName("java.util.Arrays"));
+			deps.setName(ast.newSimpleName("asList"));
+			
+			FieldAccess task = ast.newFieldAccess();
+			task.setExpression(ast.newThisExpression());
+			task.setName(ast.newSimpleName("ae_task"));
+			
+			deps.arguments().add(task);
+			
+			schedule.arguments().add(deps);
 	
 			if (!this.isStatic())
-				create.arguments().add(this.expr.translate(out));
+				schedule.arguments().add(this.expr.translate(out));
 	
 			for (EExpression arg : this.arguments)
-				create.arguments().add(arg.translate(out));
+				schedule.arguments().add(arg.translate(out));
 
-			return create;
+			return schedule;
 		} else
 		{
 			MethodInvocation invoke = ast.newMethodInvocation();

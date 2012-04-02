@@ -23,6 +23,7 @@ public class ENumberLiteral extends EExpression
 		super(east, original, scope);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
+		this.simple = true;
 	}
 
 	/* factory */
@@ -65,18 +66,12 @@ public class ENumberLiteral extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "literal");
 	}
 	
-	@Override
-	public boolean isSimpleTask()
-	{
-		return true;
-	}
-
 	@Override
 	public Expression build(List<CompilationUnit> out)
 	{

@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -84,14 +85,11 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 		for (EVariableDeclarationFragment frag : this.fragments)
 		{
 			frag.checkDependencies(stack);
-			this.strongDependencies.add(frag);
+			this.dependency.addStrong(frag.dependency);
 		}
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-
-		for (EASTExecutableNode node : deps)
-			if (!this.fragments.contains(node))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -109,7 +107,7 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "varstmt");

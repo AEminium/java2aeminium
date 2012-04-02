@@ -3,8 +3,8 @@ package aeminium.compiler.signature;
 import java.util.HashSet;
 import java.util.Set;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
-import aeminium.compiler.east.EASTExecutableNode;
 
 public class SignatureItemMerge extends SignatureItem implements SignatureItemModification
 {
@@ -51,10 +51,10 @@ public class SignatureItemMerge extends SignatureItem implements SignatureItemMo
 	}
 	
 	@Override
-	public Set<EASTExecutableNode> getDependencies(EASTExecutableNode node, DependencyStack dependencyStack)
+	public Set<Dependency> getDependencies(DependencyStack dependencyStack)
 	{
 		dependencyStack.merge(this.to, this.from);
-		return new HashSet<EASTExecutableNode>();
+		return new HashSet<Dependency>();
 	}
 
 	@Override
@@ -67,5 +67,11 @@ public class SignatureItemMerge extends SignatureItem implements SignatureItemMo
 		 * (writing to member variables is still an external write to the method)
 		 */
 		return this.to.beginsWith(scope) || this.from.beginsWith(scope);
+	}
+
+	@Override
+	public SignatureItemMerge setDependency(Dependency dep)
+	{
+		return new SignatureItemMerge(this.to, this.from);
 	}
 }

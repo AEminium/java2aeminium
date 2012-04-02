@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.*;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.*;
 import aeminium.compiler.task.Task;
@@ -63,9 +64,9 @@ public class EClassInstanceCreation extends EDeferredExpression
 		
 		if (method != null)
 		{
-			this.deferred = new SignatureItemDeferred(this.getMethod(), this.getDataGroup(), null, dgsArgs);
+			this.deferred = new SignatureItemDeferred(this.deferredDependency, this.getMethod(), this.getDataGroup(), null, dgsArgs);
 			this.signature.addItem(this.deferred);
-			this.signature.addItem(new SignatureItemWrite(this.getDataGroup()));
+			this.signature.addItem(new SignatureItemWrite(this.dependency, this.getDataGroup()));
 		} else
 		{
 			Signature def = this.getDefaultSignature(this.getDataGroup(), dgsArgs);
@@ -79,15 +80,15 @@ public class EClassInstanceCreation extends EDeferredExpression
 		/* Conservative approach */
 		Signature sig = new Signature();
 		
-		sig.addItem(new SignatureItemRead(this.getEAST().getExternalDataGroup()));
-		sig.addItem(new SignatureItemWrite(this.getEAST().getExternalDataGroup()));
+		sig.addItem(new SignatureItemRead(this.dependency, this.getEAST().getExternalDataGroup()));
+		sig.addItem(new SignatureItemWrite(this.dependency, this.getEAST().getExternalDataGroup()));
 
 		for (DataGroup arg : dgsArgs)
-			sig.addItem(new SignatureItemRead(arg));
-		
+			sig.addItem(new SignatureItemRead(this.dependency, arg));
+
 		if (dgRet != null)
-			sig.addItem(new SignatureItemWrite(dgRet));
-		
+			sig.addItem(new SignatureItemWrite(this.dependency, dgRet));
+
 		return sig;
 	}
 	
@@ -110,7 +111,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 		for (EExpression arg : this.arguments)
 		{
 			arg.checkDependencies(stack);
-			this.strongDependencies.add(arg);
+			this.dependency.addStrong(arg.dependency);
 		}
 		
 		Signature sig;
@@ -119,11 +120,8 @@ public class EClassInstanceCreation extends EDeferredExpression
 		else
 			sig = this.signature;
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
-		
-		for (EASTExecutableNode node : deps)
-			if (!this.arguments.contains(node))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(sig);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -150,7 +148,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "new");
@@ -195,11 +193,18 @@ public class EClassInstanceCreation extends EDeferredExpression
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
 		access.setName(ast.newSimpleName("ae_ret"));
-		
+
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(access);
 		assign.setRightHandSide(create);
-		
+		 
 		return assign;
+	}
+	
+	@Override
+	public boolean isAeminium()
+	{
+		System.err.println("WARNING: ClassInstanceCreation.isAeminium() not supported yet");
+		return false;
 	}
 }

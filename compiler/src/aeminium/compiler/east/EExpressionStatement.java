@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.*;
+
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.task.Task;
@@ -54,12 +56,10 @@ public class EExpressionStatement extends EStatement
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
-		this.strongDependencies.add(this.expr);
+		this.dependency.addStrong(this.expr.dependency);
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -76,7 +76,7 @@ public class EExpressionStatement extends EStatement
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "exprstmt");

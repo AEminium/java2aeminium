@@ -75,16 +75,10 @@ public abstract class ENameExpression extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "literal");
-	}
-	
-	@Override
-	public boolean isSimpleTask()
-	{
-		return true;
 	}
 
 	@Override
@@ -99,7 +93,7 @@ public abstract class ENameExpression extends EExpression
 
 		FieldAccess field = ast.newFieldAccess();
 
-		field.setExpression(this.task.getPathToTask(node.getDeclaringTask()));
+		field.setExpression(this.dependency.getPathTo(node.getDeclaringTask().getNode().dependency));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.getOriginal()));
 
 		return field;

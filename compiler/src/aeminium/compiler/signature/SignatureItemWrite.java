@@ -2,15 +2,17 @@ package aeminium.compiler.signature;
 
 import java.util.Set;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
-import aeminium.compiler.east.EASTExecutableNode;
 
 public class SignatureItemWrite extends SignatureItem implements SignatureItemModification
 {
 	protected final DataGroup datagroup;
+	protected final Dependency dependency;
 	
-	public SignatureItemWrite(DataGroup datagroup)
+	public SignatureItemWrite(Dependency dependency, DataGroup datagroup)
 	{
+		this.dependency = dependency;
 		this.datagroup = datagroup;
 	}
 	
@@ -32,24 +34,31 @@ public class SignatureItemWrite extends SignatureItem implements SignatureItemMo
 	@Override
 	public String toString()
 	{
-		return "[WRITE] " + this.datagroup;
+		return "[WRITE] " + this.datagroup + " " + this.dependency;
 	}
 	
 	@Override
 	public SignatureItemWrite replace(DataGroup what, DataGroup with)
 	{
-		return new SignatureItemWrite(this.datagroup.replace(what, with));
+		return new SignatureItemWrite(this.dependency, this.datagroup.replace(what, with));
 	}
 	
 	@Override
-	public Set<EASTExecutableNode> getDependencies(EASTExecutableNode node, DependencyStack dependencyStack)
+	public Set<Dependency> getDependencies(DependencyStack dependencyStack)
 	{
-		return dependencyStack.write(node, this.datagroup);
+		return dependencyStack.write(this.dependency, this.datagroup);
 	}
 	
 	@Override
 	public boolean isLocalTo(DataGroup scope)
 	{
 		return this.datagroup.beginsWith(scope);
+	}
+	
+	@Override
+	public SignatureItemWrite setDependency(Dependency dep)
+	{
+//		assert(this.dependency == null);
+		return new SignatureItemWrite(dep, this.datagroup);
 	}
 }

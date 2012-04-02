@@ -5,17 +5,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
-import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.Statement;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemMerge;
@@ -56,8 +52,8 @@ public class EReturnStatement extends EStatement
 		{
 			this.expr.checkSignatures();
 			
-			this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
-			this.signature.addItem(new SignatureItemWrite(this.method.returnDataGroup));
+			this.signature.addItem(new SignatureItemRead(this.dependency, this.expr.getDataGroup()));
+			this.signature.addItem(new SignatureItemWrite(this.dependency, this.method.returnDataGroup));
 			this.signature.addItem(new SignatureItemMerge(this.method.returnDataGroup, this.expr.getDataGroup()));
 		}
 	}
@@ -81,13 +77,11 @@ public class EReturnStatement extends EStatement
 		if (this.expr != null)
 		{
 			this.expr.checkDependencies(stack);
-			this.strongDependencies.add(this.expr);
+			this.dependency.addStrong(this.expr.dependency);
 		}
 
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -106,7 +100,7 @@ public class EReturnStatement extends EStatement
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "ret");
@@ -128,31 +122,6 @@ public class EReturnStatement extends EStatement
 		assign.setLeftHandSide(ret);
 		assign.setRightHandSide(this.expr.translate(out)); 
 
-		// if the value is required, push it to the caller task
-		IfStatement ifstmt = ast.newIfStatement();
-		
-		FieldAccess caller_task = ast.newFieldAccess();
-		caller_task.setExpression(task.getPathToRoot());
-		caller_task.setName(ast.newSimpleName("ae_parent"));
-
-		InfixExpression cond = ast.newInfixExpression();
-		cond.setLeftOperand(caller_task);
-		cond.setOperator(Operator.NOT_EQUALS);
-		cond.setRightOperand(ast.newNullLiteral());
-
-		ifstmt.setExpression(cond);
-
-		Assignment push_assign = ast.newAssignment();
-
-		FieldAccess caller_ret = ast.newFieldAccess();
-		caller_ret.setExpression((Expression) ASTNode.copySubtree(ast, caller_task));
-		caller_ret.setName(ast.newSimpleName("ae_ret"));
-
-		push_assign.setLeftHandSide(caller_ret);
-		push_assign.setRightHandSide((Expression) ASTNode.copySubtree(ast, ret));
-
-		ifstmt.setThenStatement(ast.newExpressionStatement(push_assign));
-
-		return Arrays.asList(ast.newExpressionStatement(assign), ifstmt);
+		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 }

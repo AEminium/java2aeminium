@@ -6,17 +6,22 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.Set;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.east.EMethodDeclaration;
 
 public class SignatureItemDeferred extends SignatureItem
 {
+	protected final Dependency dep;
+	
 	protected final EMethodDeclaration method;
 	protected final DataGroup dgRet;
 	protected final DataGroup dgThis;
 	protected final ArrayList<DataGroup> dgsArgs;
 	
-	public SignatureItemDeferred(EMethodDeclaration method, DataGroup dgRet, DataGroup dgThis, ArrayList<DataGroup> dgsArgs)
+	public SignatureItemDeferred(Dependency dep, EMethodDeclaration method, DataGroup dgRet, DataGroup dgThis, ArrayList<DataGroup> dgsArgs)
 	{
+		this.dep = dep;
+		
 		this.method = method;
 		this.dgRet = dgRet;
 		this.dgThis = dgThis;
@@ -78,12 +83,12 @@ public class SignatureItemDeferred extends SignatureItem
 		for (DataGroup arg : this.dgsArgs)
 			dgsArgs.add(arg.replace(what, with));
 
-		return new SignatureItemDeferred(this.method, dgRet, dgThis, dgsArgs);
+		return new SignatureItemDeferred(this.dep, this.method, dgRet, dgThis, dgsArgs);
 	}
 	
 	public Signature getUndeferredSignature()
 	{
-		return this.method.undefer(this.dgRet, this.dgThis, this.dgsArgs);
+		return this.method.undefer(this.dep, this.dgRet, this.dgThis, this.dgsArgs);
 	}
 
 	public Signature closure()
@@ -126,7 +131,7 @@ public class SignatureItemDeferred extends SignatureItem
 		for (SignatureItem item : items)
 			if (!(item instanceof SignatureItemDeferred))
 				closure.addItem(item);
-		
+				
 		return closure;
 	}
 	
@@ -135,5 +140,12 @@ public class SignatureItemDeferred extends SignatureItem
 	{
 		// TODO/FIXME: how to check if their modifications are local? 
 		return false;
+	}
+
+	@Override
+	public SignatureItem setDependency(Dependency dep)
+	{
+		ArrayList<DataGroup> dgsArgs = new ArrayList<DataGroup>(this.dgsArgs);
+		return new SignatureItemDeferred(dep, this.method, this.dgRet, this.dgThis, dgsArgs);
 	}
 }

@@ -1,11 +1,12 @@
 package aeminium.compiler.task;
 
 import java.util.ArrayList;
-import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
+import aeminium.compiler.Dependency;
+import aeminium.compiler.NodeDependency;
 import aeminium.compiler.east.EASTExecutableNode;
 
 public abstract class Task
@@ -122,12 +123,12 @@ public abstract class Task
 		body.statements().add(ast.newExpressionStatement(task_asgn));
 
 		// add bodies
-		for (EASTExecutableNode node : this.node.getStrongDependencies())
+		for (NodeDependency dep : this.node.dependency.getStrongDependencies())
 		{
-			Task dep = node.getTask();
+			Task dep_task = dep.getNode().getTask();
 			
-			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getName()));
-			String name = "ae_" + dep.getName();
+			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep_task.getName()));
+			String name = "ae_" + dep_task.getName();
 
 			if (!recursive)
 				this.addField(type, name, false);
@@ -140,14 +141,14 @@ public abstract class Task
 			child_access.setName(ast.newSimpleName(name));
 
 			child_asgn.setLeftHandSide(child_access);
-			child_asgn.setRightHandSide(dep.create());
+			child_asgn.setRightHandSide(dep_task.create());
 
 			body.statements().add(ast.newExpressionStatement(child_asgn));
 		}
 
-		for (EASTExecutableNode node :  this.node.getChildren())
+		for (NodeDependency dep :  this.node.dependency.getChildren())
 		{
-			Task child = node.getTask();
+			Task child = dep.getNode().getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
 			String name = "ae_" + child.getName();
@@ -156,160 +157,94 @@ public abstract class Task
 				this.addField(type, name, false);
 		}
 
-		// AeminiumHelper.schedule(this.ae_task, ..., Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
-		MethodInvocation schedule = ast.newMethodInvocation();
-		schedule.setExpression(ast.newSimpleName("AeminiumHelper"));
-		schedule.setName(ast.newSimpleName("schedule"));
-
-		schedule.arguments().add((Expression) ASTNode.copySubtree(ast, task_access));
-		
-		// this.ae_parent == null ? AeminiumHelper.NO_PARENT : ae_parent.ae_task
-		ConditionalExpression expr = ast.newConditionalExpression();
-		
-		InfixExpression inf = ast.newInfixExpression();
-		inf.setLeftOperand(ast.newSimpleName("ae_parent"));
-		inf.setRightOperand(ast.newNullLiteral());
-		inf.setOperator(InfixExpression.Operator.EQUALS);
-
-		FieldAccess parent_task = ast.newFieldAccess();
-		parent_task.setExpression(ast.newSimpleName("ae_parent"));
-		parent_task.setName(ast.newSimpleName("ae_task"));
-	
-		expr.setExpression(inf);
-		expr.setThenExpression(ast.newName("AeminiumHelper.NO_PARENT"));
-		expr.setElseExpression(parent_task);
-
-		schedule.arguments().add(expr);
-
-		if (overrideTasks == null)
+		if (!(this instanceof MethodTask))
 		{
-			/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
-			ArrayList<Task> deps = new ArrayList<Task>();
+			// AeminiumHelper.schedule(this.ae_task, ..., Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
+			MethodInvocation schedule = ast.newMethodInvocation();
+			schedule.setExpression(ast.newSimpleName("AeminiumHelper"));
+			schedule.setName(ast.newSimpleName("schedule"));
+	
+			schedule.arguments().add((Expression) ASTNode.copySubtree(ast, task_access));
 			
-			for (EASTExecutableNode node : this.node.getStrongDependencies())
+			FieldAccess parent_task = ast.newFieldAccess();
+			parent_task.setExpression(ast.newSimpleName("ae_parent"));
+			parent_task.setName(ast.newSimpleName("ae_task"));
+			
+			schedule.arguments().add(parent_task);
+	
+			if (overrideTasks == null)
 			{
-				Task dep = node.getTask();
-				if (!deps.contains(dep))
-					deps.add(dep);
-			}
-			
-			for (EASTExecutableNode node : this.node.getWeakDependencies())
-			{
-				Task dep = node.getTask();
-				if (!deps.contains(dep) && this != dep && !this.isChildOf(dep))
-					deps.add(dep);
-			}
-			
-			if (deps.size() > 0)
+				/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
+				ArrayList<Expression> deps = new ArrayList<Expression>();
+				
+				for (Dependency dep : this.node.dependency.getStrongDependencies())
+				{
+					Expression path = this.node.dependency.getPathTo(dep);
+					
+					FieldAccess task_path = ast.newFieldAccess();
+					task_path.setExpression(path);
+					task_path.setName(ast.newSimpleName("ae_task"));
+					
+					deps.add(task_path);
+				}
+				
+				for (Dependency dep : this.node.dependency.getWeakDependencies())
+				{
+					if (dep.isParentOf(this.node.dependency))
+						continue;
+
+					Expression path = this.node.dependency.getPathTo(dep);
+					FieldAccess task_path = ast.newFieldAccess();
+					task_path.setExpression(path);
+					task_path.setName(ast.newSimpleName("ae_task"));
+
+					deps.add(task_path);
+				}
+				
+				if (deps.size() > 0)
+				{
+					MethodInvocation asList = ast.newMethodInvocation();
+					asList.setExpression(ast.newName("java.util.Arrays"));
+					asList.setName(ast.newSimpleName("asList"));
+		
+					asList.arguments().addAll(deps);
+					schedule.arguments().add(asList);
+				} else
+					schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
+			} else
 			{
 				MethodInvocation asList = ast.newMethodInvocation();
 				asList.setExpression(ast.newName("java.util.Arrays"));
 				asList.setName(ast.newSimpleName("asList"));
-	
-				for (Task dep : deps)
+				
+				for (Task dep : overrideTasks)
 				{
+					FieldAccess dep_access = ast.newFieldAccess();
+					dep_access.setExpression(ast.newSimpleName("ae_parent"));
+					dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
+	
 					FieldAccess dep_task = ast.newFieldAccess();
-					dep_task.setExpression(this.getPathToTask(dep));
+					dep_task.setExpression(dep_access);
 					dep_task.setName(ast.newSimpleName("ae_task"));
 	
 					asList.arguments().add(dep_task);
 				}
-				
+	
 				schedule.arguments().add(asList);
-			} else
-				schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
-		} else
-		{
-			MethodInvocation asList = ast.newMethodInvocation();
-			asList.setExpression(ast.newName("java.util.Arrays"));
-			asList.setName(ast.newSimpleName("asList"));
-			
-			for (Task dep: overrideTasks)
-			{
-				FieldAccess dep_access = ast.newFieldAccess();
-				dep_access.setExpression(ast.newSimpleName("ae_parent"));
-				dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
-
-				FieldAccess dep_task = ast.newFieldAccess();
-				dep_task.setExpression(dep_access);
-				dep_task.setName(ast.newSimpleName("ae_task"));
-
-				asList.arguments().add(dep_task);
 			}
-
-			schedule.arguments().add(asList);
+			
+			body.statements().add(ast.newExpressionStatement(schedule));
 		}
 		
-		body.statements().add(ast.newExpressionStatement(schedule));
-
 		constructor.setName(ast.newSimpleName(this.name));
 		constructor.setConstructor(true);
 		constructor.setBody(body);
 	}
 	
-	public Expression getPathToTask(Task target)
+
+	public Expression undefer(Expression path)
 	{
-		AST ast = this.node.getAST();
-
-		Task self = this;
-		Stack<Task> tasks_target = new Stack<Task>();
-		Stack<Task> tasks_self = new Stack<Task>();
-
-		while (target != null)
-		{
-			tasks_target.push(target);
-			target = target.parent;
-		}
-
-		while (self != null)
-		{
-			tasks_self.push(self);
-			self = self.parent;
-		}
-
-		assert(!tasks_target.empty() && !tasks_self.empty());
- 
-		while (!tasks_target.empty() && !tasks_self.empty() && tasks_target.peek() == tasks_self.peek())
-		{
-			tasks_target.pop();
-			tasks_self.pop();
-		}
-
-		Expression path = ast.newThisExpression();
-
-		while (!tasks_self.empty())
-		{
-			tasks_self.pop();
-
-			FieldAccess field = ast.newFieldAccess();
-			field.setExpression(path);
-			field.setName(ast.newSimpleName("ae_parent"));
-			path = field;
-		}
-
-		while (!tasks_target.empty())
-		{
-			FieldAccess field = ast.newFieldAccess();
-			field.setExpression(path);
-			field.setName(ast.newSimpleName("ae_" + tasks_target.pop().getName()));
-			path = field;
-		}
-
 		return path;
-	}
-
-	public Expression getPathToRoot()
-	{
-		AST ast = this.node.getAST();
-
-		if (this.parent == null)
-			return ast.newThisExpression();
-
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(this.parent.getPathToRoot());
-		access.setName(ast.newSimpleName("ae_parent"));
-
-		return access;
 	}
 	
 	public boolean isChildOf(Task other)
@@ -379,5 +314,34 @@ public abstract class Task
 	public EASTExecutableNode getNode()
 	{
 		return this.node;
+	}
+
+	public Expression getPathToRoot()
+	{
+		AST ast = this.node.getAST();
+
+		if (this.parent == null)
+			return ast.newThisExpression();
+
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(this.parent.getPathToRoot());
+		access.setName(ast.newSimpleName("ae_parent"));
+
+		return access;
+	}
+	
+	public ArrayList<String> getPath()
+	{
+		Task task = this;
+
+		ArrayList<String> names = new ArrayList<String>();
+
+		while (task != null)
+		{
+			names.add(0, task.getName());
+			task = task.parent;
+		};
+		
+		return names;
 	}
 }

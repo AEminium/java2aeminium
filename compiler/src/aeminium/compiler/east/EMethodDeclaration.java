@@ -8,6 +8,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -16,11 +17,11 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItem;
-import aeminium.compiler.signature.SignatureItemRead;
 import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.MethodTask;
 import aeminium.compiler.task.Task;
@@ -80,13 +81,9 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		return sig;
 	}
 	
-	public Signature undefer(DataGroup dgRet, DataGroup dgThis, ArrayList<DataGroup> dgsArgs)
+	public Signature undefer(Dependency dep, DataGroup dgRet, DataGroup dgThis, ArrayList<DataGroup> dgsArgs)
 	{
 		Signature sig = new Signature();
-		
-		for (int i = 0; i < this.parameters.size(); i++)
-			if (this.parameters.get(i).getOriginal().getType().isPrimitiveType())
-				sig.addItem(new SignatureItemRead(dgsArgs.get(i)));
 
 		outerLoop: for (SignatureItem item : this.getFullSignature().getItems())
 		{
@@ -95,14 +92,14 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 				continue;
 
 			SignatureItem _item = item;
+			_item = _item.setDependency(dep);
 
 			for (int i = 0; i < this.parameters.size(); i++)
 			{
-				// This item refers a write/merge to a parameter passed in by copy (native)
+				// This item refers a read/write/merge to a parameter passed in by copy (native)
 				// it has no implications on outer dependencies and can be cut out
 				if (this.parameters.get(i).getOriginal().getType().isPrimitiveType()
-					&& item.isLocalTo(this.parameters.get(i).name.getDataGroup())
-					&& !(item instanceof SignatureItemRead))
+					&& item.isLocalTo(this.parameters.get(i).name.getDataGroup()))
 					continue outerLoop;
 
 				_item = _item.replace(this.parameters.get(i).name.getDataGroup(), dgsArgs.get(i));
@@ -130,7 +127,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.body.checkDependencies(stack);
-		this.strongDependencies.add(this.body);
+		this.dependency.addStrong(this.body.dependency);
 	}
 	
 	public boolean isVoid()
@@ -214,14 +211,24 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 		body.statements().add(ast.newExpressionStatement(init));
 
+		// new Class_main().schedule(AeminiumHelper.NO_PARENT, args);
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
 		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getName())));
-		creation.arguments().add(ast.newNullLiteral());
 
+		MethodInvocation schedule = ast.newMethodInvocation();
+		schedule.setExpression(creation);
+		schedule.setName(ast.newSimpleName("schedule"));
+		
+		FieldAccess deps = ast.newFieldAccess();
+		deps.setExpression(ast.newSimpleName("AeminiumHelper"));
+		deps.setName(ast.newSimpleName("NO_DEPS"));
+		
+		schedule.arguments().add(deps);
+		
 		for (Object arg : this.getOriginal().parameters())
-			creation.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));
+			schedule.arguments().add((Expression) ASTNode.copySubtree(ast, ((SingleVariableDeclaration) arg).getName()));
 
-		body.statements().add(ast.newExpressionStatement(creation));
+		body.statements().add(ast.newExpressionStatement(schedule));
 
 		// AeminiumHelper.shutdown();
 		MethodInvocation shutdown = ast.newMethodInvocation();
@@ -246,5 +253,11 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		
 		// TODO: EMethodDeclaration Type from TypeDeclaration
 		return ast.newSimpleType((SimpleName) ASTNode.copySubtree(ast, this.type.getOriginal().getName()));
+	}
+	
+	@Override
+	public MethodTask getTask()
+	{
+		return (MethodTask) this.task;
 	}
 }

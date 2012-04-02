@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import aeminium.compiler.east.EASTExecutableNode;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItem;
@@ -15,26 +14,26 @@ import aeminium.compiler.signature.SignatureItemModification;
 
 public class DependencyStack
 {
-	protected final HashMap<DataGroup, Set<EASTExecutableNode>> reads;
-	protected final HashMap<DataGroup, EASTExecutableNode> writes;
+	protected final HashMap<DataGroup, Set<Dependency>> reads;
+	protected final HashMap<DataGroup, Dependency> writes;
 	protected final HashMap<DataGroup, Set<DataGroup>> merges;
 	
 	public DependencyStack()
 	{
-		this.reads = new HashMap<DataGroup, Set<EASTExecutableNode>>();
-		this.writes = new HashMap<DataGroup, EASTExecutableNode>();
+		this.reads = new HashMap<DataGroup, Set<Dependency>>();
+		this.writes = new HashMap<DataGroup, Dependency>();
 		this.merges = new HashMap<DataGroup, Set<DataGroup>>();
 	}
 	
-	public Set<EASTExecutableNode> read(EASTExecutableNode node, DataGroup from)
+	public Set<Dependency> read(Dependency node, DataGroup from)
 	{
 		Set<DataGroup> groupsFrom = this.getGroups(from);
-		Set<EASTExecutableNode> dependencies = new HashSet<EASTExecutableNode>();
+		Set<Dependency> dependencies = new HashSet<Dependency>();
 
 		for (DataGroup _from : groupsFrom)
 		{
 			if (!this.reads.containsKey(_from))
-				this.reads.put(_from, new HashSet<EASTExecutableNode>());
+				this.reads.put(_from, new HashSet<Dependency>());
 			
 			this.reads.get(_from).add(node);
 			
@@ -47,16 +46,16 @@ public class DependencyStack
 		return dependencies;
 	}
 	
-	public Set<EASTExecutableNode> write(EASTExecutableNode node, DataGroup to)
+	public Set<Dependency> write(Dependency node, DataGroup to)
 	{
 		Set<DataGroup> groupsTo = this.getGroups(to);
-		Set<EASTExecutableNode> dependencies = new HashSet<EASTExecutableNode>();
+		Set<Dependency> dependencies = new HashSet<Dependency>();
 			
 		for (DataGroup _to : groupsTo)
 		{
 			if (this.reads.containsKey(_to))
 			{
-				Set<EASTExecutableNode> reads = this.reads.get(_to);
+				Set<Dependency> reads = this.reads.get(_to);
 				dependencies.addAll(reads);
 				reads.clear();
 			}
@@ -97,9 +96,9 @@ public class DependencyStack
 		return groups;
 	}
 
-	public Set<EASTExecutableNode> getDependencies(EASTExecutableNode node, Signature signature)
+	public Set<Dependency> getDependencies(Signature signature)
 	{
-		Set<EASTExecutableNode> dependencies = new HashSet<EASTExecutableNode>();
+		Set<Dependency> dependencies = new HashSet<Dependency>();
 		
 		ArrayList<SignatureItemMerge> merges = new ArrayList<SignatureItemMerge>();
 		
@@ -108,23 +107,26 @@ public class DependencyStack
 			if (item instanceof SignatureItemMerge)
 				merges.add((SignatureItemMerge) item);
 			else
-				dependencies.addAll(((SignatureItemModification) item).getDependencies(node, this));
+			{
+				SignatureItemModification _item = (SignatureItemModification) item;
+				dependencies.addAll(_item.getDependencies(this));
+			}
 		}
 		
 		for (SignatureItemMerge item : merges)
-			dependencies.addAll(item.getDependencies(node, this));
+			dependencies.addAll(item.getDependencies(this));
 		
 		return dependencies;		
 	}
-	
+
 	/**
 	 * Join 2 distinct stacks (i.e. obtained from the then/else stmts) by replacing
 	 * every difference between them with a reference to node (i.e. the parent if node)
 	 */
-	public void join(DependencyStack other, EASTExecutableNode node)
+	public void join(DependencyStack other, Dependency node)
 	{
-		HashMap<DataGroup, Set<EASTExecutableNode>> resultReads = new HashMap<DataGroup, Set<EASTExecutableNode>>();
-		HashMap<DataGroup, EASTExecutableNode> resultWrites = new HashMap<DataGroup, EASTExecutableNode>();
+		HashMap<DataGroup, Set<Dependency>> resultReads = new HashMap<DataGroup, Set<Dependency>>();
+		HashMap<DataGroup, Dependency> resultWrites = new HashMap<DataGroup, Dependency>();
 		HashMap<DataGroup, Set<DataGroup>> resultMerges = new HashMap<DataGroup, Set<DataGroup>>();
 		
 		HashSet<DataGroup> totalWrites = new HashSet<DataGroup>();
@@ -148,19 +150,19 @@ public class DependencyStack
 		for (DataGroup dg : totalReads)
 		{
 			if (!this.reads.containsKey(dg) || !other.reads.containsKey(dg))
-				resultReads.put(dg, new HashSet<EASTExecutableNode>(Arrays.asList(node)));
+				resultReads.put(dg, new HashSet<Dependency>(Arrays.asList(node)));
 			else
 			{
-				Set<EASTExecutableNode> readsA = this.reads.get(dg);
-				Set<EASTExecutableNode> readsB = other.reads.get(dg);
+				Set<Dependency> readsA = this.reads.get(dg);
+				Set<Dependency> readsB = other.reads.get(dg);
 				
-				Set<EASTExecutableNode> readsCommon = new HashSet<EASTExecutableNode>();
+				Set<Dependency> readsCommon = new HashSet<Dependency>();
 				readsCommon.addAll(readsA);
 				readsCommon.retainAll(readsB);
 				
 				// add the nodes in common, and if there is at least one in 
 				// not included add node
-				Set<EASTExecutableNode> readsResult = new HashSet<EASTExecutableNode>();
+				Set<Dependency> readsResult = new HashSet<Dependency>();
 				readsResult.addAll(readsCommon);
 				
 				if (!readsCommon.containsAll(readsA) || !readsCommon.containsAll(readsB))
@@ -203,7 +205,7 @@ public class DependencyStack
 		
 		for (DataGroup node : this.reads.keySet())
 		{
-			HashSet<EASTExecutableNode> reads = new HashSet<EASTExecutableNode>();
+			HashSet<Dependency> reads = new HashSet<Dependency>();
 			reads.addAll(this.reads.get(node));
 			copy.reads.put(node, reads);
 		}

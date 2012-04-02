@@ -10,11 +10,14 @@ import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
+import aeminium.compiler.Dependency;
+import aeminium.compiler.RuntimeDependency;
 import aeminium.compiler.signature.*;
 
 public abstract class EDeferredExpression extends EExpression
 {
 	protected final IMethodBinding binding;
+	protected final Dependency deferredDependency;
 	
 	/* checkSignature */
 	protected SignatureItemDeferred deferred;
@@ -24,6 +27,7 @@ public abstract class EDeferredExpression extends EExpression
 		super(east, original, scope);
 
 		this.binding = binding;
+		this.deferredDependency = new RuntimeDependency(this, "deferred");
 	}
 
 	public EMethodDeclaration getMethod()
@@ -40,7 +44,7 @@ public abstract class EDeferredExpression extends EExpression
 	@Override
 	public Expression translate(List<CompilationUnit> out)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			return this.build(out);
 		
 		out.add(this.task.translate());
@@ -68,7 +72,7 @@ public abstract class EDeferredExpression extends EExpression
 		access.setName(ast.newSimpleName("ae_" + this.task.getName()));
 
 		FieldAccess ret = ast.newFieldAccess();
-		ret.setExpression(access);
+		ret.setExpression(this.task.undefer(access));
 		ret.setName(ast.newSimpleName("ae_ret"));
 
 		return ret;

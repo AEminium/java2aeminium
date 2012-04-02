@@ -6,6 +6,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.Assignment.Operator;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -54,8 +55,8 @@ public class EAssignment extends EExpression
 		this.left.checkSignatures();
 		this.right.checkSignatures();
 		
-		this.signature.addItem(new SignatureItemRead(this.right.getDataGroup()));
-		this.signature.addItem(new SignatureItemWrite(this.left.getDataGroup()));
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.right.getDataGroup()));
+		this.signature.addItem(new SignatureItemWrite(this.dependency, this.left.getDataGroup()));
 		this.signature.addItem(new SignatureItemMerge(this.left.getDataGroup(), this.right.getDataGroup()));
 	}
 
@@ -75,16 +76,13 @@ public class EAssignment extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.left.checkDependencies(stack);
-		this.strongDependencies.add(this.left);
+		this.dependency.addStrong(this.left.dependency);
 		
 		this.right.checkDependencies(stack);
-		this.strongDependencies.add(this.right);
+		this.dependency.addStrong(this.right.dependency);
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.left) && !node.equals(this.right))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 
 	@Override
@@ -104,7 +102,7 @@ public class EAssignment extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "assign");

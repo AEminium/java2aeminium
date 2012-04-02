@@ -2,18 +2,20 @@ package aeminium.compiler.signature;
 
 import java.util.Set;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
-import aeminium.compiler.east.EASTExecutableNode;
 
 public class SignatureItemRead extends SignatureItem implements SignatureItemModification
 {
 	protected final DataGroup datagroup;
+	protected final Dependency dependency;
 	
-	public SignatureItemRead(DataGroup datagroup)
+	public SignatureItemRead(Dependency dependency, DataGroup datagroup)
 	{
 		this.datagroup = datagroup;
+		this.dependency = dependency;
 	}
-	
+
 	@Override
 	public boolean equals(Object other)
 	{
@@ -22,7 +24,7 @@ public class SignatureItemRead extends SignatureItem implements SignatureItemMod
 		
 		return this.datagroup.equals(((SignatureItemRead) other).datagroup);
 	}
-	
+
 	@Override
 	public int hashCode()
 	{
@@ -32,24 +34,31 @@ public class SignatureItemRead extends SignatureItem implements SignatureItemMod
 	@Override
 	public String toString()
 	{
-		return "[READ] " + this.datagroup;
+		return "[READ] " + this.datagroup + " " + this.dependency;
 	}
 	
 	@Override
 	public SignatureItemRead replace(DataGroup what, DataGroup with)
 	{
-		return new SignatureItemRead(this.datagroup.replace(what, with));
+		return new SignatureItemRead(this.dependency, this.datagroup.replace(what, with));
 	}
 
 	@Override
-	public Set<EASTExecutableNode> getDependencies(EASTExecutableNode node, DependencyStack dependencyStack)
+	public Set<Dependency> getDependencies(DependencyStack dependencyStack)
 	{
-		return dependencyStack.read(node, this.datagroup);
+		return dependencyStack.read(this.dependency, this.datagroup);
 	}
 
 	@Override
 	public boolean isLocalTo(DataGroup scope)
 	{
 		return this.datagroup.beginsWith(scope);
+	}
+
+	@Override
+	public SignatureItemRead setDependency(Dependency dep)
+	{
+//		assert(this.dependency == null);
+		return new SignatureItemRead(dep, this.datagroup);
 	}
 }

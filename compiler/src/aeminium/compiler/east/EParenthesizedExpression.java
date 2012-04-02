@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 
+import aeminium.compiler.Dependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.*;
 import aeminium.compiler.task.Task;
@@ -48,8 +48,8 @@ public class EParenthesizedExpression extends EExpression
 	{
 		this.expr.checkSignatures();
 		
-		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
-		this.signature.addItem(new SignatureItemWrite(this.datagroup));		
+		this.signature.addItem(new SignatureItemRead(this.dependency, this.expr.getDataGroup()));
+		this.signature.addItem(new SignatureItemWrite(this.dependency, this.datagroup));		
 		this.signature.addItem(new SignatureItemMerge(this.datagroup, this.expr.getDataGroup()));
 	}
 
@@ -68,13 +68,10 @@ public class EParenthesizedExpression extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
-		this.strongDependencies.add(this.expr);
+		this.dependency.addStrong(this.expr.dependency);
 		
-		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
-		
-		for (EASTExecutableNode node : deps)
-			if (!this.expr.equals(node))
-				this.weakDependencies.add(node);
+		Set<Dependency> deps = stack.getDependencies(this.signature);
+		this.dependency.addWeak(deps);
 	}
 	
 	@Override
@@ -91,7 +88,7 @@ public class EParenthesizedExpression extends EExpression
 	@Override
 	public void preTranslate(Task parent)
 	{
-		if (this.inlineTask)
+		if (this.inline)
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "paren");
