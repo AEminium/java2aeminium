@@ -14,6 +14,7 @@ public class EThisExpression extends EExpression
 	public EThisExpression(EAST east, ThisExpression original, EASTDataNode scope)
 	{
 		super(east, original, scope);
+		this.simple = true;
 	}
 	
 	/* factory */

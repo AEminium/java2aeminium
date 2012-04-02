@@ -17,6 +17,7 @@ public abstract class ENameExpression extends EExpression
 	{
 		super(east, original, scope);
 		
+		this.simple = true;
 		this.binding = original.resolveBinding();
 	}
 	

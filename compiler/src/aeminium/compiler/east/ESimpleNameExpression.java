@@ -8,6 +8,7 @@ public class ESimpleNameExpression extends ENameExpression
 	public ESimpleNameExpression(EAST east, SimpleName original, EASTDataNode scope)
 	{
 		super(east, original, scope);
+
 		this.simple = true;
 	}
 	

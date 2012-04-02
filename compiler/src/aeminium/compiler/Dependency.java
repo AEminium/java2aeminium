@@ -52,15 +52,21 @@ public abstract class Dependency
 		return new ArrayList<NodeDependency>(this.strongDependencies);
 	}
 
-	public ArrayList<Dependency> getWeakDependencies()
+	public Set<Dependency> getWeakDependencies()
 	{
-		return new ArrayList<Dependency>(this.weakDependencies);
+		return new HashSet<Dependency>(this.weakDependencies);
 	}
 	
-	public ArrayList<NodeDependency> getChildren()
+	public Set<NodeDependency> getChildren()
 	{
-		return new ArrayList<NodeDependency>(this.children);
+		return new HashSet<NodeDependency>(this.children);
 	}
+	
+	public Set<Dependency> getReverseDependencies()
+	{
+		return new HashSet<Dependency>(this.reverseDependencies);
+	}
+	
 	public void simplify()
 	{
 		Set<Dependency> deps = new HashSet<Dependency>();

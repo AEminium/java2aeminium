@@ -150,7 +150,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		this.task.getExecute().getBody().statements().addAll(this.build(out));
 		
 		AST ast = this.getAST();
-		
+					
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
 		task_access.setName(ast.newSimpleName("ae_" + this.task.getName()));

@@ -53,7 +53,10 @@ public abstract class EStatement extends EASTExecutableNode
 		this.task.getExecute().getBody().statements().addAll(this.build(out));
 		
 		AST ast = this.getAST();
-		
+
+		if (this.dependency.getReverseDependencies().size() == 0)
+			return Arrays.asList((Statement) ast.newExpressionStatement(this.task.create()));
+
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
 		task_access.setName(ast.newSimpleName("ae_" + this.task.getName()));
