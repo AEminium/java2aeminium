@@ -37,7 +37,7 @@ public abstract class Dependency
 	
 	public void addWeak(Dependency dep)
 	{
-		if (!this.strongDependencies.contains(dep))
+		if (!this.isParentOf(dep))
 		{
 			this.weakDependencies.add(dep);
 			dep.reverseDependencies.add(this);

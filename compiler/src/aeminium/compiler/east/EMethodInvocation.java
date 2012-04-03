@@ -139,9 +139,6 @@ public class EMethodInvocation extends EDeferredExpression
 	{
 		int sum = 0;
 
-		for (Dependency dep : this.dependency.getWeakDependencies())
-			System.out.println(dep);
-
 		if (!this.isStatic())
 			sum += this.expr.optimize();
 		

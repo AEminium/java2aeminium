@@ -38,9 +38,9 @@ public class EParenthesizedExpression extends EExpression
 	}
 
 	@Override
-	public InfixExpression getOriginal()
+	public ParenthesizedExpression getOriginal()
 	{
-		return (InfixExpression) this.original;
+		return (ParenthesizedExpression) this.original;
 	}
 	
 	@Override
@@ -72,6 +72,7 @@ public class EParenthesizedExpression extends EExpression
 		
 		Set<Dependency> deps = stack.getDependencies(this.signature);
 		this.dependency.addWeak(deps);
+		System.err.println(deps);
 	}
 	
 	@Override

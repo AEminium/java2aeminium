@@ -28,6 +28,7 @@ public class NodeDependency extends Dependency
 	
 	public void inlineTo(NodeDependency other)
 	{
+
 		for (NodeDependency dep : this.strongDependencies)
 			if (!other.strongDependencies.contains(dep))
 				other.strongDependencies.add(dep);
