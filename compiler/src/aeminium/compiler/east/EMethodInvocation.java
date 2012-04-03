@@ -80,7 +80,7 @@ public class EMethodInvocation extends EDeferredExpression
 			this.signature.addItem(this.deferred);
 			
 			for (int i = 0; i < method.parameters.size(); i++)
-				signature.addItem(new SignatureItemRead(this.dependency, dgsArgs.get(i)));
+				this.signature.addItem(new SignatureItemRead(this.dependency, dgsArgs.get(i)));
 		} else
 		{
 			Signature def = this.getEAST().getCompiler().getSignatureReader().getSignature(this.deferredDependency, this.binding.getKey(), this.getDataGroup(), dgExpr, dgsArgs);
@@ -130,7 +130,6 @@ public class EMethodInvocation extends EDeferredExpression
 		} else
 			sig = this.signature;
 
-		
 		Set<Dependency> deps = stack.getDependencies(sig);
 		this.dependency.addWeak(deps);
 	}
@@ -139,6 +138,9 @@ public class EMethodInvocation extends EDeferredExpression
 	public int optimize()
 	{
 		int sum = 0;
+
+		for (Dependency dep : this.dependency.getWeakDependencies())
+			System.out.println(dep);
 
 		if (!this.isStatic())
 			sum += this.expr.optimize();

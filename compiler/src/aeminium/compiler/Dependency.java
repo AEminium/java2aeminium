@@ -37,8 +37,11 @@ public abstract class Dependency
 	
 	public void addWeak(Dependency dep)
 	{
-		this.weakDependencies.add(dep);
-		dep.reverseDependencies.add(this);
+		if (!this.strongDependencies.contains(dep))
+		{
+			this.weakDependencies.add(dep);
+			dep.reverseDependencies.add(this);
+		}		
 	}
 	
 	public void addWeak(Collection<Dependency> deps)
@@ -112,6 +115,23 @@ public abstract class Dependency
 		}
 
 		return false;
+	}
+	
+
+	public boolean dependentFree()
+	{
+		if (this.reverseDependencies.size() != 0)
+			return false;
+		
+		for (Dependency strong : this.strongDependencies)
+			if (!strong.dependentFree())
+				return false;
+
+		for (Dependency child : this.children)
+			if (!child.dependentFree())
+				return false;
+
+		return true;
 	}
 	
 	public abstract ArrayList<String> getPath();

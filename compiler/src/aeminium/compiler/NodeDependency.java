@@ -46,11 +46,17 @@ public class NodeDependency extends Dependency
 		
 		for (Dependency dep : this.reverseDependencies)
 		{
+			other.reverseDependencies.add(dep);
+
 			dep.weakDependencies.remove(this);
 			dep.weakDependencies.add(other);
 		}
+
+		other.reverseDependencies.remove(this);
+		
+		assert(!other.reverseDependencies.contains(other));
 	}
-	
+
 	@Override
 	public ArrayList<String> getPath()
 	{
@@ -93,5 +99,11 @@ public class NodeDependency extends Dependency
 		}
 
 		return path;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "[NODE] "+this.node.getOriginal();
 	}
 }

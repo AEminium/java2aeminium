@@ -148,6 +148,9 @@ public abstract class Task
 
 		for (NodeDependency dep :  this.node.dependency.getChildren())
 		{
+			if (dep.dependentFree())
+				continue;
+			
 			Task child = dep.getNode().getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
