@@ -72,7 +72,6 @@ public class EParenthesizedExpression extends EExpression
 		
 		Set<Dependency> deps = stack.getDependencies(this.signature);
 		this.dependency.addWeak(deps);
-		System.err.println(deps);
 	}
 	
 	@Override
