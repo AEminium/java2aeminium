@@ -37,6 +37,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	{
 		super(east, original);
 
+		this.simple = true;
 		this.scope = scope;
 		this.datagroup = scope.getDataGroup();
 

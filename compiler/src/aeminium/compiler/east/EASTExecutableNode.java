@@ -1,10 +1,7 @@
 package aeminium.compiler.east;
 
-import java.util.HashSet;
-
 import org.eclipse.jdt.core.dom.ASTNode;
 
-import aeminium.compiler.Dependency;
 import aeminium.compiler.NodeDependency;
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
@@ -48,20 +45,25 @@ public abstract class EASTExecutableNode extends EASTNode
 		
 		int sum = 0;
 
-		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
-		
-		for (Dependency dep : this.dependency.getStrongDependencies())
-			if (dep instanceof NodeDependency)
-				nodes.add(((NodeDependency) dep).getNode());
+		/* if the other task is only used by this one, it can be inlined */
+		for (NodeDependency dep : this.dependency.getStrongDependencies())
+			if (dep.getReverseDependencies().size() < 1)
+				sum += dep.getNode().inlineTo(this);
 
-		if (this.dependency.getStrongDependencies().size() + this.dependency.getWeakDependencies().size() < 2)
-			for (EASTExecutableNode node : nodes)
-				sum += node.inline(this);
-		
-		for (EASTExecutableNode node : nodes)
+		/* inline all simple tasks */
+		for (NodeDependency dep : this.dependency.getStrongDependencies())
+		{
+			EASTExecutableNode node = dep.getNode();
 			if (node.isSimpleTask())
-				sum += node.inline(this);
-		
+				sum += node.inlineTo(this);
+		}
+
+		/* if this task is simple and only depends of task y, then inline it. */ 
+		if (this.isSimpleTask() && 
+			this.dependency.getStrongDependencies().size() + this.dependency.getWeakDependencies().size() < 2)
+			for (NodeDependency dep : this.dependency.getStrongDependencies())
+				sum += dep.getNode().inlineTo(this);
+
 		return sum;
 	}
 	
@@ -70,7 +72,7 @@ public abstract class EASTExecutableNode extends EASTNode
 		return this.simple;
 	}
 
-	public int inline(EASTExecutableNode inlineTo)
+	public int inlineTo(EASTExecutableNode inlineTo)
 	{
 		if (this.inline)
 			return 0;
@@ -85,5 +87,10 @@ public abstract class EASTExecutableNode extends EASTNode
 		return 1;
 	}
 
+	public NodeDependency getDependency()
+	{
+		return this.dependency;
+	}
+	
 	public abstract void preTranslate(Task parent);
 }

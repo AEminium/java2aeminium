@@ -21,10 +21,24 @@ public class RuntimeDependency extends Dependency
 	public ArrayList<String> getPath()
 	{
 		ArrayList<String> path = this.node.dependency.getPath();
-
-		if (node.isAeminium())
-			path.add(subpath);
+		path.add(this.subpath);
 		
 		return path;
+	}
+	
+	@Override
+	public boolean equals(Object other)
+	{
+		if (other == null || ! (other instanceof RuntimeDependency))
+			return false;
+		
+		RuntimeDependency _other = (RuntimeDependency) other;
+		return this.node.equals(_other.node) && this.subpath.equals(_other.subpath);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return this.node.hashCode() ^ this.subpath.hashCode();
 	}
 }

@@ -109,6 +109,8 @@ public class EIfStatement extends EStatement
 		int sum = 0;
 		
 		sum += this.expr.optimize();
+		sum += this.expr.inlineTo(this);
+		
 		sum += this.thenStmt.optimize();
 		
 		if (this.elseStmt != null)

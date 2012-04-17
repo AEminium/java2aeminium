@@ -94,7 +94,7 @@ public abstract class ENameExpression extends EExpression
 
 		FieldAccess field = ast.newFieldAccess();
 
-		field.setExpression(this.dependency.getPathTo(node.getDeclaringTask().getNode().dependency));
+		field.setExpression(this.dependency.getPathTo(node.getDependency()));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.getOriginal()));
 
 		return field;

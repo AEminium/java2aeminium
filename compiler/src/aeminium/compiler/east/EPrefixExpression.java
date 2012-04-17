@@ -98,7 +98,6 @@ public class EPrefixExpression extends EExpression
 			this.task = parent;
 		else
 			this.task = parent.newSubTask(this, "prefix");
-		
 		this.expr.preTranslate(this.task);
 	}
 

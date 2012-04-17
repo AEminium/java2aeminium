@@ -12,7 +12,7 @@ public abstract class Dependency
 	protected final ArrayList<NodeDependency> strongDependencies;
 
 	protected final Set<Dependency> weakDependencies;
-	protected final Set<NodeDependency> children;
+	protected final Set<Dependency> children;
 	
 	protected final Set<Dependency> reverseDependencies;
 	
@@ -20,7 +20,7 @@ public abstract class Dependency
 	{
 		this.strongDependencies = new ArrayList<NodeDependency>();
 		this.weakDependencies = new HashSet<Dependency>();
-		this.children = new HashSet<NodeDependency>();
+		this.children = new HashSet<Dependency>();
 
 		this.reverseDependencies = new HashSet<Dependency>();
 	}
@@ -30,18 +30,18 @@ public abstract class Dependency
 		this.strongDependencies.add(dep);
 	}
 	
-	public void addChild(NodeDependency dep)
+	public void addChild(Dependency dep)
 	{
 		this.children.add(dep);
 	}
 	
 	public void addWeak(Dependency dep)
 	{
-		if (!this.isParentOf(dep))
+		if (!this.isStrongParentOf(dep))
 		{
 			this.weakDependencies.add(dep);
 			dep.reverseDependencies.add(this);
-		}		
+		}
 	}
 	
 	public void addWeak(Collection<Dependency> deps)
@@ -60,9 +60,9 @@ public abstract class Dependency
 		return new HashSet<Dependency>(this.weakDependencies);
 	}
 	
-	public Set<NodeDependency> getChildren()
+	public Set<Dependency> getChildren()
 	{
-		return new HashSet<NodeDependency>(this.children);
+		return new HashSet<Dependency>(this.children);
 	}
 	
 	public Set<Dependency> getReverseDependencies()
@@ -81,12 +81,39 @@ public abstract class Dependency
 
 		for (Dependency dep : deps)
 		{
+			if (dep instanceof RuntimeDependency)
+				continue;
+			
 			temp_weak.remove(dep.weakDependencies);
 			temp_weak.remove(dep.strongDependencies);
 		}
 
 		this.weakDependencies.clear();
 		this.weakDependencies.addAll(temp_weak);
+	}
+	
+	public boolean isStrongParentOf(Dependency node)
+	{		
+		Stack<Dependency> tovisit = new Stack<Dependency>();
+		Set<Dependency> visited = new HashSet<Dependency>();
+	
+		tovisit.add(this);
+		
+		while (!tovisit.empty())
+		{
+			Dependency dep = tovisit.pop();
+
+			if (dep.equals(node))
+				return true;
+			
+			visited.add(dep);
+			
+			for (Dependency child : dep.strongDependencies)
+				if (!visited.contains(child))
+					tovisit.push(child);
+		}
+
+		return false;
 	}
 	
 	public boolean isParentOf(Dependency node)
@@ -116,21 +143,25 @@ public abstract class Dependency
 
 		return false;
 	}
-	
 
 	public boolean dependentFree()
 	{
-		if (this.reverseDependencies.size() != 0)
-			return false;
+		Stack<Dependency> sub = new Stack<Dependency>();
+
+		sub.add(this);
 		
-		for (Dependency strong : this.strongDependencies)
-			if (!strong.dependentFree())
-				return false;
-
-		for (Dependency child : this.children)
-			if (!child.dependentFree())
-				return false;
-
+		while (!sub.empty())
+		{
+			Dependency dep = sub.pop();
+			
+			for (Dependency rev : dep.reverseDependencies)
+				if (!this.isParentOf(rev))
+					return false;
+					
+			sub.addAll(dep.strongDependencies);
+			sub.addAll(dep.children);
+		}
+		
 		return true;
 	}
 	

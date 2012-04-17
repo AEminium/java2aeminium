@@ -91,7 +91,7 @@ public class EAssignment extends EExpression
 		int sum = 0;
 
 		sum += this.left.optimize();
-		sum += this.left.inline(this); /* Always inline the left hand side */
+		sum += this.left.inlineTo(this); /* Always inline the left hand side */
 		sum += this.right.optimize();
 		
 		sum += super.optimize();

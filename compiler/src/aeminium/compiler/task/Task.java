@@ -25,8 +25,6 @@ public abstract class Task
 	@SuppressWarnings("unchecked")
 	protected Task(EASTExecutableNode node, String name, Task parent)
 	{
-		System.out.println("Task: " + name + " child of " + parent);
-		
 		this.node = node;
 		this.name = name;
 		this.parent = parent;
@@ -53,7 +51,7 @@ public abstract class Task
 		this.constructors.add(defaultConstructor);
 		
 		this.decl.bodyDeclarations().add(defaultConstructor);
-		
+
 		/* public void execute(Runtime rt, Task task) throws Exception */
 		this.execute = ast.newMethodDeclaration();
 		this.decl.bodyDeclarations().add(this.execute);
@@ -146,18 +144,23 @@ public abstract class Task
 			body.statements().add(ast.newExpressionStatement(child_asgn));
 		}
 
-		for (NodeDependency dep :  this.node.dependency.getChildren())
+		for (Dependency dep :  this.node.dependency.getChildren())
 		{
-			if (dep.dependentFree())
+			if (!(dep instanceof NodeDependency))
 				continue;
 			
-			Task child = dep.getNode().getTask();
+			NodeDependency _dep = (NodeDependency) dep;
+
+			if (_dep.dependentFree())
+				continue;
+			
+			Task child = _dep.getNode().getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
 			String name = "ae_" + child.getName();
 
 			if (!recursive)
-				this.addField(type, name, false);
+				this.addField(type, name, true);
 		}
 
 		if (!(this instanceof MethodTask))

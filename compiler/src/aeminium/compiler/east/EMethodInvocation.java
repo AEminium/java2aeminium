@@ -79,11 +79,27 @@ public class EMethodInvocation extends EDeferredExpression
 			this.deferred = new SignatureItemDeferred(this.deferredDependency, method, this.getDataGroup(), dgExpr, dgsArgs);
 			this.signature.addItem(this.deferred);
 			
+			if (!this.isStatic())
+				this.signature.addItem(new SignatureItemRead(this.dependency, dgExpr));
+
 			for (int i = 0; i < method.parameters.size(); i++)
 				this.signature.addItem(new SignatureItemRead(this.dependency, dgsArgs.get(i)));
 		} else
 		{
-			Signature def = this.getEAST().getCompiler().getSignatureReader().getSignature(this.deferredDependency, this.binding.getKey(), this.getDataGroup(), dgExpr, dgsArgs);
+			/* method is external, so it will be inlined,
+			 * therefore the SignatureItems must originate from this dependency
+			 * and not the deferred */
+			Signature def = this.getEAST()
+				.getCompiler()
+				.getSignatureReader()
+				.getSignature(
+					this.dependency,
+					this.binding.getKey(),
+					this.getDataGroup(),
+					dgExpr,
+					dgsArgs
+				);
+
 			this.signature.addAll(def);
 		}
 	}
@@ -122,16 +138,24 @@ public class EMethodInvocation extends EDeferredExpression
 		Signature sig;
 		if (this.deferred != null)
 		{
-			sig = this.deferred.closure();
+			sig = new Signature();
 
 			for (SignatureItem item : this.signature.getItems())
 				if (!item.equals(this.deferred))
 					sig.addItem(item);
-		} else
-			sig = this.signature;
 
-		Set<Dependency> deps = stack.getDependencies(sig);
-		this.dependency.addWeak(deps);
+			Set<Dependency> deps = stack.getDependencies(sig);
+			this.dependency.addWeak(deps);
+			this.dependency.addChild(this.deferredDependency);
+
+			sig = this.deferred.closure();
+			deps = stack.getDependencies(sig);
+			this.dependency.addWeak(deps);
+		} else
+		{
+			Set<Dependency> deps = stack.getDependencies(this.signature);
+			this.dependency.addWeak(deps);
+		}		
 	}
 	
 	@Override
@@ -151,7 +175,7 @@ public class EMethodInvocation extends EDeferredExpression
 	}
 	
 	@Override
-	public int inline(EASTExecutableNode inlineTo)
+	public int inlineTo(EASTExecutableNode inlineTo)
 	{
 		// TODO inline ClassInstanceCreation
 		System.out.println("TODO: EMethodInvocation.inline()");
@@ -191,6 +215,16 @@ public class EMethodInvocation extends EDeferredExpression
 			schedule.setExpression(function);
 			
 			schedule.setName(ast.newSimpleName("schedule"));
+			
+			FieldAccess parent = ast.newFieldAccess();
+			parent.setExpression(ast.newThisExpression());
+			parent.setName(ast.newSimpleName("ae_parent"));
+			
+			FieldAccess parentTask = ast.newFieldAccess();
+			parentTask.setExpression(parent);
+			parentTask.setName(ast.newSimpleName("ae_task"));
+			
+			schedule.arguments().add(parentTask);
 			
 			MethodInvocation deps = ast.newMethodInvocation();
 			deps.setExpression(ast.newName("java.util.Arrays"));

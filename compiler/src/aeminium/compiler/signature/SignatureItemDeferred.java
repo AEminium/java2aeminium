@@ -39,6 +39,9 @@ public class SignatureItemDeferred extends SignatureItem
 		if (!this.method.equals(_other.method))
 			return false;
 		
+		if (this.dep != _other.dep && !this.dep.equals(_other.dep))
+			return false;
+		
 		if (this.dgRet != _other.dgRet && !this.dgRet.equals(_other.dgRet))
 			return false;
 
@@ -59,7 +62,7 @@ public class SignatureItemDeferred extends SignatureItem
 	public int hashCode()
 	{
 		// FIXME: should take into account other parameters, but not strictly required
-		return this.method.hashCode();
+		return this.method.hashCode() ^ this.dep.hashCode();
 	}
 	
 	@Override

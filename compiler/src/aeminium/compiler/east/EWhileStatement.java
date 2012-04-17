@@ -83,6 +83,9 @@ public class EWhileStatement extends EStatement
 	{
 		int sum = 0;
 		
+		/* force expr task to be inlined */
+		sum += this.expr.inlineTo(this);
+
 		sum += this.expr.optimize();
 		sum += this.body.optimize();
 		

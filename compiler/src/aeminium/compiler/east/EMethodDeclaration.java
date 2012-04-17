@@ -110,11 +110,11 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 				_item = _item.replace(this.type.thisDataGroup, dgRet);
 			} else
 			{
-				if (!this.isStatic())
-					_item = _item.replace(this.type.thisDataGroup, dgThis);
-					
 				if (!this.isVoid())
 					_item = _item.replace(this.returnDataGroup, dgRet);
+
+				if (!this.isStatic())
+					_item = _item.replace(this.type.thisDataGroup, dgThis);	
 			}
 
 			sig.addItem(_item);
@@ -211,14 +211,20 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 		body.statements().add(ast.newExpressionStatement(init));
 
-		// new Class_main().schedule(AeminiumHelper.NO_PARENT, args);
+		// new Class_main().schedule(AeminiumHelper.NO_PARENT, AeminiumHelper.NO_DEPS, args);
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
 		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getName())));
 
 		MethodInvocation schedule = ast.newMethodInvocation();
 		schedule.setExpression(creation);
 		schedule.setName(ast.newSimpleName("schedule"));
-		
+
+		FieldAccess parent = ast.newFieldAccess();
+		parent.setExpression(ast.newSimpleName("AeminiumHelper"));
+		parent.setName(ast.newSimpleName("NO_PARENT"));
+
+		schedule.arguments().add(parent);
+
 		FieldAccess deps = ast.newFieldAccess();
 		deps.setExpression(ast.newSimpleName("AeminiumHelper"));
 		deps.setName(ast.newSimpleName("NO_DEPS"));

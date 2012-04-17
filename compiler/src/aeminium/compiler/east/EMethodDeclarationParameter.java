@@ -2,8 +2,8 @@ package aeminium.compiler.east;
 
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
+import aeminium.compiler.NodeDependency;
 import aeminium.compiler.signature.*;
-import aeminium.compiler.task.Task;
 
 public class EMethodDeclarationParameter extends EASTNode implements EASTDeclaringNode
 {
@@ -47,8 +47,8 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 	}
 
 	@Override
-	public Task getTask()
+	public NodeDependency getDependency()
 	{
-		return this.scope.getTask();
+		return this.scope.getDependency();
 	}
 }

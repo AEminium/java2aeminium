@@ -1,8 +1,8 @@
 package aeminium.compiler.east;
 
-import aeminium.compiler.task.Task;
+import aeminium.compiler.NodeDependency;
 
 public interface EASTDeclaringNode extends EASTDataNode
 {
-	public Task getTask();
+	public NodeDependency getDependency();
 }

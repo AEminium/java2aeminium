@@ -64,9 +64,15 @@ public class EClassInstanceCreation extends EDeferredExpression
 		
 		if (method != null)
 		{
-			this.deferred = new SignatureItemDeferred(this.deferredDependency, this.getMethod(), this.getDataGroup(), null, dgsArgs);
+			/* TODO/FIXME: allow for deferred class creation
+			 * this.deferred = new SignatureItemDeferred(this.deferredDependency, this.getMethod(), this.getDataGroup(), null, dgsArgs); */
+
+			this.deferred = new SignatureItemDeferred(this.dependency, this.getMethod(), this.getDataGroup(), null, dgsArgs);
 			this.signature.addItem(this.deferred);
+
 			this.signature.addItem(new SignatureItemWrite(this.dependency, this.getDataGroup()));
+			for (int i = 0; i < method.parameters.size(); i++)
+				this.signature.addItem(new SignatureItemRead(this.dependency, dgsArgs.get(i)));
 		} else
 		{
 			Signature def = this.getDefaultSignature(this.getDataGroup(), dgsArgs);
@@ -77,7 +83,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 	
 	protected Signature getDefaultSignature(DataGroup dgRet, ArrayList<DataGroup> dgsArgs)
 	{
-		/* Conservative approach */
+		/* Conservative approach, without considering parallelism */
 		Signature sig = new Signature();
 		
 		sig.addItem(new SignatureItemRead(this.dependency, this.getEAST().getExternalDataGroup()));
@@ -116,8 +122,15 @@ public class EClassInstanceCreation extends EDeferredExpression
 		
 		Signature sig;
 		if (this.deferred != null)
+		{
 			sig = this.deferred.closure();
-		else
+	
+//			this.dependency.addChild(this.deferredDependency);
+	
+			for (SignatureItem item : this.signature.getItems())
+				if (!item.equals(this.deferred))
+					sig.addItem(item);
+		} else
 			sig = this.signature;
 		
 		Set<Dependency> deps = stack.getDependencies(sig);
@@ -129,6 +142,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 	{
 		int sum = 0;
 		
+		// TODO: always inliing the deferredDependency
 		for (EExpression arg : this.arguments)
 			sum += arg.optimize();
 		
@@ -138,7 +152,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 	}
 	
 	@Override
-	public int inline(EASTExecutableNode inlineTo)
+	public int inlineTo(EASTExecutableNode inlineTo)
 	{
 		// TODO inline ClassInstanceCreation
 		System.out.println("TODO: EClassInstanceCreation.inline()");
@@ -180,7 +194,6 @@ public class EClassInstanceCreation extends EDeferredExpression
 				create.arguments().add(arg.translate(out));
 
 			return create;
-		
 		}
 		*/
 		

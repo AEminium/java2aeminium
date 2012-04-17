@@ -22,7 +22,10 @@ public class SignatureItemRead extends SignatureItem implements SignatureItemMod
 		if (other == null || ! (other instanceof SignatureItemRead))
 			return false;
 		
-		return this.datagroup.equals(((SignatureItemRead) other).datagroup);
+		SignatureItemRead _other = (SignatureItemRead) other;
+		
+		return this.datagroup.equals(_other.datagroup) &&
+			(this.dependency == _other.dependency || this.dependency.equals(_other.dependency));
 	}
 
 	@Override
@@ -58,7 +61,6 @@ public class SignatureItemRead extends SignatureItem implements SignatureItemMod
 	@Override
 	public SignatureItemRead setDependency(Dependency dep)
 	{
-//		assert(this.dependency == null);
 		return new SignatureItemRead(dep, this.datagroup);
 	}
 }

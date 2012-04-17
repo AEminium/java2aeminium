@@ -22,7 +22,9 @@ public class SignatureItemWrite extends SignatureItem implements SignatureItemMo
 		if (other == null || ! (other instanceof SignatureItemWrite))
 			return false;
 		
-		return this.datagroup.equals(((SignatureItemWrite) other).datagroup);
+		SignatureItemWrite _other = (SignatureItemWrite) other;
+		return this.datagroup.equals(_other.datagroup) &&
+			(this.dependency == _other.dependency || this.dependency.equals(_other.dependency));
 	}
 	
 	@Override

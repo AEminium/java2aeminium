@@ -128,7 +128,7 @@ public class EArrayCreation extends EExpression
 		if (this.initializer != null)
 		{
 			sum += this.initializer.optimize();
-			sum += this.initializer.inline(this);
+			sum += this.initializer.inlineTo(this);
 		}
 		
 		sum += super.optimize();

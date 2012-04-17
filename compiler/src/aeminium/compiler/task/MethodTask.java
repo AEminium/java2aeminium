@@ -20,6 +20,11 @@ public class MethodTask extends Task
 		
 		Block body = ast.newBlock();
 
+		SingleVariableDeclaration parent = ast.newSingleVariableDeclaration();
+		parent.setType(ast.newSimpleType(ast.newName("aeminium.runtime.Task")));
+		parent.setName(ast.newSimpleName("ae_parent"));
+		schedule.parameters().add(parent);
+		
 		/* Invoker task as deps or NO_PARENT */
 		SingleVariableDeclaration deps = ast.newSingleVariableDeclaration();
 		ParameterizedType depsType = ast.newParameterizedType(ast.newSimpleType(ast.newName("java.util.Collection")));
@@ -33,7 +38,7 @@ public class MethodTask extends Task
 		if (!this.getNode().isStatic())
 		{
 			Type thisType = this.getNode().getThisType();
-			this.addField(thisType, "ae_this", false);
+			this.addField(thisType, "ae_this", true);
 
 			// add ae_this parameter
 			SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
@@ -64,7 +69,7 @@ public class MethodTask extends Task
 			schedule.parameters().add((SingleVariableDeclaration) ASTNode.copySubtree(ast, decl));
 
 			// this.x = x
-			this.addField((Type) ASTNode.copySubtree(ast, decl.getType()), decl.getName().toString(), false);
+			this.addField((Type) ASTNode.copySubtree(ast, decl.getType()), decl.getName().toString(), true);
 
 			Assignment asgn = ast.newAssignment();
 
@@ -88,11 +93,7 @@ public class MethodTask extends Task
 		
 		invoke.arguments().add(task);
 		
-		FieldAccess parent = ast.newFieldAccess();
-		parent.setExpression(ast.newSimpleName("AeminiumHelper"));
-		parent.setName(ast.newSimpleName("NO_PARENT"));
-
-		invoke.arguments().add(parent);
+		invoke.arguments().add(ast.newSimpleName("ae_parent"));
 		invoke.arguments().add(ast.newSimpleName("ae_deps"));
 
 		body.statements().add(ast.newExpressionStatement(invoke));

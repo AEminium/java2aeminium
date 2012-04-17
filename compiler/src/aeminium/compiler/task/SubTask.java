@@ -28,7 +28,7 @@ public abstract class SubTask extends Task
 		if (node instanceof EStatement)
 			return StatementSubTask.create((EStatement) node, name, parent);
 		
-		System.err.println("TODO: SubTask.create()");
+		System.err.println("TODO: SubTask.create() - " + node.getClass().getName());
 		return null;
 	}
 

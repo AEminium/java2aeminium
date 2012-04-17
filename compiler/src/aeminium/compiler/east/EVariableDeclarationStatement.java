@@ -27,6 +27,8 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	{
 		super(east, original, scope, method);
 
+		this.simple = true;
+		
 		this.datagroup = scope.getDataGroup();
 		this.dataType = original.getType();
 		

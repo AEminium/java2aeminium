@@ -13,7 +13,7 @@ public class NodeDependency extends Dependency
 	protected final EASTExecutableNode node;
 
 	public boolean fast;
-	
+
 	public NodeDependency(EASTExecutableNode node)
 	{
 		super();
@@ -28,7 +28,6 @@ public class NodeDependency extends Dependency
 	
 	public void inlineTo(NodeDependency other)
 	{
-
 		for (NodeDependency dep : this.strongDependencies)
 			if (!other.strongDependencies.contains(dep))
 				other.strongDependencies.add(dep);
@@ -37,7 +36,7 @@ public class NodeDependency extends Dependency
 			if (!other.weakDependencies.contains(dep))
 				other.weakDependencies.add(dep);
 	
-		for (NodeDependency dep : this.children)
+		for (Dependency dep : this.children)
 			if (!other.children.contains(dep))
 				other.children.add(dep);
 	
@@ -107,4 +106,21 @@ public class NodeDependency extends Dependency
 	{
 		return "[NODE] "+this.node.getOriginal();
 	}
+	
+	@Override
+	public boolean equals(Object other)
+	{
+		if (other == null || ! (other instanceof NodeDependency))
+			return false;
+		
+		NodeDependency _other = (NodeDependency) other;
+		return this.node.equals(_other.node);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return this.node.hashCode();
+	}
+
 }

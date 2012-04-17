@@ -2,9 +2,9 @@ package aeminium.compiler.east;
 
 import org.eclipse.jdt.core.dom.*;
 
+import aeminium.compiler.NodeDependency;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.SimpleDataGroup;
-import aeminium.compiler.task.Task;
 
 public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 {
@@ -49,8 +49,8 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 		return this.scope.getTypeDeclaration();
 	}
 	
-	public Task getDeclaringTask()
+	public NodeDependency getDependency()
 	{
-		return this.scope.getTask();
+		return this.scope.getDependency();
 	}
 }
