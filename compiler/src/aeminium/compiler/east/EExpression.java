@@ -60,7 +60,10 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 				
 		if (expr instanceof FieldAccess)
 			return EFieldAccess.create(east, (FieldAccess) expr, scope);
-				
+		
+		if (expr instanceof BooleanLiteral)
+			return EBooleanLiteral.create(east, (BooleanLiteral) expr, scope);
+
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;
 	}
