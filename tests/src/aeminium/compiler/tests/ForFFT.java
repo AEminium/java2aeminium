@@ -12,7 +12,7 @@ public class ForFFT {
 	        Complex[] even = new Complex[N / 2];
 		    aeminium_rec_for_method_7(even ,N ,0 ,x);
 		    Complex[] q = ForFFT.sequentialFFT(even);
-		    Complex[] odd = new Complex[N / 2];
+		    Complex[] odd = even;
 		    aeminium_rec_for_method_8(N ,odd ,0 ,x);
 		    Complex[] r = ForFFT.sequentialFFT(odd);
 		    Complex[] y = new Complex[N];
@@ -28,9 +28,8 @@ public class ForFFT {
         if (k < (N / 2)) {
             double kth = (((-2) * k) * (Math.PI)) / N;
             Complex wk = new Complex(Math.cos(kth) , Math.sin(kth));
-			Complex wkrk = wk.times(r[k]);
-            y[k] = q[k].plus(wkrk);
-            y[(k + (N / 2))] = q[k].minus(wkrk);
+            y[k] = q[k].plus(wk.times(r[k]));
+            y[(k + (N / 2))] = q[k].minus(wk.times(r[k]));
             ++k;
             aeminium_rec_for_method_9(r ,q ,N ,k ,y);
         }
@@ -89,7 +88,7 @@ public class ForFFT {
     }
 
     public static void main(String[] args) {
-        Complex[] input = ForFFT.createRandomComplexArray(32 ,524288);
+        Complex[] input = ForFFT.createRandomComplexArray(100,524288);
         Complex[] output = ForFFT.sequentialFFT(input);
         int i = 0;
         aeminium_rec_while_method_5(output ,i);

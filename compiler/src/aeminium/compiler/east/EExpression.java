@@ -49,6 +49,9 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		if (expr instanceof PrefixExpression)
 			return EPrefixExpression.create(east, (PrefixExpression) expr, scope);
 		
+		if (expr instanceof PostfixExpression)
+			return EPostfixExpression.create(east, (PostfixExpression) expr, scope);
+
 		if (expr instanceof ParenthesizedExpression)
 			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope);
 		

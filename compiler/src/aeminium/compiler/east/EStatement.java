@@ -39,7 +39,7 @@ public abstract class EStatement extends EASTExecutableNode
 			return EWhileStatement.create(east, (WhileStatement) stmt, scope, method);
 		
 		if (stmt instanceof EmptyStatement)
-			return EEmptyStatement.create(east, (WhileStatement) stmt, scope, method);
+			return EEmptyStatement.create(east, (EmptyStatement) stmt, scope, method);
 
 		System.err.println("Not implemented error: " + stmt.getClass().getName());
 
