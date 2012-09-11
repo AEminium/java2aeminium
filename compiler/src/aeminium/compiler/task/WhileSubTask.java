@@ -41,7 +41,7 @@ public class WhileSubTask extends StatementSubTask
 		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false, null);
 		this.fillConstructor(this.constructors.get(1), this.node.getAST().newBlock(), true, deps);
 		this.fillExecute();
-
+		
 		return this.cu;
 	}
 }

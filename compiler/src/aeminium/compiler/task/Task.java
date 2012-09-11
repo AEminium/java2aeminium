@@ -398,7 +398,7 @@ public abstract class Task
 	{
 		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false, null);
 		this.fillExecute();
-
+		
 		return this.cu;
 	}
 

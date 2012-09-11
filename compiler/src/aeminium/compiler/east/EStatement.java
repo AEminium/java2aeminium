@@ -62,6 +62,8 @@ public abstract class EStatement extends EASTExecutableNode
 		assign.setLeftHandSide(task_access);
 		assign.setRightHandSide(this.task.create());
 
+		this.postTranslate(this.task);
+
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 	

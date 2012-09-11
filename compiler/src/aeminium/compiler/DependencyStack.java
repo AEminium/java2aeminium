@@ -127,6 +127,8 @@ public class DependencyStack
 				EASTControlerNode controler = this.scopes.get(scope);
 				dependencies.add((EASTExecutableNode) controler);
 				controler.addControledNode(node);
+				
+				node.addController(controler);
 			}
 		}
 

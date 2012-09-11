@@ -177,6 +177,8 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 			Assignment finish_assign = ast.newAssignment();
 			finish_assign.setLeftHandSide(finished);
 			finish_assign.setRightHandSide(ast.newBooleanLiteral(true));
+			
+			stmts.add(ast.newExpressionStatement(finish_assign));
 		}
 
 		return stmts;
@@ -188,5 +190,11 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 		this.controled.add(node);
 		
 		this.method.control();
+	}
+
+	@Override
+	public Task getScopeTask()
+	{
+		return this.method.getTask();
 	}
 }

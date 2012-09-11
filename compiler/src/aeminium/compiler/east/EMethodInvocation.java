@@ -165,7 +165,6 @@ public class EMethodInvocation extends EDeferredExpression
 			arg.preTranslate(this.task);
 	}
 	
-	
 	@SuppressWarnings("unchecked")
 	@Override
 	public Expression build(List<CompilationUnit> out)

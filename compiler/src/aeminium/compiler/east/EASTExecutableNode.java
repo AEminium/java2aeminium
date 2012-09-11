@@ -4,7 +4,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InfixExpression.Operator;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
@@ -20,6 +29,8 @@ public abstract class EASTExecutableNode extends EASTNode
 	protected final Set<EASTExecutableNode> weakDependencies;
 	protected final Set<EASTExecutableNode> children;
 	
+	protected final Set<EASTControlerNode> controlers;
+
 	/* optimize */
 	protected boolean inlineTask;
 	
@@ -37,6 +48,7 @@ public abstract class EASTExecutableNode extends EASTNode
 		this.strongDependencies = new ArrayList<EASTExecutableNode>();
 		this.weakDependencies = new HashSet<EASTExecutableNode>();
 		this.children = new HashSet<EASTExecutableNode>();
+		this.controlers = new HashSet<EASTControlerNode>();
 		
 		this.inlineTask = false;
 	}
@@ -146,4 +158,53 @@ public abstract class EASTExecutableNode extends EASTNode
 	public abstract void preTranslate(Task parent);
 	
 	public abstract EASTDataNode getScope();
+
+	public void addController(EASTControlerNode controler)
+	{
+		this.controlers.add(controler);
+	}
+
+	@SuppressWarnings("unchecked")
+	public void postTranslate(Task task)
+	{
+		AST ast = this.getAST();
+
+		if (this.controlers.size() == 0)
+			return;
+
+		Expression cond = null;
+		
+		for (EASTControlerNode controler : this.controlers)
+		{
+			FieldAccess access = ast.newFieldAccess();
+			access.setExpression(task.getPathToNearestTask(controler.getScopeTask()));
+			access.setName(ast.newSimpleName("ae_finished"));
+			
+			PrefixExpression prefix = ast.newPrefixExpression();
+			prefix.setOperator(org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT);
+			prefix.setOperand(access);
+
+			if (cond == null)
+				cond = prefix;
+			else
+			{
+				InfixExpression expr = ast.newInfixExpression();
+				expr.setLeftOperand(cond);
+				expr.setRightOperand(prefix);
+				expr.setOperator(Operator.CONDITIONAL_AND);
+				
+				cond = expr;
+			}
+		}
+		
+		IfStatement ifstmt = ast.newIfStatement();
+		
+		ifstmt.setExpression(cond);
+		ifstmt.setThenStatement((Statement) ASTNode.copySubtree(ast, task.getExecute().getBody()));
+		
+		Block block = ast.newBlock();
+		block.statements().add(ifstmt);
+		
+		task.getExecute().setBody(block);
+	}
 }

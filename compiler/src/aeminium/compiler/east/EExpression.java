@@ -77,6 +77,8 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	@SuppressWarnings("unchecked")
 	public Expression translate(List<CompilationUnit> out)
 	{
+		System.out.println(this + ": " + this.inlineTask);
+		
 		if (this.inlineTask)
 			return this.build(out);
 		
@@ -103,6 +105,8 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		FieldAccess ret = ast.newFieldAccess();
 		ret.setExpression(access);
 		ret.setName(ast.newSimpleName("ae_ret"));
+
+		this.postTranslate(this.task);
 
 		return ret;
 	}

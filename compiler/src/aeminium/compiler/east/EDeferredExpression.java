@@ -41,7 +41,11 @@ public abstract class EDeferredExpression extends EExpression
 	public Expression translate(List<CompilationUnit> out)
 	{
 		if (this.inlineTask)
-			return this.build(out);
+		{
+			Expression expr = this.build(out);
+			this.postTranslate(this.task);
+			return expr;
+		}
 		
 		out.add(this.task.translate());
 		
@@ -71,6 +75,8 @@ public abstract class EDeferredExpression extends EExpression
 		ret.setExpression(access);
 		ret.setName(ast.newSimpleName("ae_ret"));
 
+		this.postTranslate(this.task);
+		
 		return ret;
 	}
 	
