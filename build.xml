@@ -17,7 +17,7 @@
 	<property name="tests.target.dir" value="tests/target" />
 	<property name="tests.build.dir" value="tests/build" />
 	<property name="tests.lib.dir" value="tests/lib" />
-	<property name="tests.class" value="aeminium.compiler.tests.FFT" />
+	<property name="tests.class" value="aeminium.compiler.tests.Control" />
 	<property name="tests.jar" value="tests/test.jar" />
 
 	<!-- aeminium.tests -->

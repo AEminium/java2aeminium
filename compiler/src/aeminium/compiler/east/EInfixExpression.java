@@ -70,7 +70,6 @@ public class EInfixExpression extends EExpression
 		this.signature.addItem(new SignatureItemRead(this.left.getDataGroup()));
 		this.signature.addItem(new SignatureItemRead(this.right.getDataGroup()));
 		this.signature.addItem(new SignatureItemWrite(this.datagroup));
-		
 	}
 
 	@Override

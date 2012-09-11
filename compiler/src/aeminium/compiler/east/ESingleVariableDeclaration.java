@@ -122,4 +122,10 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 		if (this.expr != null)
 			this.expr.preTranslate(this.task);
 	}
+	
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.getScope();
+	}
 }

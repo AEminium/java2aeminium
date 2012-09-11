@@ -33,6 +33,8 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 	protected final EBlock body;
 	
 	protected final DataGroup returnDataGroup;
+
+	private boolean controled = false;
 	
 	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type)
 	{
@@ -246,5 +248,15 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		
 		// TODO: EMethodDeclaration Type from TypeDeclaration
 		return ast.newSimpleType((SimpleName) ASTNode.copySubtree(ast, this.type.getOriginal().getName()));
+	}
+
+	public void control()
+	{
+		this.controled = true;
+	}
+	
+	public boolean isControled()
+	{
+		return this.controled;
 	}
 }

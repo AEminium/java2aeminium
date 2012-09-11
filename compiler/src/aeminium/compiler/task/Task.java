@@ -1,6 +1,7 @@
 package aeminium.compiler.task;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.Stack;
 
 import org.eclipse.jdt.core.dom.*;
@@ -28,7 +29,7 @@ public abstract class Task
 		
 		this.node = node;
 		this.name = name;
-		this.parent = parent;
+		this.parent = parent; 
 
 		this.subtasks = 0;
 
@@ -196,7 +197,7 @@ public abstract class Task
 			for (EASTExecutableNode node : this.node.getWeakDependencies())
 			{
 				Task dep = node.getTask();
-				if (!deps.contains(dep) && this != dep && !this.isChildOf(dep))
+				if (!deps.contains(dep) && this != dep && !this.isDescendentOf(dep))
 					deps.add(dep);
 			}
 			
@@ -209,7 +210,7 @@ public abstract class Task
 				for (Task dep : deps)
 				{
 					FieldAccess dep_task = ast.newFieldAccess();
-					dep_task.setExpression(this.getPathToTask(dep));
+					dep_task.setExpression(this.getPathToNearestTask(dep));
 					dep_task.setName(ast.newSimpleName("ae_task"));
 	
 					asList.arguments().add(dep_task);
@@ -247,7 +248,7 @@ public abstract class Task
 		constructor.setBody(body);
 	}
 	
-	public Expression getPathToTask(Task target)
+	public Expression getPathToNearestTask(Task target)
 	{
 		AST ast = this.node.getAST();
 
@@ -287,11 +288,33 @@ public abstract class Task
 			path = field;
 		}
 
+		int distance = 0;
+		
 		while (!tasks_target.empty())
 		{
+			Task descendent = tasks_target.pop();
+			
+			if (descendent.isChildOf(descendent.parent))
+				distance++;
+			
+			/* distance of one is allowed:
+			 * if (x)
+			 * {
+			 * 		stuff;
+			 * 		A();
+			 * }
+			 * B();
+			 * 
+			 * if B depends on A, then A must occur previously in the code order.
+			 * and therefore the fist task that allows paralelization of stuff is the If statement
+			 * which is always created at time B is executed (since B is created after the If).
+			 * */
+			if (distance > 1)
+				break;
+			
 			FieldAccess field = ast.newFieldAccess();
 			field.setExpression(path);
-			field.setName(ast.newSimpleName("ae_" + tasks_target.pop().getName()));
+			field.setName(ast.newSimpleName("ae_" + descendent.getName()));
 			path = field;
 		}
 
@@ -312,12 +335,25 @@ public abstract class Task
 		return access;
 	}
 	
-	public boolean isChildOf(Task other)
+	public boolean isDescendentOf(Task other)
 	{
 		for (Task parent = this.parent; parent != null; parent = parent.parent)
 			if (parent == other)
 				return true;
 		
+		return false;
+	}
+	
+	public boolean isChildOf(Task other)
+	{
+		if (this.parent == null)
+			return false;
+		
+		Set<EASTExecutableNode> children = this.parent.node.getChildren();
+		for (EASTExecutableNode child : children)
+			if (child.getTask() == this)
+				return true;
+
 		return false;
 	}
 	

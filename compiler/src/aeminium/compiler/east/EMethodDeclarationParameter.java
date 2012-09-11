@@ -51,4 +51,10 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 	{
 		return this.scope.getTask();
 	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
+	}
 }

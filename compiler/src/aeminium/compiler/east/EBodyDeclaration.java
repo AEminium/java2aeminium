@@ -36,7 +36,7 @@ public abstract class EBodyDeclaration extends EASTExecutableNode implements EAS
 		DependencyStack stack = new DependencyStack();
 		this.checkDependencies(stack);
 	}
-	
+
 	/**
 	 * Gets a modifier from a list by its common name
 	 * @param name The common name of the modifier (e.g.: "public", "static", "@AEminium")
@@ -59,6 +59,13 @@ public abstract class EBodyDeclaration extends EASTExecutableNode implements EAS
 	}
 	
 	public ETypeDeclaration getType()
+	{
+		return this.type;
+	}
+	
+	
+	@Override
+	public EASTDataNode getScope()
 	{
 		return this.type;
 	}

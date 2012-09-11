@@ -55,6 +55,9 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 		if (expr instanceof StringLiteral)
 			return EStringLiteral.create(east, (StringLiteral) expr, scope);
 				
+		if (expr instanceof BooleanLiteral)
+			return EBooleanLiteral.create(east, (BooleanLiteral) expr, scope);
+
 		if (expr instanceof ThisExpression)
 			return EThisExpression.create(east, (ThisExpression) expr, scope);
 				
@@ -112,6 +115,11 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	public boolean isVoid()
 	{
 		return this.getType().toString().equals("void");
+	}
+	
+	public EASTDataNode getScope()
+	{
+		return this.scope;
 	}
 	
 	public abstract Expression build(List<CompilationUnit> out);

@@ -53,4 +53,10 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	{
 		return this.scope.getTask();
 	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
+	}
 }

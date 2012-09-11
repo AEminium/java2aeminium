@@ -1,4 +1,4 @@
-9
+10
 Ljava/lang/Math;.cos(D)D
 2
 R P 0
@@ -30,6 +30,11 @@ R P 0
 W R
 
 Ljava/lang/Math;.sinh(D)D
+2
+R P 0
+W R
+
+Ljava/lang/Math;.abs(D)D
 2
 R P 0
 W R

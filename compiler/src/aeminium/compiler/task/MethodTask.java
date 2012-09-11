@@ -123,6 +123,24 @@ public class MethodTask extends Task
 		
 		this.addField(ast.newSimpleType(ast.newName("aeminium.runtime.Task")), "ae_task", false);
 
+		if (this.getNode().isControled())
+		{
+			// this.ae_finished = false;
+			
+			this.addField(ast.newPrimitiveType(PrimitiveType.BOOLEAN), "ae_finished", false);
+
+			Assignment asgn = ast.newAssignment();
+
+			FieldAccess access = ast.newFieldAccess();
+			access.setExpression(ast.newThisExpression());
+			access.setName(ast.newSimpleName("ae_finished"));
+
+			asgn.setLeftHandSide(access);
+			asgn.setRightHandSide(ast.newBooleanLiteral(false));
+
+			body.statements().add(ast.newExpressionStatement(asgn));
+		}
+		
 		super.fillConstructor(constructor, body, recursive, overrideTasks);
 	}
 }

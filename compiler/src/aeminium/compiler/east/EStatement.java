@@ -65,5 +65,11 @@ public abstract class EStatement extends EASTExecutableNode
 		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
 	}
 	
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
+	}
+	
 	public abstract List<Statement> build(List<CompilationUnit> out);
 }

@@ -128,4 +128,10 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 
 		return stmts;
 	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
+	}
 }

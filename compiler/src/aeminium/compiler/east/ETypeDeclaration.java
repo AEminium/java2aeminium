@@ -11,9 +11,10 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.SimpleDataGroup;
 
-public class ETypeDeclaration extends EASTNode
+public class ETypeDeclaration extends EASTNode implements EASTDataNode
 {
 	protected final ECompilationUnit cu;
 	
@@ -123,5 +124,23 @@ public class ETypeDeclaration extends EASTNode
 			type.bodyDeclarations().add(method.translate(out));
 
 		return type;
+	}
+
+	@Override
+	public ETypeDeclaration getTypeDeclaration()
+	{
+		return this;
+	}
+
+	@Override
+	public DataGroup getDataGroup()
+	{
+		return this.staticDataGroup;
+	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return null;
 	}
 }

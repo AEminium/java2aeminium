@@ -4,6 +4,9 @@ import aeminium.compiler.signature.DataGroup;
 
 public interface EASTDataNode
 {
-	public DataGroup getDataGroup();
 	public ETypeDeclaration getTypeDeclaration();
+
+	public DataGroup getDataGroup();
+
+	public EASTDataNode getScope();
 }

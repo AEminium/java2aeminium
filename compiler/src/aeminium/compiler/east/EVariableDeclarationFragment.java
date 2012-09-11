@@ -184,4 +184,10 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 
 		return stmts;
 	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
+	}
 }

@@ -14,7 +14,8 @@ import aeminium.compiler.signature.SimpleDataGroup;
 import aeminium.compiler.task.Task;
 
 public class EBlock extends EStatement implements EASTDataNode
-{	
+{
+	protected final EASTDataNode scope;
 	protected final DataGroup datagroup;
 	
 	protected final ArrayList<EStatement> stmts;
@@ -23,6 +24,7 @@ public class EBlock extends EStatement implements EASTDataNode
 	{
 		super(east, original, scope, method);
 		
+		this.scope = scope;
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("{}"));
 		
 		this.stmts = new ArrayList<EStatement>();
@@ -41,7 +43,7 @@ public class EBlock extends EStatement implements EASTDataNode
 	{
 		return this.datagroup;
 	}
-
+	
 	@Override
 	public ETypeDeclaration getTypeDeclaration()
 	{
@@ -119,5 +121,11 @@ public class EBlock extends EStatement implements EASTDataNode
 			stmts.addAll(stmt.translate(out));
 		
 		return stmts;
+	}
+
+	@Override
+	public EASTDataNode getScope()
+	{
+		return this.scope;
 	}
 }

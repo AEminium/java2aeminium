@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import aeminium.compiler.east.EASTControlerNode;
 import aeminium.compiler.east.EASTExecutableNode;
 import aeminium.compiler.signature.DataGroup;
 import aeminium.compiler.signature.Signature;
@@ -19,11 +20,15 @@ public class DependencyStack
 	protected final HashMap<DataGroup, EASTExecutableNode> writes;
 	protected final HashMap<DataGroup, Set<DataGroup>> merges;
 	
+	protected final HashMap<DataGroup, EASTControlerNode> scopes;
+	
 	public DependencyStack()
 	{
 		this.reads = new HashMap<DataGroup, Set<EASTExecutableNode>>();
 		this.writes = new HashMap<DataGroup, EASTExecutableNode>();
 		this.merges = new HashMap<DataGroup, Set<DataGroup>>();
+		
+		this.scopes = new HashMap<DataGroup, EASTControlerNode>();
 	}
 	
 	public Set<EASTExecutableNode> read(EASTExecutableNode node, DataGroup from)
@@ -113,6 +118,23 @@ public class DependencyStack
 		
 		for (SignatureItemMerge item : merges)
 			dependencies.addAll(item.getDependencies(node, this));
+		
+		/* control dependencies */
+		for (DataGroup scope : this.scopes.keySet())
+		{
+			if (node.getScope().getDataGroup().beginsWith(scope))
+			{
+				EASTControlerNode controler = this.scopes.get(scope);
+				dependencies.add((EASTExecutableNode) controler);
+				controler.addControledNode(node);
+			}
+		}
+
+		/* TODO:
+		 * only add deps that are not direct parents?
+		 * if the controler is a child (not a weak/strong dependency) 
+		 * of a task in the given scope, the parent task becomes the controler for
+		 * all other tasks inside the scope at the same level that of the parent and above*/
 		
 		return dependencies;		
 	}
@@ -218,5 +240,11 @@ public class DependencyStack
 		}
 		
 		return copy;
+	}
+
+	public void control(EASTControlerNode node, DataGroup scope)
+	{
+		/* TODO: make functions use this */
+		this.scopes.put(scope, node);
 	}
 }

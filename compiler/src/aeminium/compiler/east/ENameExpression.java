@@ -99,7 +99,7 @@ public abstract class ENameExpression extends EExpression
 
 		FieldAccess field = ast.newFieldAccess();
 
-		field.setExpression(this.task.getPathToTask(node.getDeclaringTask()));
+		field.setExpression(this.task.getPathToNearestTask(node.getDeclaringTask()));
 		field.setName((SimpleName) ASTNode.copySubtree(ast, this.getOriginal()));
 
 		return field;

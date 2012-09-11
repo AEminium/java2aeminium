@@ -144,4 +144,6 @@ public abstract class EASTExecutableNode extends EASTNode
 	}
 	
 	public abstract void preTranslate(Task parent);
+	
+	public abstract EASTDataNode getScope();
 }
