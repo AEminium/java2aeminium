@@ -52,6 +52,23 @@ public class DependencyStack
 		return dependencies;
 	}
 	
+	public Set<EASTExecutableNode> readCopy(EASTExecutableNode node, DataGroup from)
+	{
+		Set<DataGroup> groupsFrom = this.getGroups(from);
+		Set<EASTExecutableNode> dependencies = new HashSet<EASTExecutableNode>();
+
+		for (DataGroup _from : groupsFrom)
+		{
+			/* don't register as a read */
+			if (this.writes.containsKey(_from))
+				dependencies.add(this.writes.get(_from));
+		}
+		
+		dependencies.remove(node);
+	
+		return dependencies;
+	}
+	
 	public Set<EASTExecutableNode> write(EASTExecutableNode node, DataGroup to)
 	{
 		Set<DataGroup> groupsTo = this.getGroups(to);
