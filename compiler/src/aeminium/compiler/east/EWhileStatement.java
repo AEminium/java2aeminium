@@ -17,10 +17,7 @@ public class EWhileStatement extends EStatement
 	protected final EExpression expr;
 	protected final EStatement body;
 
-	protected final EExpression expr_loop;
-	protected final EStatement body_loop;
-	
-	protected WhileSubTask task_loop;
+	protected final EWhileStatement loop;
 	
 	public EWhileStatement(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EWhileStatement base)
 	{
@@ -29,8 +26,10 @@ public class EWhileStatement extends EStatement
 		this.expr = EExpression.create(east, original.getExpression(), scope, base == null ? null : base.expr);
 		this.body = EStatement.create(east, original.getBody(), scope, method, base == null ?  null : base.body);
 		
-		this.expr_loop = EExpression.create(east, original.getExpression(), scope, this.expr);
-		this.body_loop = EStatement.create(east, original.getBody(), scope, method, this.body);
+		if (base == null)
+			this.loop = EWhileStatement.create(east, original, scope, method, this);
+		else
+			this.loop = null;
 	}
 
 	/* factory */
@@ -50,12 +49,11 @@ public class EWhileStatement extends EStatement
 	{
 		this.expr.checkSignatures();
 		this.body.checkSignatures();
-		
-		this.expr_loop.checkSignatures();
-		this.body_loop.checkSignatures();
 
+		if (this.loop != null)
+			this.loop.checkSignatures();
+		
 		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
-		/* FIXME: add expr_loop read? */
 	}
 
 	@Override
@@ -86,18 +84,23 @@ public class EWhileStatement extends EStatement
 				
 		DependencyStack copy = stack.fork();
 		this.body.checkDependencies(copy);
-		this.expr_loop.checkDependencies(copy);
 		
-		DependencyStack copy2 = copy.fork();
-		this.body_loop.checkDependencies(copy2);
-		copy.join(copy2, this);
-		
+		if (this.loop != null)
+		{
+			DependencyStack copy2 = copy.fork();
+			this.loop.checkDependencies(copy2);
+			copy.join(copy2, this);
+		}
+
 		stack.join(copy, this);
 
 		this.children.add(this.body);
 
 		// TODO: this is only valid for the sequential translation used bellow
-		this.children.add(this);
+		if (this.loop != null)
+			this.children.add(this.loop);
+		else
+			this.children.add(this); /* FIXME: this will probably break somewere*/
 	}
 
 	@Override
@@ -108,9 +111,16 @@ public class EWhileStatement extends EStatement
 		sum += this.expr.optimize();
 		sum += this.body.optimize();
 		
-		sum += this.expr_loop.optimize();
-		sum += this.body_loop.optimize();
-
+		if (this.loop == null)
+		{
+			if (this.expr.base.inlineTask)
+				this.expr.inline(this);
+			
+			if (this.body.base.inlineTask)
+				this.body.inline(this);
+		} else
+			sum += this.loop.optimize();
+		
 		sum += super.optimize();
 		
 		return sum;
@@ -122,50 +132,20 @@ public class EWhileStatement extends EStatement
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "while", this.base == null ? null : this.base.task);
+		{
+			if (this.loop != null)
+				this.task = parent.newSubTask(this, "while", this.base == null ? null : this.base.task);
+			else
+				this.task = WhileSubTask.create(this, this.base.task.getTypeName() + "loop", parent, this.base.task);
+		}
 		
 		this.expr.preTranslate(this.task);
 		this.body.preTranslate(this.task);
-
-		assert(!this.inlineTask);
 		
-		if (!this.inlineTask)
-		{
-			this.task_loop = WhileSubTask.create(this, this.task.getTypeName() + "loop", parent, this.task);
-			this.expr_loop.preTranslate(this.task_loop);
-			this.body_loop.preTranslate(this.task_loop);
-		}
+		if (this.loop != null)
+			this.loop.preTranslate(this.task);
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public List<Statement> translate(List<CompilationUnit> out)
-	{
-		if (this.inlineTask)
-			return this.build(out);
-
-		out.add(this.task.translate());
-		out.add(this.task_loop.translate());
-
-		this.task.getExecute().getBody().statements().addAll(this.build(out));
-		this.task_loop.getExecute().getBody().statements().addAll(this.buildLoop(out));
-		
-		AST ast = this.getAST();
-		
-		FieldAccess task_access = ast.newFieldAccess();
-		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
-
-		Assignment assign = ast.newAssignment();
-		assign.setLeftHandSide(task_access);
-		assign.setRightHandSide(this.task.create());
-
-		this.postTranslate(this.task);
-
-		return Arrays.asList((Statement) ast.newExpressionStatement(assign));
-	}
-	
-	
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<Statement> build(List<CompilationUnit> out)
@@ -177,22 +157,30 @@ public class EWhileStatement extends EStatement
 
 		Block block = ast.newBlock();
 		block.statements().addAll(this.body.translate(out));
-
-		FieldAccess task_access = ast.newFieldAccess();
-		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
-
-		Assignment assign = ast.newAssignment();
-		assign.setLeftHandSide(task_access);
-		assign.setRightHandSide(this.task_loop.create());
-
-		block.statements().add(ast.newExpressionStatement(assign));
 		
+		if (this.loop != null)
+			block.statements().addAll(this.loop.translate(out));
+		else
+		{
+			/* the same thing as a normal translate here.
+			 * because doing so would create an infinite loop */
+			FieldAccess task_access = ast.newFieldAccess();
+			task_access.setExpression(ast.newThisExpression());
+			task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
+
+			Assignment assign = ast.newAssignment();
+			assign.setLeftHandSide(task_access);
+			assign.setRightHandSide(this.task.create());
+
+			block.statements().add(ast.newExpressionStatement(assign));	
+		}
+
 		stmt.setThenStatement(block);
 		
 		return Arrays.asList((Statement) stmt);
 	}
 
+	/*
 	@SuppressWarnings("unchecked")
 	public List<Statement> buildLoop(List<CompilationUnit> out)
 	{
@@ -217,7 +205,7 @@ public class EWhileStatement extends EStatement
 		stmt.setThenStatement(block);
 		
 		return Arrays.asList((Statement) stmt);
-	}
+	}*/
 
 	public EASTExecutableNode getBody()
 	{

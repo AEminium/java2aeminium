@@ -186,7 +186,7 @@ public abstract class Task
 			Task child = node.getTask();
 			
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getTypeName()));
-			String name = "ae_" + child.getTypeName();
+			String name = "ae_" + child.getFieldName();
 
 			if (!recursive)
 				this.addField(type, name, false);

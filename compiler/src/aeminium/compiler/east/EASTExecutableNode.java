@@ -40,7 +40,7 @@ public abstract class EASTExecutableNode extends EASTNode
 	private EASTExecutableNode inlinedTo;
 	
 	protected final EASTExecutableNode base;
-
+	
 	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode base)
 	{
 		super(east, original);
@@ -98,6 +98,12 @@ public abstract class EASTExecutableNode extends EASTNode
 		for (EASTExecutableNode node : nodes)
 			if (node.isSimpleTask())
 				sum += node.inline(this);
+		
+		for (EASTExecutableNode node : nodes)
+		{
+			if (node.base != null && node.base.inlineTask)
+				sum += node.inline(this);
+		}
 		
 		return sum;
 	}
