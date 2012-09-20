@@ -16,6 +16,7 @@ public abstract class EASTNode
 		this.original = original;
 	}
 	
+	
 	public EAST getEAST()
 	{
 		return this.east;

@@ -21,23 +21,35 @@ public class EFieldDeclaration extends EBodyDeclaration
 	protected final Type dataType;
 	protected final ArrayList<EVariableDeclarationFragment> fragments;
 	
-	public EFieldDeclaration(EAST east, FieldDeclaration original, ETypeDeclaration type)
+	public EFieldDeclaration(EAST east, FieldDeclaration original, ETypeDeclaration type, EFieldDeclaration base)
 	{
-		super(east, original, type);
+		super(east, original, type, base);
 
 		this.type = type;
 		this.dataType = original.getType();
 
 		this.fragments = new ArrayList<EVariableDeclarationFragment>();
 		
-		for (Object frag : original.fragments())
-			this.fragments.add(EVariableDeclarationFragment.create(this.east, (VariableDeclarationFragment) frag, this, this.dataType));
+		for (int i = 0; i < original.fragments().size(); i++)
+		{
+			this.fragments.add
+			(
+				EVariableDeclarationFragment.create
+				(
+					east,
+					(VariableDeclarationFragment) original.fragments().get(i),
+					this,
+					this.dataType,
+					base == null ? null: base.fragments.get(i)
+				)
+			);
+		}
 	}
 
 	/* Factory */
-	public static EFieldDeclaration create(EAST east, FieldDeclaration original, ETypeDeclaration type)
+	public static EFieldDeclaration create(EAST east, FieldDeclaration original, ETypeDeclaration type, EFieldDeclaration base)
 	{
-		return new EFieldDeclaration(east, original, type);
+		return new EFieldDeclaration(east, original, type, base);
 	}
 	
 	@Override
@@ -93,7 +105,7 @@ public class EFieldDeclaration extends EBodyDeclaration
 	{
 		String name = this.type.getOriginal().getName() + "_" + this.getOriginal().getStartPosition();
 
-		this.preTranslate(FieldTask.create(this, name));		
+		this.preTranslate(FieldTask.create(this, name, this.base == null ? null : base.task));		
 	}
 	
 	@Override
@@ -101,8 +113,8 @@ public class EFieldDeclaration extends EBodyDeclaration
 	{
 		this.task = parent;
 		
-		for (EVariableDeclarationFragment frag : this.fragments)
-			frag.preTranslate(this.task);
+		for (int i = 0; i < this.fragments.size(); i++)
+			this.fragments.get(i).preTranslate(this.task);
 	}
 
 	@SuppressWarnings("unchecked")

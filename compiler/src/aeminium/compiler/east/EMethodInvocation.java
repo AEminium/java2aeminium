@@ -21,26 +21,38 @@ public class EMethodInvocation extends EDeferredExpression
 	protected final EExpression expr;
 	protected final ArrayList<EExpression> arguments;
 	
-	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope)
+	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope, EMethodInvocation base)
 	{
-		super(east, original, scope, original.resolveMethodBinding());
+		super(east, original, scope, original.resolveMethodBinding(), base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("invoke " + original.getName().toString()));
 		
 		if (original.getExpression() == null)
 			this.expr = null;
 		else
-			this.expr = EExpression.create(this.east, original.getExpression(), scope);
+			this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
 		
 		this.arguments = new ArrayList<EExpression>();
-		for (Object arg : original.arguments())
-			this.arguments.add(EExpression.create(this.east, (Expression) arg, scope));
+		
+		for (int i = 0; i < original.arguments().size(); i++)
+		{
+			this.arguments.add
+			(
+				EExpression.create
+				(
+					this.east,
+					(Expression) original.arguments().get(i),
+					scope,
+					base == null ? null : base.arguments.get(i)
+				)
+			);
+		}
 	}
 
 	/* factory */
-	public static EMethodInvocation create(EAST east, MethodInvocation invoke, EASTDataNode scope)
+	public static EMethodInvocation create(EAST east, MethodInvocation invoke, EASTDataNode scope, EMethodInvocation base)
 	{
-		return new EMethodInvocation(east, invoke, scope);
+		return new EMethodInvocation(east, invoke, scope, base);
 	}
 		
 	@Override
@@ -156,13 +168,13 @@ public class EMethodInvocation extends EDeferredExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "invoke");
+			this.task = parent.newSubTask(this, "invoke", this.base == null ? null : this.base.task);
 		
 		if (!this.isStatic())
 			this.expr.preTranslate(this.task);
 		
-		for (EExpression arg : this.arguments)
-			arg.preTranslate(this.task);
+		for (int i = 0; i < this.arguments.size(); i++)
+			this.arguments.get(i).preTranslate(this.task);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -174,7 +186,7 @@ public class EMethodInvocation extends EDeferredExpression
 		if (this.isAeminium())
 		{
 			ClassInstanceCreation create = ast.newClassInstanceCreation();
-			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getName())));	
+			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getTypeName())));	
 			
 			create.arguments().add(ast.newThisExpression());
 	

@@ -13,25 +13,26 @@ public abstract class ENameExpression extends EExpression
 {
 	protected final IBinding binding;
 	
-	public ENameExpression(EAST east, Name original, EASTDataNode scope)
+	public ENameExpression(EAST east, Name original, EASTDataNode scope, ENameExpression base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.binding = original.resolveBinding();
 	}
 	
 	/* factory */
-	public static ENameExpression create(EAST east, Name original, EASTDataNode scope)
+	public static ENameExpression create(EAST east, Name original, EASTDataNode scope, ENameExpression base)
 	{
 		if (original instanceof SimpleName)
-			return ESimpleNameExpression.create(east, (SimpleName) original, scope);
+			return ESimpleNameExpression.create(east, (SimpleName) original, scope, (ESimpleNameExpression) base);
 		
 		if (original instanceof QualifiedName)
-			return EQualifiedNameExpression.create(east, (QualifiedName) original, scope);
+			return EQualifiedNameExpression.create(east, (QualifiedName) original, scope, (EQualifiedNameExpression) base);
 		
 		System.err.println("FIXME: ENameExpression.create()");
 		return null;
 	}
+	
 	
 	@Override
 	public DataGroup getDataGroup()
@@ -78,7 +79,7 @@ public abstract class ENameExpression extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "literal");
+			this.task = parent.newSubTask(this, "literal", this.base == null ? null : this.base.task);
 	}
 	
 	@Override
@@ -104,4 +105,5 @@ public abstract class ENameExpression extends EExpression
 
 		return field;
 	}
+
 }

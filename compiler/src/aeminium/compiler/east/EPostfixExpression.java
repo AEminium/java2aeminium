@@ -17,20 +17,20 @@ public class EPostfixExpression extends EExpression
 	
 	protected final DataGroup datagroup;
 	
-	public EPostfixExpression(EAST east, PostfixExpression original, EASTDataNode scope)
+	public EPostfixExpression(EAST east, PostfixExpression original, EASTDataNode scope, EPostfixExpression base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.operator = this.getOriginal().getOperator();
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("postfix " + this.operator));
 
-		this.expr = EExpression.create(this.east, original.getOperand(), scope);
+		this.expr = EExpression.create(this.east, original.getOperand(), scope, base == null ? null : base.expr);
 	}
 
 	/* factory */
-	public static EPostfixExpression create(EAST east, PostfixExpression original, EASTDataNode scope)
+	public static EPostfixExpression create(EAST east, PostfixExpression original, EASTDataNode scope, EPostfixExpression base)
 	{
-		return new EPostfixExpression(east, original, scope);
+		return new EPostfixExpression(east, original, scope, base);
 	}
 	
 	@Override
@@ -99,7 +99,7 @@ public class EPostfixExpression extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "postfix");
+			this.task = parent.newSubTask(this, "postfix", this.base == null ? null : this.base.task);
 		
 		this.expr.preTranslate(this.task);
 	}

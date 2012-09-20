@@ -18,17 +18,17 @@ public class ENumberLiteral extends EExpression
 {
 	protected final DataGroup datagroup;
 	
-	public ENumberLiteral(EAST east, NumberLiteral original, EASTDataNode scope)
+	public ENumberLiteral(EAST east, NumberLiteral original, EASTDataNode scope, ENumberLiteral base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
 	/* factory */
-	public static ENumberLiteral create(EAST east, NumberLiteral original, EASTDataNode scope)
+	public static ENumberLiteral create(EAST east, NumberLiteral original, EASTDataNode scope, ENumberLiteral base)
 	{
-		return new ENumberLiteral(east, original, scope);
+		return new ENumberLiteral(east, original, scope, base);
 	}
 	
 	@Override
@@ -68,7 +68,7 @@ public class ENumberLiteral extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "literal");
+			this.task = parent.newSubTask(this, "literal", this.base == null ? null : this.base.task);
 	}
 	
 	@Override

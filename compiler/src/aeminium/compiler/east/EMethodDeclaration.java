@@ -36,9 +36,9 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 	private boolean controled = false;
 	
-	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type)
+	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type, EMethodDeclaration base)
 	{
-		super(east, original, type);
+		super(east, original, type, base);
 		
 		this.returnDataGroup = this.getDataGroup().append(new SimpleDataGroup("ret " + original.getName().toString()));
 
@@ -47,16 +47,27 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		this.east.addNode(this.binding, this);
 		
 		this.parameters = new ArrayList<EMethodDeclarationParameter>();
-		for (Object param : original.parameters())
-			this.parameters.add(EMethodDeclarationParameter.create(this.east, (SingleVariableDeclaration) param, this));
+		for (int i  = 0; i < original.parameters().size(); i++)
+		{
+			this.parameters.add
+			(
+				EMethodDeclarationParameter.create
+				(
+					this.east,
+					(SingleVariableDeclaration) original.parameters().get(i),
+					this,
+					base == null ? null : base.parameters.get(i)
+				)
+			);
+		}
 		
-		this.body = EBlock.create(this.east, (Block) original.getBody(), this, this);
+		this.body = EBlock.create(this.east, (Block) original.getBody(), this, this, base == null ? null : base.body);
 	}
 
 	/* factory */
-	public static EMethodDeclaration create(EAST east, MethodDeclaration method, ETypeDeclaration type)
+	public static EMethodDeclaration create(EAST east, MethodDeclaration method, ETypeDeclaration type, EMethodDeclaration base)
 	{
-		return new EMethodDeclaration(east, method, type);
+		return new EMethodDeclaration(east, method, type, base);
 	}
 
 	@Override
@@ -170,7 +181,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 	{
 		String name = this.type.getOriginal().getName() + "_" + this.getOriginal().getName();
 		
-		this.preTranslate(MethodTask.create(this, name));		
+		this.preTranslate(MethodTask.create(this, name, this.base == null ? null : base.task));		
 	}
 
 	@Override
@@ -217,7 +228,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 		body.statements().add(ast.newExpressionStatement(init));
 
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
-		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getName())));
+		creation.setType(ast.newSimpleType(ast.newSimpleName(this.task.getTypeName())));
 		creation.arguments().add(ast.newNullLiteral());
 
 		for (Object arg : this.getOriginal().parameters())

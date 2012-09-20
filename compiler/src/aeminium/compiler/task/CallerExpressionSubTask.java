@@ -13,9 +13,9 @@ import aeminium.compiler.east.EType;
 public class CallerExpressionSubTask extends ExpressionSubTask
 {
 	@SuppressWarnings("unchecked")
-	protected CallerExpressionSubTask(EExpression node, String name, Task parent)
+	protected CallerExpressionSubTask(EExpression node, String name, Task parent, Task base)
 	{
-		super(node, name, parent);
+		super(node, name, parent, base);
 		
 		AST ast = this.node.getAST();
 		
@@ -38,8 +38,8 @@ public class CallerExpressionSubTask extends ExpressionSubTask
 		this.decl.setSuperclassType(callerType);
 	}
 
-	public static CallerExpressionSubTask create(EExpression node, String name, Task parent)
+	public static CallerExpressionSubTask create(EExpression node, String name, Task parent, Task base)
 	{
-		return new CallerExpressionSubTask(node, name, parent);
+		return new CallerExpressionSubTask(node, name, parent, base);
 	}
 }

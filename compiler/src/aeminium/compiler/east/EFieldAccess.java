@@ -16,17 +16,17 @@ public class EFieldAccess extends EExpression
 	protected final EExpression expr;
 	protected final ESimpleNameExpression name;
 	
-	public EFieldAccess(EAST east, FieldAccess original, EASTDataNode scope)
+	public EFieldAccess(EAST east, FieldAccess original, EASTDataNode scope, EFieldAccess base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
-		this.expr = EExpression.create(east, original.getExpression(), scope);
-		this.name = ESimpleNameExpression.create(east, original.getName(), scope);
+		this.expr = EExpression.create(east, original.getExpression(), scope, base == null ? null : base.expr);
+		this.name = ESimpleNameExpression.create(east, original.getName(), scope, base == null ? null : base.name);
 	}
 
-	public static EFieldAccess create(EAST east, FieldAccess original, EASTDataNode scope)
+	public static EFieldAccess create(EAST east, FieldAccess original, EASTDataNode scope, EFieldAccess base)
 	{
-		return new EFieldAccess(east, original, scope);
+		return new EFieldAccess(east, original, scope, base);
 	}
 	
 	@Override
@@ -97,7 +97,7 @@ public class EFieldAccess extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "field");
+			this.task = parent.newSubTask(this, "field", this.base == null ? null : this.base.task);
 		
 		this.expr.preTranslate(this.task);
 		this.name.preTranslate(this.task);

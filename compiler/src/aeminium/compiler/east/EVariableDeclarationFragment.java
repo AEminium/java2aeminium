@@ -32,9 +32,9 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	protected final ESimpleNameDeclaration name;
 	protected final EExpression expr;
 	
-	public EVariableDeclarationFragment(EAST east, VariableDeclarationFragment original, EASTDataNode scope, Type dataType)
+	public EVariableDeclarationFragment(EAST east, VariableDeclarationFragment original, EASTDataNode scope, Type dataType, EVariableDeclarationFragment base)
 	{
-		super(east, original);
+		super(east, original, base);
 
 		this.scope = scope;
 		this.datagroup = scope.getDataGroup();
@@ -45,10 +45,10 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		else
 			this.dataType = ast.newArrayType((Type) ASTNode.copySubtree(ast, dataType), original.getExtraDimensions());
 			
-		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this);
+		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, base == null ? null : base.name);
 		
 		if (original.getInitializer() != null)
-			this.expr = EExpression.create(this.east, original.getInitializer(), this.scope);
+			this.expr = EExpression.create(this.east, original.getInitializer(), this.scope, base == null ? null : base.expr);
 		else
 			this.expr = null;
 	}
@@ -59,9 +59,9 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		return (VariableDeclarationFragment) this.original;
 	}
 
-	public static EVariableDeclarationFragment create(EAST east, VariableDeclarationFragment frag, EASTDataNode scope, Type dataType)
+	public static EVariableDeclarationFragment create(EAST east, VariableDeclarationFragment frag, EASTDataNode scope, Type dataType, EVariableDeclarationFragment base)
 	{
-		return new EVariableDeclarationFragment(east, frag, scope, dataType);
+		return new EVariableDeclarationFragment(east, frag, scope, dataType, base);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "varfrag");
+			this.task = parent.newSubTask(this, "varfrag", this.base == null ? null : this.base.task);
 		
 		if (this.expr != null)
 			this.expr.preTranslate(this.task);
@@ -155,7 +155,7 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+		task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(task_access);

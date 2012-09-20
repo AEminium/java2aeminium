@@ -10,33 +10,33 @@ public abstract class EStatement extends EASTExecutableNode
 	protected final EASTDataNode scope;
 	protected final EMethodDeclaration method;
 	
-	public EStatement(EAST east, Statement original, EASTDataNode scope, EMethodDeclaration method)
+	public EStatement(EAST east, Statement original, EASTDataNode scope, EMethodDeclaration method, EStatement base)
 	{
-		super(east, original);
+		super(east, original, base);
 
 		this.scope = scope;
 		this.method = method;
 	}
 
-	public static EStatement create(EAST east, Statement stmt, EASTDataNode scope, EMethodDeclaration method)
+	public static EStatement create(EAST east, Statement stmt, EASTDataNode scope, EMethodDeclaration method, EStatement base)
 	{
 		if (stmt instanceof Block)
-			return EBlock.create(east, (Block) stmt, scope, method);
+			return EBlock.create(east, (Block) stmt, scope, method, (EBlock) base);
 		
 		if (stmt instanceof VariableDeclarationStatement)
-			return EVariableDeclarationStatement.create(east, (VariableDeclarationStatement) stmt, scope, method);
+			return EVariableDeclarationStatement.create(east, (VariableDeclarationStatement) stmt, scope, method, (EVariableDeclarationStatement) base);
 		
 		if (stmt instanceof ReturnStatement)
-			return EReturnStatement.create(east, (ReturnStatement) stmt, scope, method);
+			return EReturnStatement.create(east, (ReturnStatement) stmt, scope, method, (EReturnStatement) base);
 		
 		if (stmt instanceof IfStatement)
-			return EIfStatement.create(east, (IfStatement) stmt, scope, method);
+			return EIfStatement.create(east, (IfStatement) stmt, scope, method, (EIfStatement) base);
 
 		if (stmt instanceof ExpressionStatement)
-			return EExpressionStatement.create(east, (ExpressionStatement) stmt, scope, method);
+			return EExpressionStatement.create(east, (ExpressionStatement) stmt, scope, method, (EExpressionStatement) base);
 		
 		if (stmt instanceof WhileStatement)
-			return EWhileStatement.create(east, (WhileStatement) stmt, scope, method);
+			return EWhileStatement.create(east, (WhileStatement) stmt, scope, method, (EWhileStatement) base);
 		
 		System.err.println("Not implemented error: " + stmt.getClass().getName());
 
@@ -56,7 +56,7 @@ public abstract class EStatement extends EASTExecutableNode
 		
 		FieldAccess task_access = ast.newFieldAccess();
 		task_access.setExpression(ast.newThisExpression());
-		task_access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+		task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
 
 		Assignment assign = ast.newAssignment();
 		assign.setLeftHandSide(task_access);

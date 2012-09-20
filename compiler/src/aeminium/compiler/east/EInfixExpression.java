@@ -23,27 +23,40 @@ public class EInfixExpression extends EExpression
 	
 	protected final DataGroup datagroup;
 	
-	public EInfixExpression(EAST east, InfixExpression original, EASTDataNode scope)
+	public EInfixExpression(EAST east, InfixExpression original, EASTDataNode scope, EInfixExpression base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.operator = this.getOriginal().getOperator();
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("infix " + this.operator));
 
-		this.left = EExpression.create(this.east, original.getLeftOperand(), scope);
-		this.right = EExpression.create(this.east, original.getRightOperand(), scope);
+		this.left = EExpression.create(this.east, original.getLeftOperand(), scope, base == null ? null : base.left);
+		this.right = EExpression.create(this.east, original.getRightOperand(), scope, base == null ? null : base.right);
 		
 		this.extended = new ArrayList<EExpression>();
 
 		if (original.extendedOperands() != null)
-			for (Object ext : original.extendedOperands())
-				this.extended.add(EExpression.create(this.east, (Expression) ext, scope));
+		{
+			for (int i = 0; i < original.extendedOperands().size(); i++)
+			{
+				this.extended.add
+				(
+					EExpression.create
+					(
+						this.east,
+						(Expression) original.extendedOperands().get(i),
+						scope,
+						base == null ? null : base.extended.get(i)
+					)
+				);
+			}
+		}
 	}
 
 	/* factory */
-	public static EInfixExpression create(EAST east, InfixExpression original, EASTDataNode scope)
+	public static EInfixExpression create(EAST east, InfixExpression original, EASTDataNode scope, EInfixExpression base)
 	{
-		return new EInfixExpression(east, original, scope);
+		return new EInfixExpression(east, original, scope, base);
 	}
 	
 	@Override
@@ -131,13 +144,13 @@ public class EInfixExpression extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "infix");
+			this.task = parent.newSubTask(this, "infix", this.base == null ? null : this.base.task);
 		
 		this.left.preTranslate(this.task);
 		this.right.preTranslate(this.task);
 		
-		for (EExpression ext : this.extended)
-			ext.preTranslate(this.task);
+		for (int i = 0; i < this.extended.size(); i++)
+			this.extended.get(i).preTranslate(this.task);
 	}
 
 	@SuppressWarnings("unchecked")

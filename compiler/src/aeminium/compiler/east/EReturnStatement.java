@@ -30,22 +30,22 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 	protected final EExpression expr;
 	protected final Set<EASTExecutableNode> controled;
 	
-	public EReturnStatement(EAST east, ReturnStatement original, EASTDataNode scope, EMethodDeclaration method)
+	public EReturnStatement(EAST east, ReturnStatement original, EASTDataNode scope, EMethodDeclaration method, EReturnStatement base)
 	{
-		super(east, original, scope, method);
+		super(east, original, scope, method, base);
 
 		if (original.getExpression() == null)
 			this.expr = null;
 		else
-			this.expr = EExpression.create(this.east, original.getExpression(), scope);
+			this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
 
 		this.controled = new HashSet<EASTExecutableNode>();
 	}
 
 	/* factory */
-	public static EReturnStatement create(EAST east, ReturnStatement stmt, EASTDataNode scope, EMethodDeclaration method)
+	public static EReturnStatement create(EAST east, ReturnStatement stmt, EASTDataNode scope, EMethodDeclaration method, EReturnStatement base)
 	{
-		return new EReturnStatement(east, stmt, scope, method);
+		return new EReturnStatement(east, stmt, scope, method, base);
 	}
 	
 	@Override
@@ -116,7 +116,7 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "ret");
+			this.task = parent.newSubTask(this, "ret", this.base == null ? null : this.base.task);
 		
 		if (this.expr != null)
 			this.expr.preTranslate(this.task);

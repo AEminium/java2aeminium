@@ -14,17 +14,17 @@ public class EExpressionStatement extends EStatement
 {
 	protected final EExpression expr;
 	
-	public EExpressionStatement(EAST east, ExpressionStatement original, EASTDataNode scope, EMethodDeclaration method)
+	public EExpressionStatement(EAST east, ExpressionStatement original, EASTDataNode scope, EMethodDeclaration method, EExpressionStatement base)
 	{
-		super(east, original, scope, method);
+		super(east, original, scope, method, base);
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope);
+		this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
 	}
 
 	/* factory */
-	public static EExpressionStatement create(EAST east, ExpressionStatement stmt, EASTDataNode scope, EMethodDeclaration method)
+	public static EExpressionStatement create(EAST east, ExpressionStatement stmt, EASTDataNode scope, EMethodDeclaration method, EExpressionStatement base)
 	{
-		return new EExpressionStatement(east, stmt, scope, method);
+		return new EExpressionStatement(east, stmt, scope, method, base);
 	}
 	
 	@Override
@@ -79,7 +79,7 @@ public class EExpressionStatement extends EStatement
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "exprstmt");
+			this.task = parent.newSubTask(this, "exprstmt", this.base == null ? null : this.base.task);
 		
 		this.expr.preTranslate(this.task);
 	}

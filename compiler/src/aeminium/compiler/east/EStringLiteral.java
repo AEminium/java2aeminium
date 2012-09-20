@@ -18,17 +18,17 @@ public class EStringLiteral extends EExpression
 {
 	protected final DataGroup datagroup;
 	
-	public EStringLiteral(EAST east, StringLiteral original, EASTDataNode scope)
+	public EStringLiteral(EAST east, StringLiteral original, EASTDataNode scope, EStringLiteral base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
 	/* factory */
-	public static EStringLiteral create(EAST east, StringLiteral original, EASTDataNode scope)
+	public static EStringLiteral create(EAST east, StringLiteral original, EASTDataNode scope, EStringLiteral base)
 	{
-		return new EStringLiteral(east, original, scope);
+		return new EStringLiteral(east, original, scope, base);
 	}
 	
 	@Override
@@ -68,7 +68,7 @@ public class EStringLiteral extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "literal");
+			this.task = parent.newSubTask(this, "literal", this.base == null ? null : this.base.task);
 	}
 	
 	@Override

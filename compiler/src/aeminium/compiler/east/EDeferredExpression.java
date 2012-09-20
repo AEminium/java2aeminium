@@ -19,9 +19,9 @@ public abstract class EDeferredExpression extends EExpression
 	/* checkSignature */
 	protected SignatureItemDeferred deferred;
 	
-	public EDeferredExpression(EAST east, Expression original, EASTDataNode scope, IMethodBinding binding)
+	public EDeferredExpression(EAST east, Expression original, EASTDataNode scope, IMethodBinding binding, EDeferredExpression base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 
 		this.binding = binding;
 	}
@@ -69,7 +69,7 @@ public abstract class EDeferredExpression extends EExpression
 		/* parent task */
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
-		access.setName(ast.newSimpleName("ae_" + this.task.getName()));
+		access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
 
 		FieldAccess ret = ast.newFieldAccess();
 		ret.setExpression(access);

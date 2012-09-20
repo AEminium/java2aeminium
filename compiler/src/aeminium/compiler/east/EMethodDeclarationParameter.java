@@ -12,7 +12,7 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 	
 	protected final ESimpleNameDeclaration name;
 	
-	public EMethodDeclarationParameter(EAST east, SingleVariableDeclaration original, EASTDeclaringNode scope)
+	public EMethodDeclarationParameter(EAST east, SingleVariableDeclaration original, EASTDeclaringNode scope, EMethodDeclarationParameter base)
 	{
 		super(east, original);
 
@@ -20,7 +20,7 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 		
 		this.datagroup = scope.getDataGroup();
 		
-		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this);
+		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, base == null ? null : base.name);
 	}
 
 	@Override
@@ -41,9 +41,9 @@ public class EMethodDeclarationParameter extends EASTNode implements EASTDeclari
 		return (SingleVariableDeclaration) this.original;
 	}
 
-	public static EMethodDeclarationParameter create(EAST east, SingleVariableDeclaration param, EASTDeclaringNode scope)
+	public static EMethodDeclarationParameter create(EAST east, SingleVariableDeclaration param, EASTDeclaringNode scope, EMethodDeclarationParameter base)
 	{
-		return new EMethodDeclarationParameter(east, param, scope);
+		return new EMethodDeclarationParameter(east, param, scope, base);
 	}
 
 	@Override

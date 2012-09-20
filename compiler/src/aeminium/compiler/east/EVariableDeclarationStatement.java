@@ -22,22 +22,35 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	
 	protected final DataGroup datagroup;
 	
-	public EVariableDeclarationStatement(EAST east, VariableDeclarationStatement original, EASTDataNode scope, EMethodDeclaration method)
+	public EVariableDeclarationStatement(EAST east, VariableDeclarationStatement original, EASTDataNode scope, EMethodDeclaration method, EVariableDeclarationStatement base)
 	{
-		super(east, original, scope, method);
+		super(east, original, scope, method, base);
 
 		this.datagroup = scope.getDataGroup();
 		this.dataType = original.getType();
 		
 		this.fragments = new ArrayList<EVariableDeclarationFragment>();
-		for (Object frag : original.fragments())
-			this.fragments.add(EVariableDeclarationFragment.create(this.east, (VariableDeclarationFragment) frag, scope, this.dataType));
+
+		for (int i = 0; i < original.fragments().size(); i++)
+		{
+			this.fragments.add
+			(
+				EVariableDeclarationFragment.create
+				(
+					this.east,
+					(VariableDeclarationFragment) original.fragments().get(i),
+					scope,
+					this.dataType,
+					base == null ? null : base.fragments.get(i)
+				)
+			);
+		}
 	}
 	
 	/* factory */
-	public static EVariableDeclarationStatement create(EAST east, VariableDeclarationStatement stmt, EASTDataNode scope, EMethodDeclaration method)
+	public static EVariableDeclarationStatement create(EAST east, VariableDeclarationStatement stmt, EASTDataNode scope, EMethodDeclaration method, EVariableDeclarationStatement base)
 	{
-		return new EVariableDeclarationStatement(east, stmt, scope, method);
+		return new EVariableDeclarationStatement(east, stmt, scope, method, base);
 	}
 	
 	@Override
@@ -112,10 +125,10 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "varstmt");
+			this.task = parent.newSubTask(this, "varstmt", this.base == null ? null: this.base.task);
 		
-		for (EVariableDeclarationFragment frag : this.fragments)
-			frag.preTranslate(this.task);
+		for (int i = 0; i < this.fragments.size(); i++)
+			this.fragments.get(i).preTranslate(this.task);		
 	}
 	
 	@Override

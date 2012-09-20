@@ -39,7 +39,9 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	private EASTExecutableNode inlinedTo;
 	
-	public EASTExecutableNode(EAST east, ASTNode original)
+	protected final EASTExecutableNode base;
+
+	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode base)
 	{
 		super(east, original);
 
@@ -51,8 +53,9 @@ public abstract class EASTExecutableNode extends EASTNode
 		this.controlers = new HashSet<EASTControlerNode>();
 		
 		this.inlineTask = false;
+		this.base = base;
 	}
-	
+
 	public ArrayList<EASTExecutableNode> getStrongDependencies()
 	{
 		return this.strongDependencies;

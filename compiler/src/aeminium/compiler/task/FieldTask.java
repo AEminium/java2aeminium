@@ -4,15 +4,15 @@ import aeminium.compiler.east.EFieldDeclaration;
 
 public class FieldTask extends Task
 {
-	protected FieldTask(EFieldDeclaration node, String name)
+	protected FieldTask(EFieldDeclaration node, String name, Task base)
 	{
-		super(node, name, null);
+		super(node, name, null, base);
 		
 		System.out.println("TODO: FieldTask");
 	}
 
-	public static FieldTask create(EFieldDeclaration node, String name)
+	public static FieldTask create(EFieldDeclaration node, String name, Task base)
 	{
-		return new FieldTask(node, name);
+		return new FieldTask(node, name, base);
 	}
 }

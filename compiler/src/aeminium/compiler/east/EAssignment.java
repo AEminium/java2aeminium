@@ -20,20 +20,27 @@ public class EAssignment extends EExpression
 	protected final EExpression right;
 	protected final Operator operator;
 
-	public EAssignment(EAST east, Assignment original, EASTDataNode scope)
+	public EAssignment(EAST east, Assignment original, EASTDataNode scope, EAssignment base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.operator = original.getOperator();
 
-		this.left = EExpression.create(east, original.getLeftHandSide(), scope);
-		this.right = EExpression.create(east, original.getRightHandSide(), scope);
+		if (base == null)
+		{
+			this.left = EExpression.create(east, original.getLeftHandSide(), scope, null);
+			this.right = EExpression.create(east, original.getRightHandSide(), scope, null);
+		} else
+		{
+			this.left = EExpression.create(east, original.getLeftHandSide(), scope, base.left);
+			this.right = EExpression.create(east, original.getRightHandSide(), scope, base.right);			
+		}
 	}
 
 	/* factory */
-	public static EAssignment create(EAST east, Assignment original, EASTDataNode scope)
+	public static EAssignment create(EAST east, Assignment original, EASTDataNode scope, EAssignment base)
 	{
-		return new EAssignment(east, original, scope);
+		return new EAssignment(east, original, scope, base);
 	}
 	
 	@Override
@@ -107,7 +114,7 @@ public class EAssignment extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "assign");
+			this.task = parent.newSubTask(this, "assign", this.base == null ? null : this.base.task);
 		
 		this.left.preTranslate(this.task);
 		this.right.preTranslate(this.task);

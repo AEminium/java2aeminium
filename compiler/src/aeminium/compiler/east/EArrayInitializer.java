@@ -23,21 +23,33 @@ public class EArrayInitializer extends EExpression
 	protected final DataGroup datagroup;
 	protected final ArrayList<EExpression> exprs;
 	
-	public EArrayInitializer(EAST east, ArrayInitializer original, EASTDataNode scope)
+	public EArrayInitializer(EAST east, ArrayInitializer original, EASTDataNode scope, EArrayInitializer base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("init"));
 
 		this.exprs = new ArrayList<EExpression>();
-		for (Object expr : original.expressions())
-			this.exprs.add(EExpression.create(east, (Expression) expr, scope));
+
+		for (int i = 0; i < original.expressions().size(); i++)
+		{
+			this.exprs.add
+			(
+				EExpression.create
+				(
+					east,
+					(Expression) original.expressions().get(i),
+					scope,
+					base == null ? base : base.exprs.get(i)
+				)
+			);
+		}
 	}
 
 	/* factory */
-	public static EArrayInitializer create(EAST east, ArrayInitializer original, EASTDataNode scope)
+	public static EArrayInitializer create(EAST east, ArrayInitializer original, EASTDataNode scope, EArrayInitializer base)
 	{
-		return new EArrayInitializer(east, original, scope);
+		return new EArrayInitializer(east, original, scope, base);
 	}
 	
 	@Override
@@ -114,10 +126,10 @@ public class EArrayInitializer extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "init");
-		
-		for (EExpression expr : this.exprs)
-			expr.preTranslate(this.task);
+			this.task = parent.newSubTask(this, "init", this.base == null ? null : this.base.task);
+
+		for (int i = 0; i < this.exprs.size(); i++)
+			this.exprs.get(i).preTranslate(this.task);
 	}
 	
 	@SuppressWarnings("unchecked")

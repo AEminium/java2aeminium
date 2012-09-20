@@ -21,23 +21,23 @@ public class EIfStatement extends EStatement
 	protected final EStatement thenStmt;
 	protected final EStatement elseStmt;
 	
-	public EIfStatement(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method)
+	public EIfStatement(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EIfStatement base)
 	{
-		super(east, original, scope, method);
+		super(east, original, scope, method, base);
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope);
-		this.thenStmt = EStatement.create(this.east, original.getThenStatement(), scope, method);
+		this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
+		this.thenStmt = EStatement.create(this.east, original.getThenStatement(), scope, method, base == null ? null : base.thenStmt);
 		
 		if (original.getElseStatement() == null)
 			this.elseStmt = null;
 		else
-			this.elseStmt = EStatement.create(this.east, original.getElseStatement(), scope, method);
+			this.elseStmt = EStatement.create(this.east, original.getElseStatement(), scope, method, base == null ? null : base.elseStmt);
 	}
 
 	/* factory */
-	public static EIfStatement create(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method)
+	public static EIfStatement create(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EIfStatement base)
 	{
-		return new EIfStatement(east, original, scope, method);
+		return new EIfStatement(east, original, scope, method, base);
 	}
 
 	@Override
@@ -128,7 +128,7 @@ public class EIfStatement extends EStatement
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "if");
+			this.task = parent.newSubTask(this, "if", this.base == null ? null : this.base.task);
 		
 		this.expr.preTranslate(this.task);
 		this.thenStmt.preTranslate(this.task);

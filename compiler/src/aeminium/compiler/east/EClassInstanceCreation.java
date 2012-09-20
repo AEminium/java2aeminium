@@ -18,23 +18,35 @@ public class EClassInstanceCreation extends EDeferredExpression
 	
 	protected final ArrayList<EExpression> arguments;
 	
-	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope)
+	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope, EClassInstanceCreation base)
 	{
-		super(east, original, scope, original.resolveConstructorBinding());
+		super(east, original, scope, original.resolveConstructorBinding(), base);
 		
 		this.type = original.getType();
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("new " + this.type.toString()));
 		
 		this.arguments = new ArrayList<EExpression>();
-		for (Object arg : original.arguments())
-			this.arguments.add(EExpression.create(east, (Expression) arg, this));
+
+		for (int i = 0 ; i < original.arguments().size(); i++)
+		{
+			this.arguments.add
+			(
+				EExpression.create
+				(
+					east,
+					(Expression) original.arguments().get(i),
+					this,
+					base == null ? null : base.arguments.get(i)
+				)
+			);
+		}
 	}
 
 	/* factory */
-	public static EClassInstanceCreation create(EAST east, ClassInstanceCreation original, EASTDataNode scope)
+	public static EClassInstanceCreation create(EAST east, ClassInstanceCreation original, EASTDataNode scope, EClassInstanceCreation base)
 	{
-		return new EClassInstanceCreation(east, original, scope);
+		return new EClassInstanceCreation(east, original, scope, base);
 	}
 	
 	@Override
@@ -153,10 +165,10 @@ public class EClassInstanceCreation extends EDeferredExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "new");
+			this.task = parent.newSubTask(this, "new", this.base == null ? null : this.base.task);
 		
-		for (EExpression arg : this.arguments)
-			arg.preTranslate(this.task);
+		for (int i = 0; i < this.arguments.size(); i++)
+			this.arguments.get(i).preTranslate(this.task);
 	}
 	
 	@SuppressWarnings("unchecked")

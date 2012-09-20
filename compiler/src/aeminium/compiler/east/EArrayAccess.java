@@ -19,17 +19,24 @@ public class EArrayAccess extends EExpression
 	protected final EExpression array;
 	protected final EExpression index;
 	
-	public EArrayAccess(EAST east, ArrayAccess original, EASTDataNode scope)
+	public EArrayAccess(EAST east, ArrayAccess original, EASTDataNode scope, EArrayAccess base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
-		this.array = EExpression.create(east, original.getArray(), scope);
-		this.index = EExpression.create(east, original.getIndex(), scope);
+		if (base != null)
+		{
+			this.array = EExpression.create(east, original.getArray(), scope, base.array);
+			this.index = EExpression.create(east, original.getIndex(), scope, base.index);
+		} else
+		{
+			this.array = EExpression.create(east, original.getArray(), scope, null);
+			this.index = EExpression.create(east, original.getIndex(), scope, null);
+		}
 	}
 
-	public static EArrayAccess create(EAST east, ArrayAccess original, EASTDataNode scope)
+	public static EArrayAccess create(EAST east, ArrayAccess original, EASTDataNode scope, EArrayAccess base)
 	{
-		return new EArrayAccess(east, original, scope);
+		return new EArrayAccess(east, original, scope, base);
 	}
 	
 	@Override
@@ -100,7 +107,7 @@ public class EArrayAccess extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "arrayidx");
+			this.task = parent.newSubTask(this, "arrayidx", this.base == null ? null : this.base.task);
 		
 		this.array.preTranslate(this.task);
 		this.index.preTranslate(this.task);

@@ -14,6 +14,7 @@ public abstract class Task
 	protected final EASTExecutableNode node;
 	protected final String name;
 	protected final Task parent;
+	protected final Task base;
 
 	protected int subtasks;
 	
@@ -22,15 +23,16 @@ public abstract class Task
 	protected final ArrayList<MethodDeclaration> constructors;
 	protected final MethodDeclaration execute;
 	
+	protected boolean hasEmptyConstructor = false;
+	
 	@SuppressWarnings("unchecked")
-	protected Task(EASTExecutableNode node, String name, Task parent)
+	protected Task(EASTExecutableNode node, String name, Task parent, Task base)
 	{
-		System.out.println("Task: " + name + " child of " + parent);
-		
 		this.node = node;
 		this.name = name;
 		this.parent = parent; 
-
+		this.base = base;
+		
 		this.subtasks = 0;
 
 		/* build CU and TypeDecl */
@@ -45,7 +47,7 @@ public abstract class Task
 		this.decl = ast.newTypeDeclaration();
 		this.decl.setName(ast.newSimpleName(this.name));
 		this.decl.superInterfaceTypes().add(ast.newSimpleType(ast.newName("aeminium.runtime.Body")));
-
+		
 		/* constructor */
 		this.constructors = new ArrayList<MethodDeclaration>();
 		
@@ -54,6 +56,12 @@ public abstract class Task
 		
 		this.decl.bodyDeclarations().add(defaultConstructor);
 		
+		if (this.base != null)
+		{
+			this.decl.setSuperclassType(ast.newSimpleType(ast.newName(this.base.getTypeName())));
+			this.base.addEmptyConstructor();
+		}
+
 		/* public void execute(Runtime rt, Task task) throws Exception */
 		this.execute = ast.newMethodDeclaration();
 		this.decl.bodyDeclarations().add(this.execute);
@@ -61,11 +69,30 @@ public abstract class Task
 		this.cu.types().add(this.decl);
 	}
 
-	public Task newSubTask(EASTExecutableNode node, String suffix)
+	@SuppressWarnings("unchecked")
+	private void addEmptyConstructor()
+	{
+		if (this.hasEmptyConstructor)
+			return;
+		
+		AST ast = this.getNode().getAST();
+
+		MethodDeclaration constructor = ast.newMethodDeclaration();
+		constructor.setName(ast.newSimpleName(this.name));
+		constructor.setConstructor(true);
+		constructor.setBody(ast.newBlock());
+
+		this.constructors.add(constructor);	
+		this.decl.bodyDeclarations().add(constructor);
+
+		this.hasEmptyConstructor = true;
+	}
+
+	public Task newSubTask(EASTExecutableNode node, String suffix, Task base)
 	{
 		this.subtasks++;
 		
-		return SubTask.create(node, this.name + "_" + this.subtasks + "_" + suffix, this);
+		return SubTask.create(node, this.name + "_" + this.subtasks + "_" + suffix, this, base);
 	}
 	
 	@Override
@@ -74,14 +101,22 @@ public abstract class Task
 		return this.name;
 	}
 	
-	public String getName()
+	public String getTypeName()
 	{
 		return this.name;
+	}
+	
+	public String getFieldName()
+	{
+		return this.base == null ? this.name : this.base.getFieldName();
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void addField(Type type, String name, boolean isVolatile)
 	{
+		if (this.base != null)
+			return;
+		
 		AST ast = this.node.getAST();
 		
 		VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
@@ -98,7 +133,7 @@ public abstract class Task
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
+	protected void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive)
 	{
 		AST ast = this.node.getAST();
 		
@@ -127,8 +162,8 @@ public abstract class Task
 		{
 			Task dep = node.getTask();
 			
-			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getName()));
-			String name = "ae_" + dep.getName();
+			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getTypeName()));
+			String name = "ae_" + dep.getFieldName();
 
 			if (!recursive)
 				this.addField(type, name, false);
@@ -150,8 +185,8 @@ public abstract class Task
 		{
 			Task child = node.getTask();
 			
-			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getName()));
-			String name = "ae_" + child.getName();
+			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getTypeName()));
+			String name = "ae_" + child.getTypeName();
 
 			if (!recursive)
 				this.addField(type, name, false);
@@ -182,64 +217,41 @@ public abstract class Task
 
 		schedule.arguments().add(expr);
 
-		if (overrideTasks == null)
+		/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
+		ArrayList<Task> deps = new ArrayList<Task>();
+		
+		for (EASTExecutableNode node : this.node.getStrongDependencies())
 		{
-			/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
-			ArrayList<Task> deps = new ArrayList<Task>();
-			
-			for (EASTExecutableNode node : this.node.getStrongDependencies())
-			{
-				Task dep = node.getTask();
-				if (!deps.contains(dep))
-					deps.add(dep);
-			}
-			
-			for (EASTExecutableNode node : this.node.getWeakDependencies())
-			{
-				Task dep = node.getTask();
-				if (!deps.contains(dep) && this != dep && !this.isDescendentOf(dep))
-					deps.add(dep);
-			}
-			
-			if (deps.size() > 0)
-			{
-				MethodInvocation asList = ast.newMethodInvocation();
-				asList.setExpression(ast.newName("java.util.Arrays"));
-				asList.setName(ast.newSimpleName("asList"));
-	
-				for (Task dep : deps)
-				{
-					FieldAccess dep_task = ast.newFieldAccess();
-					dep_task.setExpression(this.getPathToNearestTask(dep));
-					dep_task.setName(ast.newSimpleName("ae_task"));
-	
-					asList.arguments().add(dep_task);
-				}
-				
-				schedule.arguments().add(asList);
-			} else
-				schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
-		} else
+			Task dep = node.getTask();
+			if (!deps.contains(dep))
+				deps.add(dep);
+		}
+		
+		for (EASTExecutableNode node : this.node.getWeakDependencies())
+		{
+			Task dep = node.getTask();
+			if (!deps.contains(dep) && this != dep && !this.isDescendentOf(dep))
+				deps.add(dep);
+		}
+		
+		if (deps.size() > 0)
 		{
 			MethodInvocation asList = ast.newMethodInvocation();
 			asList.setExpression(ast.newName("java.util.Arrays"));
 			asList.setName(ast.newSimpleName("asList"));
-			
-			for (Task dep: overrideTasks)
-			{
-				FieldAccess dep_access = ast.newFieldAccess();
-				dep_access.setExpression(ast.newSimpleName("ae_parent"));
-				dep_access.setName(ast.newSimpleName("ae_" + dep.getName()));
 
+			for (Task dep : deps)
+			{
 				FieldAccess dep_task = ast.newFieldAccess();
-				dep_task.setExpression(dep_access);
+				dep_task.setExpression(this.getPathToNearestTask(dep));
 				dep_task.setName(ast.newSimpleName("ae_task"));
 
 				asList.arguments().add(dep_task);
 			}
-
+			
 			schedule.arguments().add(asList);
-		}
+		} else
+			schedule.arguments().add(ast.newName("AeminiumHelper.NO_DEPS"));
 		
 		body.statements().add(ast.newExpressionStatement(schedule));
 
@@ -288,33 +300,16 @@ public abstract class Task
 			path = field;
 		}
 
-		int distance = 0;
-		
 		while (!tasks_target.empty())
 		{
 			Task descendent = tasks_target.pop();
 			
 			if (descendent.isChildOf(descendent.parent))
-				distance++;
-			
-			/* distance of one is allowed:
-			 * if (x)
-			 * {
-			 * 		stuff;
-			 * 		A();
-			 * }
-			 * B();
-			 * 
-			 * if B depends on A, then A must occur previously in the code order.
-			 * and therefore the fist task that allows paralelization of stuff is the If statement
-			 * which is always created at time B is executed (since B is created after the If).
-			 * */
-			if (distance > 1)
 				break;
-			
+
 			FieldAccess field = ast.newFieldAccess();
 			field.setExpression(path);
-			field.setName(ast.newSimpleName("ae_" + descendent.getName()));
+			field.setName(ast.newSimpleName("ae_" + descendent.getFieldName()));
 			path = field;
 		}
 
@@ -386,7 +381,7 @@ public abstract class Task
 		AST ast = this.node.getAST();
 
 		ClassInstanceCreation creation = ast.newClassInstanceCreation();
-		creation.setType(ast.newSimpleType(ast.newSimpleName(this.getName())));
+		creation.setType(ast.newSimpleType(ast.newSimpleName(this.getTypeName())));
 
 		if (this.parent != null)
 			creation.arguments().add(ast.newThisExpression());
@@ -396,7 +391,7 @@ public abstract class Task
 	
 	public CompilationUnit translate()
 	{
-		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false, null);
+		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false);
 		this.fillExecute();
 		
 		return this.cu;

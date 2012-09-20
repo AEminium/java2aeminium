@@ -28,28 +28,47 @@ public class EArrayCreation extends EExpression
 	protected final EArrayInitializer initializer;
 	protected final ArrayType type;
 	
-	public EArrayCreation(EAST east, ArrayCreation original, EASTDataNode scope)
+	public EArrayCreation(EAST east, ArrayCreation original, EASTDataNode scope, EArrayCreation base)
 	{
-		super(east, original, scope);
+		super(east, original, scope, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("array"));
 		
 		this.type = original.getType();
 		
 		this.dimensions = new ArrayList<EExpression>();
-		for (Object dim : original.dimensions())
-			this.dimensions.add(EExpression.create(east, (Expression) dim, scope));
+		for (int i = 0; i < original.dimensions().size(); i++)
+		{
+			this.dimensions.add
+			(
+				EExpression.create
+				(
+					east,
+					(Expression) original.dimensions().get(i),
+					scope,
+					base == null ? null : base.dimensions.get(i)
+				)
+			);
+		}
 		
 		if (original.getInitializer() == null)
 			this.initializer = null;
 		else
-			this.initializer = EArrayInitializer.create(east, (ArrayInitializer) original.getInitializer(), scope);
+		{
+			this.initializer = EArrayInitializer.create
+			(
+				east,
+				(ArrayInitializer) original.getInitializer(),
+				scope,
+				base == null ? null : base.initializer
+			);
+		}
 	}
 
 	/* factory */
-	public static EArrayCreation create(EAST east, ArrayCreation original, EASTDataNode scope)
+	public static EArrayCreation create(EAST east, ArrayCreation original, EASTDataNode scope, EArrayCreation base)
 	{
-		return new EArrayCreation(east, original, scope);
+		return new EArrayCreation(east, original, scope, base);
 	}
 	
 	@Override
@@ -143,10 +162,10 @@ public class EArrayCreation extends EExpression
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "array");
-		
-		for (EExpression dim : this.dimensions)
-			dim.preTranslate(this.task);
+			this.task = parent.newSubTask(this, "array", this.base == null ? null : this.base.task);
+
+		for (int i = 0; i < this.dimensions.size(); i++)
+			this.dimensions.get(i).preTranslate(this.task);
 		
 		if (this.initializer != null)
 			this.initializer.preTranslate(this.task);

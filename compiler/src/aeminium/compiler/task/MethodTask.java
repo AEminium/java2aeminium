@@ -1,7 +1,5 @@
 package aeminium.compiler.task;
 
-import java.util.ArrayList;
-
 import org.eclipse.jdt.core.dom.*;
 
 import aeminium.compiler.east.EMethodDeclaration;
@@ -10,15 +8,14 @@ import aeminium.compiler.east.EType;
 
 public class MethodTask extends Task
 {
-	protected MethodTask(EMethodDeclaration node, String name)
+	protected MethodTask(EMethodDeclaration node, String name, Task base)
 	{
-		super(node, name, null);
-		
+		super(node, name, null, base);
 	}
 
-	public static MethodTask create(EMethodDeclaration node, String name)
+	public static MethodTask create(EMethodDeclaration node, String name, Task base)
 	{
-		return new MethodTask(node, name);
+		return new MethodTask(node, name, base);
 	}
 	
 	public EMethodDeclaration getNode()
@@ -28,7 +25,7 @@ public class MethodTask extends Task
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive, ArrayList<Task> overrideTasks)
+	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive)
 	{
 		EMethodDeclaration method = this.getNode();
 		AST ast = this.node.getAST();
@@ -141,6 +138,6 @@ public class MethodTask extends Task
 			body.statements().add(ast.newExpressionStatement(asgn));
 		}
 		
-		super.fillConstructor(constructor, body, recursive, overrideTasks);
+		super.fillConstructor(constructor, body, recursive);
 	}
 }

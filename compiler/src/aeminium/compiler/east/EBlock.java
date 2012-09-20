@@ -20,22 +20,35 @@ public class EBlock extends EStatement implements EASTDataNode
 	
 	protected final ArrayList<EStatement> stmts;
 	
-	public EBlock(EAST east, Block original, EASTDataNode scope, EMethodDeclaration method)
+	public EBlock(EAST east, Block original, EASTDataNode scope, EMethodDeclaration method, EBlock base)
 	{
-		super(east, original, scope, method);
+		super(east, original, scope, method, base);
 		
 		this.scope = scope;
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("{}"));
 		
 		this.stmts = new ArrayList<EStatement>();
-		for (Object stmt : original.statements())
-			this.stmts.add(EStatement.create(this.east, (Statement) stmt, this, method));
+
+		for (int i = 0; i < original.statements().size(); i++)
+		{
+			this.stmts.add
+			(
+				EStatement.create
+				(
+					this.east,
+					(Statement) original.statements().get(i),
+					this,
+					method,
+					base == null ? null: base.stmts.get(i)
+				)
+			);
+		}
 	}
 
 	/* Factory */
-	public static EBlock create(EAST east, Block block, EASTDataNode scope, EMethodDeclaration method)
+	public static EBlock create(EAST east, Block block, EASTDataNode scope, EMethodDeclaration method, EBlock base)
 	{
-		return new EBlock(east, block, scope, method);
+		return new EBlock(east, block, scope, method, base);
 	}
 	
 	@Override
@@ -83,7 +96,7 @@ public class EBlock extends EStatement implements EASTDataNode
 		{
 			stmt.checkDependencies(stack);
 
-			this.children.add(stmt);
+			this.strongDependencies.add(stmt);
 		}
 	}
 
@@ -106,10 +119,10 @@ public class EBlock extends EStatement implements EASTDataNode
 		if (this.inlineTask)
 			this.task = parent;
 		else
-			this.task = parent.newSubTask(this, "block");
+			this.task = parent.newSubTask(this, "block", this.base == null ? null : this.base.task);
 		
-		for (EStatement stmt : this.stmts)
-			stmt.preTranslate(this.task);
+		for (int i = 0; i < this.stmts.size(); i++)			
+			this.stmts.get(i).preTranslate(this.task);
 	}
 	
 	@Override
@@ -118,8 +131,8 @@ public class EBlock extends EStatement implements EASTDataNode
 		ArrayList<Statement> stmts = new ArrayList<Statement>();
 		
 		for (EStatement stmt : this.stmts)
-			stmts.addAll(stmt.translate(out));
-		
+			stmt.translate(out);
+
 		return stmts;
 	}
 

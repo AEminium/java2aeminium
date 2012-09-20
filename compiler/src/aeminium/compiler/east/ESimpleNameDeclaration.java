@@ -13,7 +13,7 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	protected final DataGroup datagroup;
 	protected final IBinding binding;
 	
-	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope)
+	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope, ESimpleNameDeclaration base)
 	{
 		super(east, original);
 
@@ -26,9 +26,9 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	}
 	
 	/* Factory */
-	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDeclaringNode scope)
+	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDeclaringNode scope, ESimpleNameDeclaration base)
 	{
-		return new ESimpleNameDeclaration(east, original, scope);
+		return new ESimpleNameDeclaration(east, original, scope, base);
 	}
 	
 	@Override
