@@ -8,6 +8,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 
 import aeminium.compiler.signature.*;
@@ -64,7 +65,7 @@ public abstract class EDeferredExpression extends EExpression
 
 			this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(assign));
 		} else
-			this.task.getExecute().getBody().statements().add(ast.newExpressionStatement(this.build(out)));
+			this.task.getExecute().getBody().statements().add(this.buildStmt(out));
 
 		/* parent task */
 		FieldAccess access = ast.newFieldAccess();
@@ -84,4 +85,7 @@ public abstract class EDeferredExpression extends EExpression
 	{
 		return this.getMethod() != null;
 	}
+	
+
+	public abstract Statement buildStmt(List<CompilationUnit> out);
 }

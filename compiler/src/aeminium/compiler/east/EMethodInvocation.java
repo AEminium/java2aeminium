@@ -16,6 +16,8 @@ import aeminium.compiler.task.Task;
 
 public class EMethodInvocation extends EDeferredExpression
 {
+	private static final boolean OPTIMIZE_PARALLELIZE = true;
+	
 	protected final DataGroup datagroup;
 
 	protected final EExpression expr;
@@ -177,43 +179,85 @@ public class EMethodInvocation extends EDeferredExpression
 			this.arguments.get(i).preTranslate(this.task);
 	}
 	
+	/* Returns the inlined version */
 	@SuppressWarnings("unchecked")
 	@Override
 	public Expression build(List<CompilationUnit> out)
 	{
 		AST ast = this.getAST();
 
-		if (this.isAeminium())
-		{
-			ClassInstanceCreation create = ast.newClassInstanceCreation();
-			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getTypeName())));	
-			
-			create.arguments().add(ast.newThisExpression());
-	
-			if (!this.isStatic())
-				create.arguments().add(this.expr.translate(out));
-	
-			for (EExpression arg : this.arguments)
-				create.arguments().add(arg.translate(out));
+		MethodInvocation invoke = ast.newMethodInvocation();
+		invoke.setName(ast.newSimpleName(this.binding.getName()));
 
-			return create;
-		} else
-		{
-			MethodInvocation invoke = ast.newMethodInvocation();
-			invoke.setName(ast.newSimpleName(this.binding.getName()));
+		if (this.isStatic())
+			invoke.setExpression(ast.newName(this.binding.getDeclaringClass().getName()));
+		else
+			invoke.setExpression(this.expr.translate(out));
 
-			if (!this.isStatic())
-				invoke.setExpression(this.expr.translate(out));
-			else if (this.expr != null)
-				invoke.setExpression((Expression) ASTNode.copySubtree(ast, this.expr.getOriginal()));
+		for (EExpression arg : this.arguments)
+			invoke.arguments().add(arg.translate(out));
 
-			for (EExpression arg : this.arguments)
-				invoke.arguments().add(arg.translate(out));
-
-			return invoke;
-		}
+		return invoke;
 	}
 		
+	@SuppressWarnings("unchecked")
+	public Statement buildStmt(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+
+		if (!this.isAeminium())
+			return ast.newExpressionStatement(this.build(out));
+
+		ClassInstanceCreation create = ast.newClassInstanceCreation();
+		create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getTypeName())));	
+		
+		create.arguments().add(ast.newThisExpression());
+
+		if (!this.isStatic())
+			create.arguments().add(this.expr.translate(out));
+
+		for (EExpression arg : this.arguments)
+			create.arguments().add(arg.translate(out));
+
+		if (!EMethodInvocation.OPTIMIZE_PARALLELIZE)
+			return ast.newExpressionStatement(create);
+		
+		IfStatement ifstmt = ast.newIfStatement();
+		
+		MethodInvocation parallelize = ast.newMethodInvocation();
+		parallelize.setExpression(ast.newSimpleName("rt"));
+		parallelize.setName(ast.newSimpleName("parallelize"));
+				
+		FieldAccess access = ast.newFieldAccess();
+		access.setExpression(ast.newThisExpression());
+		access.setName(ast.newSimpleName("ae_ret"));
+		
+		Assignment assign = ast.newAssignment();
+		assign.setLeftHandSide(access);
+
+		/* can't use build() here because that would translate() arguments twice */
+		MethodInvocation invoke = ast.newMethodInvocation();
+		invoke.setName(ast.newSimpleName(this.binding.getName()));
+		invoke.arguments().addAll(ASTNode.copySubtrees(ast, create.arguments()));
+		
+		invoke.arguments().remove(0); /* task pointer */
+		if (this.isStatic())
+			invoke.setExpression(ast.newName(this.binding.getDeclaringClass().getName()));
+		else
+		{
+			invoke.setExpression(this.expr.translate(out));
+			invoke.arguments().remove(0); /* ae_this */
+		}
+		
+		assign.setRightHandSide(invoke);
+		
+		ifstmt.setExpression(parallelize);
+		ifstmt.setThenStatement(ast.newExpressionStatement(create));
+		ifstmt.setElseStatement(ast.newExpressionStatement(assign));
+		
+		return ifstmt;
+	}
+	
 	public boolean isStatic()
 	{
 		for (ModifierKeyword keyword : this.getModifiers())

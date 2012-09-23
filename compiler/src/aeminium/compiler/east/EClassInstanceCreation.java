@@ -214,4 +214,11 @@ public class EClassInstanceCreation extends EDeferredExpression
 		
 		return assign;
 	}
+
+	@Override
+	public Statement buildStmt(List<CompilationUnit> out)
+	{
+		AST ast = this.getAST();
+		return ast.newExpressionStatement(this.build(out));
+	}
 }
