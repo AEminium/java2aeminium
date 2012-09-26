@@ -47,8 +47,7 @@ public abstract class SubTask extends Task
 
 		constructor.parameters().add(param);
 
-		if (!recursive)
-			this.addField(ast.newSimpleType(ast.newName(this.parent.getTypeName())), "ae_parent", false);
+		this.addField(ast.newSimpleType(ast.newName(this.parent.getTypeName())), "ae_parent", false);
 		
 		Assignment asgn = ast.newAssignment();
 

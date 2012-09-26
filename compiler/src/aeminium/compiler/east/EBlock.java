@@ -131,7 +131,7 @@ public class EBlock extends EStatement implements EASTDataNode
 		ArrayList<Statement> stmts = new ArrayList<Statement>();
 		
 		for (EStatement stmt : this.stmts)
-			stmt.translate(out);
+			stmts.addAll(stmt.translate(out));
 
 		return stmts;
 	}

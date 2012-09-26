@@ -165,8 +165,7 @@ public abstract class Task
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(dep.getTypeName()));
 			String name = "ae_" + dep.getFieldName();
 
-			if (!recursive)
-				this.addField(type, name, false);
+			this.addField(type, name, false);
 
 			// this.ae_s1 = new ....()
 			Assignment child_asgn = ast.newAssignment();
@@ -188,8 +187,7 @@ public abstract class Task
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getTypeName()));
 			String name = "ae_" + child.getFieldName();
 
-			if (!recursive)
-				this.addField(type, name, false);
+			this.addField(type, name, false);
 		}
 
 		// AeminiumHelper.schedule(this.ae_task, ..., Arrays.asList(this.ae_1.ae_task, this.ae_2.ae_task) );
@@ -290,21 +288,25 @@ public abstract class Task
 
 		Expression path = ast.newThisExpression();
 
-		while (!tasks_self.empty())
+		self = this;
+		if (!tasks_self.empty())
 		{
-			tasks_self.pop();
+			while (true)
+			{
+				path = self.pathToParent(path);
 
-			FieldAccess field = ast.newFieldAccess();
-			field.setExpression(path);
-			field.setName(ast.newSimpleName("ae_parent"));
-			path = field;
+				if (self == tasks_self.peek())
+					break;
+				
+				self = self.parent;
+			}
 		}
-
+		
 		while (!tasks_target.empty())
 		{
 			Task descendent = tasks_target.pop();
 			
-			if (descendent.isChildOf(descendent.parent))
+			if (descendent.isChildOf(descendent.parent) && !this.isDescendentOf(descendent.parent))
 				break;
 
 			FieldAccess field = ast.newFieldAccess();
@@ -316,6 +318,17 @@ public abstract class Task
 		return path;
 	}
 
+	public Expression pathToParent(Expression currentPath)
+	{
+		AST ast = this.node.getAST();
+		
+		FieldAccess field = ast.newFieldAccess();
+		field.setExpression(currentPath);
+		field.setName(ast.newSimpleName("ae_parent"));
+
+		return field;
+	}
+
 	public Expression getPathToRoot()
 	{
 		AST ast = this.node.getAST();
@@ -323,11 +336,7 @@ public abstract class Task
 		if (this.parent == null)
 			return ast.newThisExpression();
 
-		FieldAccess access = ast.newFieldAccess();
-		access.setExpression(this.parent.getPathToRoot());
-		access.setName(ast.newSimpleName("ae_parent"));
-
-		return access;
+		return this.pathToParent(this.parent.getPathToRoot());
 	}
 	
 	public boolean isDescendentOf(Task other)

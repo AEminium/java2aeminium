@@ -124,7 +124,7 @@ public class MethodTask extends Task
 		{
 			// this.ae_finished = false;
 			
-			this.addField(ast.newPrimitiveType(PrimitiveType.BOOLEAN), "ae_finished", false);
+			this.addField(ast.newPrimitiveType(PrimitiveType.BOOLEAN), "ae_finished", true);
 
 			Assignment asgn = ast.newAssignment();
 
