@@ -1,4 +1,4 @@
-10
+11
 Ljava/lang/Math;.cos(D)D
 2
 R P 0
@@ -46,6 +46,10 @@ W T
 W R
 
 Ljava/io/PrintStream;.println(Ljava/lang/Object;)V
+1
+R P 0
+
+Ljava/io/PrintStream;.println(I)V
 1
 R P 0
 

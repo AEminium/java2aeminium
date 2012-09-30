@@ -115,7 +115,10 @@ public class SignatureReader
 	public Signature getSignature(String key, DataGroup dgRet, DataGroup dgExpr, ArrayList<DataGroup> dgsArgs)
 	{
 		if (!this.signatures.containsKey(key))
+		{
+			System.out.println("WARNING: using default signature for: " + key);
 			return getDefaultSignature(dgRet, dgExpr, dgsArgs);
+		}
 		
 		Signature sig = this.signatures.get(key);
 		Signature real = new Signature();
