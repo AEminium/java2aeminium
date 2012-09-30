@@ -13,6 +13,8 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	protected final DataGroup datagroup;
 	protected final IBinding binding;
 	
+	public final ESimpleNameDeclaration base;
+	
 	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope, ESimpleNameDeclaration base)
 	{
 		super(east, original);
@@ -22,6 +24,8 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup(original.toString()));
 
+		this.base = base;
+		
 		this.east.addNode(this.binding, this);
 	}
 	

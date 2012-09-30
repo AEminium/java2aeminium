@@ -94,9 +94,12 @@ public abstract class ENameExpression extends EExpression
 		AST ast = this.getAST();
 
 		ESimpleNameDeclaration node = (ESimpleNameDeclaration) this.east.getNode(this.binding);
-
+		
 		if (node == null)
 			return (Expression) ASTNode.copySubtree(ast, this.original);
+
+		if (this.base == null && node.base != null)
+			node = node.base;
 
 		FieldAccess field = ast.newFieldAccess();
 

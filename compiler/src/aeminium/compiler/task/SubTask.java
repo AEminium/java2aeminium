@@ -35,7 +35,7 @@ public abstract class SubTask extends Task
 	public void fillConstructor(MethodDeclaration constructor, Block body, boolean recursive)
 	{
 		AST ast = this.node.getAST();
-		
+				
 		// add _parent parameter
 		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();
 		if (recursive)

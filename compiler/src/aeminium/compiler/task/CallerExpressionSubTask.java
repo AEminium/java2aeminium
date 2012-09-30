@@ -22,19 +22,24 @@ public class CallerExpressionSubTask extends ExpressionSubTask
 		Type returnType = this.getNode().getType();
 		Type callerType;
 		
-		if (this.getNode() instanceof EMethodInvocation && ((EMethodInvocation) this.getNode()).getMethod().isVoid())
-			callerType = ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody"));
-		else
+		if (this.base != null)
 		{
-			ParameterizedType paramType = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBodyWithReturn")));
-			
-			if (returnType instanceof PrimitiveType)
-				returnType = EType.boxType((PrimitiveType) returnType);
-			
-			paramType.typeArguments().add((Type) ASTNode.copySubtree(ast, returnType));
-			callerType = paramType;
+			callerType = ast.newSimpleType(ast.newSimpleName(this.base.getTypeName()));
+		} else
+			{
+			if (this.getNode() instanceof EMethodInvocation && ((EMethodInvocation) this.getNode()).getMethod().isVoid())
+				callerType = ast.newSimpleType(ast.newName("aeminium.runtime.CallerBody"));
+			else
+			{
+				ParameterizedType paramType = ast.newParameterizedType(ast.newSimpleType(ast.newName("aeminium.runtime.CallerBodyWithReturn")));
+				
+				if (returnType instanceof PrimitiveType)
+					returnType = EType.boxType((PrimitiveType) returnType);
+				
+				paramType.typeArguments().add((Type) ASTNode.copySubtree(ast, returnType));
+				callerType = paramType;
+			}
 		}
-		
 		this.decl.setSuperclassType(callerType);
 	}
 

@@ -54,6 +54,9 @@ public class WhileSubTask extends StatementSubTask
 	@Override
 	public CompilationUnit translate()
 	{
+		if (this.translated)
+			return this.cu;
+		
 		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), true);
 		this.fillExecute();
 		

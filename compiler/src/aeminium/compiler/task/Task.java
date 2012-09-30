@@ -24,6 +24,7 @@ public abstract class Task
 	protected final MethodDeclaration execute;
 	
 	protected boolean hasEmptyConstructor = false;
+	protected boolean translated = false;
 	
 	@SuppressWarnings("unchecked")
 	protected Task(EASTExecutableNode node, String name, Task parent, Task base)
@@ -263,6 +264,8 @@ public abstract class Task
 		AST ast = this.node.getAST();
 
 		Task self = this;
+		Task ttarget = target;
+
 		Stack<Task> tasks_target = new Stack<Task>();
 		Stack<Task> tasks_self = new Stack<Task>();
 
@@ -272,6 +275,8 @@ public abstract class Task
 			target = target.parent;
 		}
 
+		target = ttarget;
+		
 		while (self != null)
 		{
 			tasks_self.push(self);
@@ -307,8 +312,16 @@ public abstract class Task
 			Task descendent = tasks_target.pop();
 			
 			if (descendent.isChildOf(descendent.parent) && !this.isDescendentOf(descendent.parent))
-				break;
+			{
+				System.out.println("DESCENDENT: " + descendent.getTypeName());
+				System.out.println("PARENT: " + descendent.parent.getTypeName());
 
+				System.out.println("THIS: " + this.getTypeName());
+				System.out.println("OTHER: " + target.getTypeName());
+				
+				break;
+			}
+			
 			FieldAccess field = ast.newFieldAccess();
 			field.setExpression(path);
 			field.setName(ast.newSimpleName("ae_" + descendent.getFieldName()));
@@ -365,7 +378,7 @@ public abstract class Task
 	protected void fillExecute()
 	{
 		AST ast = this.node.getAST();
-		
+	
 		this.execute.setName(ast.newSimpleName("execute"));
 		this.execute.modifiers().add(ast.newModifier(ModifierKeyword.PUBLIC_KEYWORD));
 
@@ -400,9 +413,14 @@ public abstract class Task
 	
 	public CompilationUnit translate()
 	{
+		if (this.translated )
+			return this.cu;
+		
 		this.fillConstructor(this.constructors.get(0), this.node.getAST().newBlock(), false);
 		this.fillExecute();
 		
+		this.translated = true;
+
 		return this.cu;
 	}
 
