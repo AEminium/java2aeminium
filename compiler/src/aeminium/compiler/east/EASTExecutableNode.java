@@ -225,11 +225,10 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	public void addController(EASTControlerNode controler)
 	{
-		if (!controler.equals(this))
-		{
-			this.controlers.add(controler);
-			this.addWeakDependency((EASTExecutableNode) controler);
-		}
+		assert(!this.equals(controler));
+		
+		this.controlers.add(controler);
+		this.addWeakDependency((EASTExecutableNode) controler);
 	}
 
 	public void addStrongDependency(EASTExecutableNode dep)
@@ -245,7 +244,6 @@ public abstract class EASTExecutableNode extends EASTNode
 	{
 		if (!this.strongDependencies.contains(dep) && !dep.equals(this))
 			this.weakDependencies.add(dep);
-			
 	}
 	
 	protected void addChildren(EASTExecutableNode dep)

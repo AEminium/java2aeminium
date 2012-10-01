@@ -125,17 +125,6 @@ public class DependencyStack
 		
 		ArrayList<SignatureItemMerge> merges = new ArrayList<SignatureItemMerge>();
 		
-		for (SignatureItem item : signature.getItems())
-		{
-			if (item instanceof SignatureItemMerge)
-				merges.add((SignatureItemMerge) item);
-			else
-				dependencies.addAll(((SignatureItemModification) item).getDependencies(node, this));
-		}
-		
-		for (SignatureItemMerge item : merges)
-			dependencies.addAll(item.getDependencies(node, this));
-		
 		/* control dependencies */
 		for (DataGroup scope : this.scopes.keySet())
 		{
@@ -149,6 +138,17 @@ public class DependencyStack
 			}
 		}
 
+		for (SignatureItem item : signature.getItems())
+		{
+			if (item instanceof SignatureItemMerge)
+				merges.add((SignatureItemMerge) item);
+			else
+				dependencies.addAll(((SignatureItemModification) item).getDependencies(node, this));
+		}
+		
+		for (SignatureItemMerge item : merges)
+			dependencies.addAll(item.getDependencies(node, this));
+		
 		/* TODO:
 		 * only add deps that are not direct parents?
 		 * if the controler is a child (not a weak/strong dependency) 
