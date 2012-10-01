@@ -90,7 +90,7 @@ public class EIfStatement extends EStatement
 		{
 			this.thenStmt.checkDependencies(stack);
 
-			this.children.add(this.thenStmt);
+			this.addChildren(this.thenStmt);
 		} else
 		{
 			DependencyStack copy = stack.fork();
@@ -100,8 +100,8 @@ public class EIfStatement extends EStatement
 
 			stack.join(copy, this);
 			
-			this.children.add(this.thenStmt);
-			this.children.add(this.elseStmt);
+			this.addChildren(this.thenStmt);
+			this.addChildren(this.elseStmt);
 		}
 	}
 	

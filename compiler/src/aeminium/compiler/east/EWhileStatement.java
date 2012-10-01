@@ -93,13 +93,13 @@ public class EWhileStatement extends EStatement
 
 		stack.join(copy, this);
 
-		this.children.add(this.body);
+		this.addChildren(this.body);
 
 		// TODO: this is only valid for the sequential translation used bellow
 		if (this.loop != null)
-			this.children.add(this.loop);
-		else
-			this.children.add(this); /* FIXME: this will probably break somewere*/
+			this.addChildren(this.loop);
+/*		else
+			this.addChildren(this); /* FIXME: this will probably break somewhere */
 	}
 
 	@Override

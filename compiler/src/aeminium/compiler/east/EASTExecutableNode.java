@@ -1,20 +1,11 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
-import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.Statement;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
@@ -90,6 +81,9 @@ public abstract class EASTExecutableNode extends EASTNode
 	{
 		int sum = this.simplifyDependencies();
 		
+		if (this.inlineTask && this.base != null)
+			sum += this.base.inline(this.inlinedTo.base);
+		
 		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
 		nodes.addAll(this.strongDependencies);
 
@@ -130,7 +124,7 @@ public abstract class EASTExecutableNode extends EASTNode
 			inlineTo.addWeakDependency(dep);
 
 		for (EASTExecutableNode dep : this.children)
-			inlineTo.children.add(dep);
+			inlineTo.addChildren(dep);
 
 		inlineTo.inlined.add(this);
 		
@@ -144,12 +138,12 @@ public abstract class EASTExecutableNode extends EASTNode
 		return 1;
 	}
 
+
 	public int simplifyDependencies()
 	{
 		Set<EASTExecutableNode> deps = new HashSet<EASTExecutableNode>();
 		deps.addAll(this.weakDependencies);
 		deps.addAll(this.strongDependencies);
-		deps.addAll(this.inlined);
 
 		for (EASTControlerNode node : this.controlers)
 			deps.add((EASTExecutableNode) node);
@@ -160,17 +154,22 @@ public abstract class EASTExecutableNode extends EASTNode
 		{
 			Set<EASTExecutableNode> majored = dep.getMajoredNodes();
 			for (EASTExecutableNode weak: this.weakDependencies)
-			{
 				if (majored.contains(weak))
 					remove.add(weak);
-			}
+		}
+
+		for (EASTExecutableNode dep : this.inlined)
+		{
+			Set<EASTExecutableNode> subtree = dep.getSubTree();
+			for (EASTExecutableNode weak: this.weakDependencies)
+				if (subtree.contains(weak))
+					remove.add(weak);			
 		}
 		
 		this.weakDependencies.removeAll(remove);
 		return remove.size();
 	}
 	
-	@SuppressWarnings("unchecked")
 	private HashSet<EASTExecutableNode> getMajoredNodes()
 	{
 		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
@@ -186,20 +185,39 @@ public abstract class EASTExecutableNode extends EASTNode
 		for (EASTControlerNode cont : this.controlers)
 			nodes.addAll(((EASTExecutableNode) cont).getMajoredNodes());
 		
-		for (EASTExecutableNode dep : this.strongDependencies)
-			nodes.addAll(dep.getMajoredNodes());
-		
 		for (EASTExecutableNode dep : this.weakDependencies)
 			nodes.addAll(dep.getMajoredNodes());
 
-		for (EASTExecutableNode dep : this.children)
-			nodes.addAll(dep.getMajoredNodes());
-
 		for (EASTExecutableNode dep : this.inlined)
-			nodes.addAll(dep.getMajoredNodes());
+			nodes.addAll(dep.getSubTree());
 
+		for (EASTExecutableNode dep : this.children)
+			nodes.addAll(dep.getSubTree());
+
+		
 		return nodes;
 	}
+	
+	private HashSet<EASTExecutableNode> getSubTree()
+	{
+		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
+
+		nodes.addAll(this.children);
+		nodes.addAll(this.strongDependencies);
+
+		for (EASTExecutableNode dep : this.strongDependencies)
+			nodes.addAll(dep.getSubTree());
+		
+		for (EASTExecutableNode dep : this.children)
+			nodes.addAll(dep.getSubTree());
+
+		for (EASTExecutableNode dep : this.inlined)
+			nodes.addAll(dep.getSubTree());
+
+		nodes.removeAll(this.inlined);
+
+		return nodes;
+}
 
 	public abstract void preTranslate(Task parent);
 	
@@ -230,6 +248,12 @@ public abstract class EASTExecutableNode extends EASTNode
 			
 	}
 	
+	protected void addChildren(EASTExecutableNode dep)
+	{
+		assert(!dep.equals(this));
+		this.children.add(dep);
+	}
+
 	@SuppressWarnings("unchecked")
 	public void postTranslate(Task task)
 	{
@@ -244,6 +268,7 @@ public abstract class EASTExecutableNode extends EASTNode
 		{
 			FieldAccess access = ast.newFieldAccess();
 			access.setExpression(task.getPathToNearestTask(controler.getScopeTask()));
+	
 			access.setName(ast.newSimpleName("ae_finished"));
 			
 			PrefixExpression prefix = ast.newPrefixExpression();
