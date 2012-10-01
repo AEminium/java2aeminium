@@ -143,7 +143,7 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.body.checkDependencies(stack);
-		this.strongDependencies.add(this.body);
+		this.addStrongDependency(this.body);
 	}
 	
 	public boolean isVoid()

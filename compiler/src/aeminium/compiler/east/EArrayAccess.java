@@ -77,16 +77,15 @@ public class EArrayAccess extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.array.checkDependencies(stack);
-		this.strongDependencies.add(this.array);
+		this.addStrongDependency(this.array);
 		
 		this.index.checkDependencies(stack);
-		this.strongDependencies.add(this.index);
+		this.addStrongDependency(this.index);
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.array.equals(node) && !this.index.equals(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 
 	@Override

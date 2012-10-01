@@ -122,20 +122,19 @@ public class EArrayCreation extends EExpression
 		for (EExpression dim : this.dimensions)
 		{
 			dim.checkDependencies(stack);
-			this.strongDependencies.add(dim);
+			this.addStrongDependency(dim);
 		}
 		
 		if (this.initializer != null)
 		{
 			this.initializer.checkDependencies(stack);
-			this.strongDependencies.add(this.initializer);
+			this.addStrongDependency(this.initializer);
 		}
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.dimensions.contains(node) && !node.equals(this.initializer))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

@@ -97,14 +97,13 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 		for (EVariableDeclarationFragment frag : this.fragments)
 		{
 			frag.checkDependencies(stack);
-			this.strongDependencies.add(frag);
+			this.addStrongDependency(frag);
 		}
 
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 
 		for (EASTExecutableNode node : deps)
-			if (!this.fragments.contains(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

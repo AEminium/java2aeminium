@@ -1,6 +1,7 @@
 package aeminium.compiler.east;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,6 +41,8 @@ public abstract class EASTExecutableNode extends EASTNode
 	private EASTExecutableNode inlinedTo;
 	
 	protected final EASTExecutableNode base;
+
+	private HashSet<EASTExecutableNode> inlined;
 	
 	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode base)
 	{
@@ -51,6 +54,7 @@ public abstract class EASTExecutableNode extends EASTNode
 		this.weakDependencies = new HashSet<EASTExecutableNode>();
 		this.children = new HashSet<EASTExecutableNode>();
 		this.controlers = new HashSet<EASTControlerNode>();
+		this.inlined = new HashSet<EASTExecutableNode>();
 		
 		this.inlineTask = false;
 		this.base = base;
@@ -84,9 +88,7 @@ public abstract class EASTExecutableNode extends EASTNode
 	
 	public int optimize()
 	{
-		this.simplifyDependencies();
-		
-		int sum = 0;
+		int sum = this.simplifyDependencies();
 		
 		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
 		nodes.addAll(this.strongDependencies);
@@ -122,17 +124,16 @@ public abstract class EASTExecutableNode extends EASTNode
 			inlineTo = inlineTo.inlinedTo;
 		
 		for (EASTExecutableNode dep : this.strongDependencies)
-			if (!inlineTo.strongDependencies.contains(dep))
-				inlineTo.strongDependencies.add(dep);
+			inlineTo.addStrongDependency(dep);
 
 		for (EASTExecutableNode dep : this.weakDependencies)
-			if (!inlineTo.weakDependencies.contains(dep))
-				inlineTo.weakDependencies.add(dep);
+			inlineTo.addWeakDependency(dep);
 
 		for (EASTExecutableNode dep : this.children)
-			if (!inlineTo.children.contains(dep))
-				inlineTo.children.add(dep);
+			inlineTo.children.add(dep);
 
+		inlineTo.inlined.add(this);
+		
 		inlineTo.strongDependencies.remove(this);
 		inlineTo.weakDependencies.remove(this);
 		inlineTo.children.remove(this);
@@ -143,36 +144,92 @@ public abstract class EASTExecutableNode extends EASTNode
 		return 1;
 	}
 
-	public void simplifyDependencies()
+	public int simplifyDependencies()
 	{
-		// TODO simplifyDependencies()
-		// watch out for inlined tasks
-		// System.err.println("TODO: EASTExecutableNode.simplifyDependencies()");
 		Set<EASTExecutableNode> deps = new HashSet<EASTExecutableNode>();
 		deps.addAll(this.weakDependencies);
 		deps.addAll(this.strongDependencies);
+		deps.addAll(this.inlined);
+
+		for (EASTControlerNode node : this.controlers)
+			deps.add((EASTExecutableNode) node);
 		
-		Set<EASTExecutableNode> temp_weak = new HashSet<EASTExecutableNode>(this.weakDependencies);
+		Set<EASTExecutableNode> remove = new HashSet<EASTExecutableNode>();
 		
 		for (EASTExecutableNode dep : deps)
 		{
-			temp_weak.remove(dep.weakDependencies);
-			temp_weak.remove(dep.strongDependencies);
+			Set<EASTExecutableNode> majored = dep.getMajoredNodes();
+			for (EASTExecutableNode weak: this.weakDependencies)
+			{
+				if (majored.contains(weak))
+					remove.add(weak);
+			}
 		}
 		
-		this.weakDependencies.clear();
-		this.weakDependencies.addAll(temp_weak);
+		this.weakDependencies.removeAll(remove);
+		return remove.size();
 	}
 	
+	@SuppressWarnings("unchecked")
+	private HashSet<EASTExecutableNode> getMajoredNodes()
+	{
+		HashSet<EASTExecutableNode> nodes = new HashSet<EASTExecutableNode>();
+
+		for (EASTControlerNode node : this.controlers)
+			nodes.add((EASTExecutableNode) node);
+		
+		nodes.addAll(this.children);
+		nodes.addAll(this.strongDependencies);
+		nodes.addAll(this.weakDependencies);
+		nodes.addAll(this.inlined);
+		
+		for (EASTControlerNode cont : this.controlers)
+			nodes.addAll(((EASTExecutableNode) cont).getMajoredNodes());
+		
+		for (EASTExecutableNode dep : this.strongDependencies)
+			nodes.addAll(dep.getMajoredNodes());
+		
+		for (EASTExecutableNode dep : this.weakDependencies)
+			nodes.addAll(dep.getMajoredNodes());
+
+		for (EASTExecutableNode dep : this.children)
+			nodes.addAll(dep.getMajoredNodes());
+
+		for (EASTExecutableNode dep : this.inlined)
+			nodes.addAll(dep.getMajoredNodes());
+
+		return nodes;
+	}
+
 	public abstract void preTranslate(Task parent);
 	
 	public abstract EASTDataNode getScope();
 
 	public void addController(EASTControlerNode controler)
 	{
-		this.controlers.add(controler);
+		if (!controler.equals(this))
+		{
+			this.controlers.add(controler);
+			this.addWeakDependency((EASTExecutableNode) controler);
+		}
 	}
 
+	public void addStrongDependency(EASTExecutableNode dep)
+	{
+		if (!dep.equals(this))
+		{
+			this.strongDependencies.add(dep);
+			this.weakDependencies.remove(dep);
+		}
+	}
+	
+	public void addWeakDependency(EASTExecutableNode dep)
+	{
+		if (!this.strongDependencies.contains(dep) && !dep.equals(this))
+			this.weakDependencies.add(dep);
+			
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void postTranslate(Task task)
 	{

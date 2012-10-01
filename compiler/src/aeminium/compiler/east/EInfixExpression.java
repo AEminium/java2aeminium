@@ -104,22 +104,21 @@ public class EInfixExpression extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.left.checkDependencies(stack);
-		this.strongDependencies.add(this.left);
+		this.addStrongDependency(this.left);
 		
 		this.right.checkDependencies(stack);
-		this.strongDependencies.add(this.right);
+		this.addStrongDependency(this.right);
 		
 		for (EExpression ext : this.extended)
 		{
 			ext.checkDependencies(stack);
-			this.strongDependencies.add(ext);
+			this.addStrongDependency(ext);
 		}
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.left.equals(node) && !this.right.equals(node) && !this.extended.contains(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

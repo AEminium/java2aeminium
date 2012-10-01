@@ -118,13 +118,13 @@ public class EMethodInvocation extends EDeferredExpression
 		if (!this.isStatic())
 		{
 			this.expr.checkDependencies(stack);
-			this.strongDependencies.add(this.expr);
+			this.addStrongDependency(this.expr);
 		}
 		
 		for (EExpression arg : this.arguments)
 		{
 			arg.checkDependencies(stack);
-			this.strongDependencies.add(arg);
+			this.addStrongDependency(arg);
 		}
 		
 		Signature sig;
@@ -136,8 +136,7 @@ public class EMethodInvocation extends EDeferredExpression
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
 		
 		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr) && !this.arguments.contains(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

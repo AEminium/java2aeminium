@@ -97,14 +97,13 @@ public class EArrayInitializer extends EExpression
 		for (EExpression expr : this.exprs)
 		{
 			expr.checkDependencies(stack);
-			this.strongDependencies.add(expr);
+			this.addStrongDependency(expr);
 		}
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.exprs.contains(node))
-				this.weakDependencies.add(node);	
+			this.addWeakDependency(node);
 	}
 
 	@Override

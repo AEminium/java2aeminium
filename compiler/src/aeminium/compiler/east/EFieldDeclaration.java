@@ -84,7 +84,7 @@ public class EFieldDeclaration extends EBodyDeclaration
 		for (EVariableDeclarationFragment frag : this.fragments)
 		{
 			frag.checkDependencies(stack);
-			this.strongDependencies.add(frag);
+			this.addStrongDependency(frag);
 		}
 	}
 	

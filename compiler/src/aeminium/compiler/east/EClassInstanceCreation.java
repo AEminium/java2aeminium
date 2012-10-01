@@ -122,7 +122,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 		for (EExpression arg : this.arguments)
 		{
 			arg.checkDependencies(stack);
-			this.strongDependencies.add(arg);
+			this.addStrongDependency(arg);
 		}
 		
 		Signature sig;
@@ -134,8 +134,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, sig);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.arguments.contains(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

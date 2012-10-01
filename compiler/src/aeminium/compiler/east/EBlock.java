@@ -95,8 +95,7 @@ public class EBlock extends EStatement implements EASTDataNode
 		for (EStatement stmt : this.stmts)
 		{
 			stmt.checkDependencies(stack);
-
-			this.strongDependencies.add(stmt);
+			this.addStrongDependency(stmt);
 		}
 	}
 

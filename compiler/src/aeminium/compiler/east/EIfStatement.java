@@ -81,11 +81,10 @@ public class EIfStatement extends EStatement
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
-		this.strongDependencies.add(this.expr);
+		this.addStrongDependency(this.expr);
 		
 		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 		
 		if (this.elseStmt == null)
 		{

@@ -66,16 +66,15 @@ public class EFieldAccess extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
-		this.strongDependencies.add(this.expr);
+		this.addStrongDependency(this.expr);
 		
 		this.name.checkDependencies(stack);
-		this.strongDependencies.add(this.name);
+		this.addStrongDependency(this.name);
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.expr.equals(node) && !this.name.equals(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 
 	@Override

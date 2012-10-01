@@ -73,13 +73,12 @@ public class EPrefixExpression extends EExpression
 	public void checkDependencies(DependencyStack stack)
 	{
 		this.expr.checkDependencies(stack);
-		this.strongDependencies.add(this.expr);
+		this.addStrongDependency(this.expr);
 		
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!this.expr.equals(node))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override

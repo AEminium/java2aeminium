@@ -88,14 +88,13 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 		if (this.expr != null)
 		{
 			this.expr.checkDependencies(stack);
-			this.strongDependencies.add(this.expr);
+			this.addStrongDependency(this.expr);
 		}
 
 		Set<EASTExecutableNode> deps = stack.getDependencies(this, this.signature);
 		
 		for (EASTExecutableNode node : deps)
-			if (!node.equals(this.expr))
-				this.weakDependencies.add(node);
+			this.addWeakDependency(node);
 	}
 	
 	@Override
