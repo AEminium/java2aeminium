@@ -123,4 +123,11 @@ public class EArrayAccess extends EExpression
 
 		return access;
 	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return true;
+	}
+
 }

@@ -285,7 +285,7 @@ public abstract class Task
 
 		assert(!tasks_target.empty() && !tasks_self.empty());
  
-		while (!tasks_target.empty() && !tasks_self.empty() && tasks_target.peek() == tasks_self.peek())
+		while (!tasks_target.empty() && !tasks_self.empty() && tasks_target.peek().equals(tasks_self.peek()))
 		{
 			tasks_target.pop();
 			tasks_self.pop();
@@ -312,15 +312,7 @@ public abstract class Task
 			Task descendent = tasks_target.pop();
 			
 			if (descendent.isChildOf(descendent.parent) && !this.isDescendentOf(descendent.parent))
-			{
-				System.out.println("DESCENDENT: " + descendent.getTypeName());
-				System.out.println("PARENT: " + descendent.parent.getTypeName());
-
-				System.out.println("THIS: " + this.getTypeName());
-				System.out.println("OTHER: " + target.getTypeName());
-				
 				break;
-			}
 			
 			FieldAccess field = ast.newFieldAccess();
 			field.setExpression(path);
