@@ -1,3 +1,31 @@
+Java2Aeminium
+
+A Java source to source compiler that performs automatic task and loop parallelization
+based on data accesses. The output code uses the ÆminiumRuntime to handle task execution.
+
+This is part of the Æminium project (http://aeminium.dei.uc.pt).
+
+Author:
+João Rafael <jprafael@student.dei.uc.pt>
+
+
+How to install and execute:
+
+git clone git@github.com:AEminium/java2aeminium.git && cd java2aeminium
+git submodule init # The ÆminiumRuntime is fetched as a submodule
+git submodule update
+ant compile.compiler # will compile the compiler
+ant run # will compile and execute the tests, and perform the previous if required 
+
+
+Source code organization:
+
+compiler: The main compiler source code that uses the Eclipse JDT to perform AST transformations.
+runtime: Git Submodule imported from http://github.com/AEminium/AeminiumRuntime
+signatures: The signatures files with more permissive information regarding default Java methods.
+tests: Target Java programs to be parallelizable.
+
+
 TODO:
 	Merge EClassInstanceConstruction and EMethodInvocation under a common ECallerExpression
 
