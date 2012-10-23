@@ -22,7 +22,10 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 		this.scope = scope;
 		this.binding = original.resolveBinding();
 		
-		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup(original.toString()));
+		if (base != null)
+			this.datagroup = base.datagroup;
+		else
+			this.datagroup = scope.getDataGroup().append(new SimpleDataGroup(original.toString()));
 
 		this.base = base;
 		
@@ -44,6 +47,7 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	@Override
 	public DataGroup getDataGroup()
 	{
+
 		return this.datagroup;
 	}
 

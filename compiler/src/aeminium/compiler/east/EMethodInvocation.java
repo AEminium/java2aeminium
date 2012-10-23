@@ -109,6 +109,7 @@ public class EMethodInvocation extends EDeferredExpression
 		for (EExpression arg : this.arguments)
 			sig.addAll(arg.getFullSignature());
 
+		
 		return sig;
 	}
 	
@@ -159,7 +160,7 @@ public class EMethodInvocation extends EDeferredExpression
 	public int inline(EASTExecutableNode inlineTo)
 	{
 		// TODO inline ClassInstanceCreation
-		System.out.println("TODO: EMethodInvocation.inline()");
+		System.err.println("TODO: EMethodInvocation.inline()");
 		return 0;
 	}
 	

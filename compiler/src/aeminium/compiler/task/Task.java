@@ -1,5 +1,9 @@
 package aeminium.compiler.task;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Stack;
@@ -11,6 +15,8 @@ import aeminium.compiler.east.EASTExecutableNode;
 
 public abstract class Task
 {
+	private final boolean OUTPUT_GRAPH = true;
+	
 	protected final EASTExecutableNode node;
 	protected final String name;
 	protected final Task parent;
@@ -184,7 +190,7 @@ public abstract class Task
 		for (EASTExecutableNode node :  this.node.getChildren())
 		{
 			Task child = node.getTask();
-			
+
 			SimpleType type = ast.newSimpleType(ast.newSimpleName(child.getTypeName()));
 			String name = "ae_" + child.getFieldName();
 
@@ -218,10 +224,11 @@ public abstract class Task
 
 		/* can't use a HashSet here because order is important. any "OrderedSet" implementation maybe? */
 		ArrayList<Task> deps = new ArrayList<Task>();
-		
+				
 		for (EASTExecutableNode node : this.node.getStrongDependencies())
 		{
 			Task dep = node.getTask();
+			
 			if (!deps.contains(dep))
 				deps.add(dep);
 		}
@@ -229,6 +236,7 @@ public abstract class Task
 		for (EASTExecutableNode node : this.node.getWeakDependencies())
 		{
 			Task dep = node.getTask();
+
 			if (!deps.contains(dep) && this != dep && !this.isDescendentOf(dep))
 				deps.add(dep);
 		}
@@ -257,6 +265,30 @@ public abstract class Task
 		constructor.setName(ast.newSimpleName(this.name));
 		constructor.setConstructor(true);
 		constructor.setBody(body);
+		
+		if (OUTPUT_GRAPH)
+		{
+			try {
+				FileWriter f = new FileWriter("graph", true);
+				
+				f.append(this.name);
+
+				for (EASTExecutableNode node :  this.node.getChildren())
+					f.append(" child-" + node.getTask().name);
+
+				for (EASTExecutableNode node : this.node.getStrongDependencies())
+					f.append(" strong-" + node.getTask().name);
+
+				for (EASTExecutableNode node : this.node.getWeakDependencies())
+					f.append(" weak-" + node.getTask().name);
+
+				f.append('\n');
+				f.flush();
+				f.close();
+			} catch (IOException e)
+			{
+			}
+		}
 	}
 	
 	public Expression getPathToNearestTask(Task target)

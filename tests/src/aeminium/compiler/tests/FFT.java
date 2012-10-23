@@ -64,14 +64,15 @@ public class FFT
 
 	public static void main(String [] args)
 	{
-		Complex[] input = createRandomComplexArray(1024, 524288);
+		Complex[] input = createRandomComplexArray(8388608, 524288); /* 2^23 */
 		Complex[] output = FFT(input);
 
-		int i = 0;
+/*		int i = 0;
 		while (i < (output).length)
 		{
 	        System.out.println(output[i]);
 			++i;
 		}
 	}
+*/
 }

@@ -55,6 +55,8 @@ public class Compiler
 
 			ASTParser parser = ASTParser.newParser(AST.JLS3);
 
+			System.out.println("Parsing: " + path);
+			
 			parser.setSource(content.toCharArray());
 			parser.setEnvironment(this.classPath, this.sourcePath, null, true);
 			parser.setResolveBindings(true);

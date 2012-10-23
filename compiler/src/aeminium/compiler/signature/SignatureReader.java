@@ -116,7 +116,7 @@ public class SignatureReader
 	{
 		if (!this.signatures.containsKey(key))
 		{
-			System.out.println("WARNING: using default signature for: " + key);
+			System.err.println("WARNING: using default signature for: " + key);
 			return getDefaultSignature(dgRet, dgExpr, dgsArgs);
 		}
 		

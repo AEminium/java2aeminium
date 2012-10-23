@@ -113,4 +113,11 @@ public class EFieldAccess extends EExpression
 
 		return access;
 	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return true;
+	}
+
 }

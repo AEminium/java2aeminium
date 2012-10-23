@@ -41,7 +41,7 @@ public abstract class ENameExpression extends EExpression
 		
 		if (node == null)
 		{
-			System.out.println("WARNING: using external datagroup for: " + this.binding.getKey());
+			System.err.println("WARNING: using external datagroup for: " + this.binding.getKey());
 			return this.getEAST().getExternalDataGroup();
 		}
 		

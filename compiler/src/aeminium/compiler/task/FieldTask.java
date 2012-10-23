@@ -8,7 +8,7 @@ public class FieldTask extends Task
 	{
 		super(node, name, null, base);
 		
-		System.out.println("TODO: FieldTask");
+		System.err.println("TODO: FieldTask");
 	}
 
 	public static FieldTask create(EFieldDeclaration node, String name, Task base)

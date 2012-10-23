@@ -154,7 +154,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 	public int inline(EASTExecutableNode inlineTo)
 	{
 		// TODO inline ClassInstanceCreation
-		System.out.println("TODO: EClassInstanceCreation.inline()");
+		System.err.println("TODO: EClassInstanceCreation.inline()");
 		return 0;
 	}
 	
