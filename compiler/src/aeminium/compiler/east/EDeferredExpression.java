@@ -20,9 +20,9 @@ public abstract class EDeferredExpression extends EExpression
 	/* checkSignature */
 	protected SignatureItemDeferred deferred;
 	
-	public EDeferredExpression(EAST east, Expression original, EASTDataNode scope, IMethodBinding binding, EDeferredExpression base)
+	public EDeferredExpression(EAST east, Expression original, EASTDataNode scope, IMethodBinding binding, EASTExecutableNode parent, EDeferredExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 
 		this.binding = binding;
 	}

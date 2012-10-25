@@ -14,17 +14,17 @@ public class EExpressionStatement extends EStatement
 {
 	protected final EExpression expr;
 	
-	public EExpressionStatement(EAST east, ExpressionStatement original, EASTDataNode scope, EMethodDeclaration method, EExpressionStatement base)
+	public EExpressionStatement(EAST east, ExpressionStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EExpressionStatement base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
+		this.expr = EExpression.create(this.east, original.getExpression(), scope, this, base == null ? null : base.expr);
 	}
 
 	/* factory */
-	public static EExpressionStatement create(EAST east, ExpressionStatement stmt, EASTDataNode scope, EMethodDeclaration method, EExpressionStatement base)
+	public static EExpressionStatement create(EAST east, ExpressionStatement stmt, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EExpressionStatement base)
 	{
-		return new EExpressionStatement(east, stmt, scope, method, base);
+		return new EExpressionStatement(east, stmt, scope, method, parent, base);
 	}
 	
 	@Override
@@ -95,5 +95,11 @@ public class EExpressionStatement extends EStatement
 		
 		ExpressionStatement exprstmt = ast.newExpressionStatement(expr);
 		return Arrays.asList((Statement) exprstmt);
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

@@ -28,9 +28,9 @@ public class EArrayCreation extends EExpression
 	protected final EArrayInitializer initializer;
 	protected final ArrayType type;
 	
-	public EArrayCreation(EAST east, ArrayCreation original, EASTDataNode scope, EArrayCreation base)
+	public EArrayCreation(EAST east, ArrayCreation original, EASTDataNode scope, EASTExecutableNode parent, EArrayCreation base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("array"));
 		
@@ -46,6 +46,7 @@ public class EArrayCreation extends EExpression
 					east,
 					(Expression) original.dimensions().get(i),
 					scope,
+					this,
 					base == null ? null : base.dimensions.get(i)
 				)
 			);
@@ -60,15 +61,16 @@ public class EArrayCreation extends EExpression
 				east,
 				(ArrayInitializer) original.getInitializer(),
 				scope,
+				this,
 				base == null ? null : base.initializer
 			);
 		}
 	}
 
 	/* factory */
-	public static EArrayCreation create(EAST east, ArrayCreation original, EASTDataNode scope, EArrayCreation base)
+	public static EArrayCreation create(EAST east, ArrayCreation original, EASTDataNode scope, EASTExecutableNode parent, EArrayCreation base)
 	{
-		return new EArrayCreation(east, original, scope, base);
+		return new EArrayCreation(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -189,4 +191,9 @@ public class EArrayCreation extends EExpression
 		return create;
 	}
 
+	@Override
+	public boolean isSimpleTask()
+	{	
+		return EASTExecutableNode.HARD_AGGREGATION;
+	}
 }

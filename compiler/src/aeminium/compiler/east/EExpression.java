@@ -9,63 +9,63 @@ public abstract class EExpression extends EASTExecutableNode implements EASTData
 	protected final EASTDataNode scope;
 	protected final ITypeBinding binding;
 	
-	public EExpression(EAST east, Expression original, EASTDataNode scope, EASTExecutableNode base)
+	public EExpression(EAST east, Expression original, EASTDataNode scope, EASTExecutableNode parent, EASTExecutableNode base)
 	{
-		super(east, original, base);
+		super(east, original, parent, base);
 		
 		this.scope = scope;
 		this.binding = original.resolveTypeBinding();
 	}
 	
-	public static EExpression create(EAST east, Expression expr, EASTDataNode scope, EASTExecutableNode base)
+	public static EExpression create(EAST east, Expression expr, EASTDataNode scope, EASTExecutableNode parent, EASTExecutableNode base)
 	{
 		if (expr instanceof ArrayCreation)
-			return EArrayCreation.create(east, (ArrayCreation) expr, scope, (EArrayCreation) base);
+			return EArrayCreation.create(east, (ArrayCreation) expr, scope, parent, (EArrayCreation) base);
 		
 		if (expr instanceof ArrayInitializer)
-			return EArrayInitializer.create(east, (ArrayInitializer) expr, scope, (EArrayInitializer) base);
+			return EArrayInitializer.create(east, (ArrayInitializer) expr, scope, parent, (EArrayInitializer) base);
 		
 		if (expr instanceof ArrayAccess)
-			return EArrayAccess.create(east, (ArrayAccess) expr, scope, (EArrayAccess) base);
+			return EArrayAccess.create(east, (ArrayAccess) expr, scope, parent, (EArrayAccess) base);
 
 		if (expr instanceof Assignment)
-			return EAssignment.create(east, (Assignment) expr, scope, (EAssignment) base);
+			return EAssignment.create(east, (Assignment) expr, scope, parent, (EAssignment) base);
 		
 		if (expr instanceof MethodInvocation)
-			return EMethodInvocation.create(east, (MethodInvocation) expr, scope, (EMethodInvocation) base);
+			return EMethodInvocation.create(east, (MethodInvocation) expr, scope, parent, (EMethodInvocation) base);
 		
 		if (expr instanceof Name)
-			return ENameExpression.create(east, (Name) expr, scope, (ENameExpression) base);
+			return ENameExpression.create(east, (Name) expr, scope, parent, (ENameExpression) base);
 		
 		if (expr instanceof ClassInstanceCreation)
-			return EClassInstanceCreation.create(east, (ClassInstanceCreation) expr, scope, (EClassInstanceCreation) base);
+			return EClassInstanceCreation.create(east, (ClassInstanceCreation) expr, scope, parent, (EClassInstanceCreation) base);
 		
 		if (expr instanceof NumberLiteral)
-			return ENumberLiteral.create(east, (NumberLiteral) expr, scope, (ENumberLiteral) base);
+			return ENumberLiteral.create(east, (NumberLiteral) expr, scope, parent, (ENumberLiteral) base);
 		
 		if (expr instanceof InfixExpression)
-			return EInfixExpression.create(east, (InfixExpression) expr, scope, (EInfixExpression) base);
+			return EInfixExpression.create(east, (InfixExpression) expr, scope, parent, (EInfixExpression) base);
 	
 		if (expr instanceof PrefixExpression)
-			return EPrefixExpression.create(east, (PrefixExpression) expr, scope, (EPrefixExpression) base);
+			return EPrefixExpression.create(east, (PrefixExpression) expr, scope, parent, (EPrefixExpression) base);
 		
 		if (expr instanceof PostfixExpression)
-			return EPostfixExpression.create(east, (PostfixExpression) expr, scope, (EPostfixExpression) base);
+			return EPostfixExpression.create(east, (PostfixExpression) expr, scope, parent, (EPostfixExpression) base);
 
 		if (expr instanceof ParenthesizedExpression)
-			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope, (EParenthesizedExpression) base);
+			return EParenthesizedExpression.create(east, (ParenthesizedExpression) expr, scope, parent, (EParenthesizedExpression) base);
 		
 		if (expr instanceof StringLiteral)
-			return EStringLiteral.create(east, (StringLiteral) expr, scope, (EStringLiteral) base);
+			return EStringLiteral.create(east, (StringLiteral) expr, scope, parent, (EStringLiteral) base);
 				
 		if (expr instanceof BooleanLiteral)
-			return EBooleanLiteral.create(east, (BooleanLiteral) expr, scope, (EBooleanLiteral)  base);
+			return EBooleanLiteral.create(east, (BooleanLiteral) expr, scope, parent, (EBooleanLiteral)  base);
 
 		if (expr instanceof ThisExpression)
-			return EThisExpression.create(east, (ThisExpression) expr, scope, (EThisExpression) base);
+			return EThisExpression.create(east, (ThisExpression) expr, scope, parent, (EThisExpression) base);
 				
 		if (expr instanceof FieldAccess)
-			return EFieldAccess.create(east, (FieldAccess) expr, scope, (EFieldAccess) base);
+			return EFieldAccess.create(east, (FieldAccess) expr, scope, parent, (EFieldAccess) base);
 				
 		System.err.println("Not implemented error: " + expr.getClass().getName());
 		return null;

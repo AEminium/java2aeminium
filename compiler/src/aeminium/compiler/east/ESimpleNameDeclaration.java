@@ -15,7 +15,7 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	
 	public final ESimpleNameDeclaration base;
 	
-	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope, ESimpleNameDeclaration base)
+	public ESimpleNameDeclaration(EAST east, SimpleName original, EASTDeclaringNode scope, EASTExecutableNode parent, ESimpleNameDeclaration base)
 	{
 		super(east, original);
 
@@ -33,9 +33,9 @@ public class ESimpleNameDeclaration extends EASTNode implements EASTDataNode
 	}
 	
 	/* Factory */
-	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDeclaringNode scope, ESimpleNameDeclaration base)
+	public static ESimpleNameDeclaration create(EAST east, SimpleName original, EASTDeclaringNode scope, EASTExecutableNode parent, ESimpleNameDeclaration base)
 	{
-		return new ESimpleNameDeclaration(east, original, scope, base);
+		return new ESimpleNameDeclaration(east, original, scope, parent, base);
 	}
 	
 	@Override

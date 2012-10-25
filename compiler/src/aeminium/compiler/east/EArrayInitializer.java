@@ -23,9 +23,9 @@ public class EArrayInitializer extends EExpression
 	protected final DataGroup datagroup;
 	protected final ArrayList<EExpression> exprs;
 	
-	public EArrayInitializer(EAST east, ArrayInitializer original, EASTDataNode scope, EArrayInitializer base)
+	public EArrayInitializer(EAST east, ArrayInitializer original, EASTDataNode scope, EASTExecutableNode parent, EArrayInitializer base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("init"));
 
@@ -40,6 +40,7 @@ public class EArrayInitializer extends EExpression
 					east,
 					(Expression) original.expressions().get(i),
 					scope,
+					this,
 					base == null ? base : base.exprs.get(i)
 				)
 			);
@@ -47,9 +48,9 @@ public class EArrayInitializer extends EExpression
 	}
 
 	/* factory */
-	public static EArrayInitializer create(EAST east, ArrayInitializer original, EASTDataNode scope, EArrayInitializer base)
+	public static EArrayInitializer create(EAST east, ArrayInitializer original, EASTDataNode scope, EASTExecutableNode parent, EArrayInitializer base)
 	{
-		return new EArrayInitializer(east, original, scope, base);
+		return new EArrayInitializer(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -143,5 +144,11 @@ public class EArrayInitializer extends EExpression
 			init.expressions().add(expr.translate(out));
 		
 		return init;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

@@ -13,21 +13,21 @@ public abstract class ENameExpression extends EExpression
 {
 	protected final IBinding binding;
 	
-	public ENameExpression(EAST east, Name original, EASTDataNode scope, ENameExpression base)
+	public ENameExpression(EAST east, Name original, EASTDataNode scope, EASTExecutableNode parent, ENameExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.binding = original.resolveBinding();
 	}
 	
 	/* factory */
-	public static ENameExpression create(EAST east, Name original, EASTDataNode scope, ENameExpression base)
+	public static ENameExpression create(EAST east, Name original, EASTDataNode scope, EASTExecutableNode parent, ENameExpression base)
 	{
 		if (original instanceof SimpleName)
-			return ESimpleNameExpression.create(east, (SimpleName) original, scope, (ESimpleNameExpression) base);
+			return ESimpleNameExpression.create(east, (SimpleName) original, scope, parent, (ESimpleNameExpression) base);
 		
 		if (original instanceof QualifiedName)
-			return EQualifiedNameExpression.create(east, (QualifiedName) original, scope, (EQualifiedNameExpression) base);
+			return EQualifiedNameExpression.create(east, (QualifiedName) original, scope, parent, (EQualifiedNameExpression) base);
 		
 		System.err.println("FIXME: ENameExpression.create()");
 		return null;

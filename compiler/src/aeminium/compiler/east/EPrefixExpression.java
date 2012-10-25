@@ -17,20 +17,20 @@ public class EPrefixExpression extends EExpression
 	
 	protected final DataGroup datagroup;
 	
-	public EPrefixExpression(EAST east, PrefixExpression original, EASTDataNode scope, EPrefixExpression base)
+	public EPrefixExpression(EAST east, PrefixExpression original, EASTDataNode scope, EASTExecutableNode parent, EPrefixExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.operator = this.getOriginal().getOperator();
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("infix " + this.operator));
 
-		this.expr = EExpression.create(this.east, original.getOperand(), scope, base == null ? null : base.expr);
+		this.expr = EExpression.create(this.east, original.getOperand(), scope, this, base == null ? null : base.expr);
 	}
 
 	/* factory */
-	public static EPrefixExpression create(EAST east, PrefixExpression original, EASTDataNode scope, EPrefixExpression base)
+	public static EPrefixExpression create(EAST east, PrefixExpression original, EASTDataNode scope, EASTExecutableNode parent, EPrefixExpression base)
 	{
-		return new EPrefixExpression(east, original, scope, base);
+		return new EPrefixExpression(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -113,5 +113,11 @@ public class EPrefixExpression extends EExpression
 		prefix.setOperator(this.getOriginal().getOperator());
 
 		return prefix;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

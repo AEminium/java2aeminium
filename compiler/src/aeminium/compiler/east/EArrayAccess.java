@@ -19,24 +19,24 @@ public class EArrayAccess extends EExpression
 	protected final EExpression array;
 	protected final EExpression index;
 	
-	public EArrayAccess(EAST east, ArrayAccess original, EASTDataNode scope, EArrayAccess base)
+	public EArrayAccess(EAST east, ArrayAccess original, EASTDataNode scope, EASTExecutableNode parent, EArrayAccess base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		if (base != null)
 		{
-			this.array = EExpression.create(east, original.getArray(), scope, base.array);
-			this.index = EExpression.create(east, original.getIndex(), scope, base.index);
+			this.array = EExpression.create(east, original.getArray(), scope, this, base.array);
+			this.index = EExpression.create(east, original.getIndex(), scope, this, base.index);
 		} else
 		{
-			this.array = EExpression.create(east, original.getArray(), scope, null);
-			this.index = EExpression.create(east, original.getIndex(), scope, null);
+			this.array = EExpression.create(east, original.getArray(), scope, this, null);
+			this.index = EExpression.create(east, original.getIndex(), scope, this, null);
 		}
 	}
 
-	public static EArrayAccess create(EAST east, ArrayAccess original, EASTDataNode scope, EArrayAccess base)
+	public static EArrayAccess create(EAST east, ArrayAccess original, EASTDataNode scope, EASTExecutableNode parent, EArrayAccess base)
 	{
-		return new EArrayAccess(east, original, scope, base);
+		return new EArrayAccess(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -127,7 +127,6 @@ public class EArrayAccess extends EExpression
 	@Override
 	public boolean isSimpleTask()
 	{
-		return true;
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
-
 }

@@ -20,9 +20,9 @@ public class EBlock extends EStatement implements EASTDataNode
 	
 	protected final ArrayList<EStatement> stmts;
 	
-	public EBlock(EAST east, Block original, EASTDataNode scope, EMethodDeclaration method, EBlock base)
+	public EBlock(EAST east, Block original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EBlock base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 		
 		this.scope = scope;
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("{}"));
@@ -39,6 +39,7 @@ public class EBlock extends EStatement implements EASTDataNode
 					(Statement) original.statements().get(i),
 					this,
 					method,
+					this,
 					base == null ? null: base.stmts.get(i)
 				)
 			);
@@ -46,9 +47,9 @@ public class EBlock extends EStatement implements EASTDataNode
 	}
 
 	/* Factory */
-	public static EBlock create(EAST east, Block block, EASTDataNode scope, EMethodDeclaration method, EBlock base)
+	public static EBlock create(EAST east, Block block, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EBlock base)
 	{
-		return new EBlock(east, block, scope, method, base);
+		return new EBlock(east, block, scope, method, parent, base);
 	}
 	
 	@Override
@@ -107,6 +108,27 @@ public class EBlock extends EStatement implements EASTDataNode
 		for (EStatement stmt : this.stmts)
 			sum += stmt.optimize();
 		
+		/* if each stmt is sequential you can inline them all if desired */
+
+		if (this.stmts.size() > 0)
+		{
+			boolean inline = this.stmts.get(0).isSequential();
+			
+			for (int i = 1; i < this.stmts.size(); i++)
+			{
+				EStatement stmt = this.stmts.get(i); 
+				if (!stmt.isSequential() || !stmt.weakDependencies.contains(this.stmts.get(i-1)))
+					inline = false;
+
+			}
+			
+			if (inline)
+			{
+				for (EStatement stmt : this.stmts)
+					stmt.inline(this);
+			}
+		}
+		
 		sum += super.optimize();
 		
 		return sum;
@@ -144,5 +166,21 @@ public class EBlock extends EStatement implements EASTDataNode
 	public EASTDataNode getScope()
 	{
 		return this.scope;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		for (EStatement stmt : this.stmts)
+			if (!stmt.inlineTask)
+				return false;
+		
+		return EASTExecutableNode.HARD_AGGREGATION;
+	}
+	
+	@Override
+	public boolean isSafeInline(EASTExecutableNode node)
+	{
+		return false;
 	}
 }

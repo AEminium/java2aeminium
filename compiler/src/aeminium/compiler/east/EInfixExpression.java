@@ -23,15 +23,15 @@ public class EInfixExpression extends EExpression
 	
 	protected final DataGroup datagroup;
 	
-	public EInfixExpression(EAST east, InfixExpression original, EASTDataNode scope, EInfixExpression base)
+	public EInfixExpression(EAST east, InfixExpression original, EASTDataNode scope, EASTExecutableNode parent, EInfixExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.operator = this.getOriginal().getOperator();
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("infix " + this.operator));
 
-		this.left = EExpression.create(this.east, original.getLeftOperand(), scope, base == null ? null : base.left);
-		this.right = EExpression.create(this.east, original.getRightOperand(), scope, base == null ? null : base.right);
+		this.left = EExpression.create(this.east, original.getLeftOperand(), scope, this, base == null ? null : base.left);
+		this.right = EExpression.create(this.east, original.getRightOperand(), scope, this, base == null ? null : base.right);
 		
 		this.extended = new ArrayList<EExpression>();
 
@@ -46,6 +46,7 @@ public class EInfixExpression extends EExpression
 						this.east,
 						(Expression) original.extendedOperands().get(i),
 						scope,
+						this,
 						base == null ? null : base.extended.get(i)
 					)
 				);
@@ -54,9 +55,9 @@ public class EInfixExpression extends EExpression
 	}
 
 	/* factory */
-	public static EInfixExpression create(EAST east, InfixExpression original, EASTDataNode scope, EInfixExpression base)
+	public static EInfixExpression create(EAST east, InfixExpression original, EASTDataNode scope, EASTExecutableNode parent, EInfixExpression base)
 	{
-		return new EInfixExpression(east, original, scope, base);
+		return new EInfixExpression(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -167,5 +168,11 @@ public class EInfixExpression extends EExpression
 			infix.extendedOperands().add(ext.translate(out));
 
 		return infix;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

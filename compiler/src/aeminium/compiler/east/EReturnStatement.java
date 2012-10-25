@@ -30,22 +30,22 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 	protected final EExpression expr;
 	protected final Set<EASTExecutableNode> controled;
 	
-	public EReturnStatement(EAST east, ReturnStatement original, EASTDataNode scope, EMethodDeclaration method, EReturnStatement base)
+	public EReturnStatement(EAST east, ReturnStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EReturnStatement base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 
 		if (original.getExpression() == null)
 			this.expr = null;
 		else
-			this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
+			this.expr = EExpression.create(this.east, original.getExpression(), scope, this, base == null ? null : base.expr);
 
 		this.controled = new HashSet<EASTExecutableNode>();
 	}
 
 	/* factory */
-	public static EReturnStatement create(EAST east, ReturnStatement stmt, EASTDataNode scope, EMethodDeclaration method, EReturnStatement base)
+	public static EReturnStatement create(EAST east, ReturnStatement stmt, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EReturnStatement base)
 	{
-		return new EReturnStatement(east, stmt, scope, method, base);
+		return new EReturnStatement(east, stmt, scope, method, parent, base);
 	}
 	
 	@Override
@@ -182,6 +182,8 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 
 		return stmts;
 	}
+	
+	
 
 	@Override
 	public void addControledNode(EASTExecutableNode node)
@@ -195,5 +197,11 @@ public class EReturnStatement extends EStatement implements EASTControlerNode
 	public Task getScopeTask()
 	{
 		return this.method.getTask();
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

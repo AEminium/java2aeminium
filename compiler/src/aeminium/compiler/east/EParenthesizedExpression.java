@@ -15,19 +15,19 @@ public class EParenthesizedExpression extends EExpression
 	
 	protected final DataGroup datagroup;
 	
-	public EParenthesizedExpression(EAST east, ParenthesizedExpression original, EASTDataNode scope, EParenthesizedExpression base)
+	public EParenthesizedExpression(EAST east, ParenthesizedExpression original, EASTDataNode scope, EASTExecutableNode parent, EParenthesizedExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("paren"));
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
+		this.expr = EExpression.create(this.east, original.getExpression(), scope, this, base == null ? null : base.expr);
 	}
 
 	/* factory */
-	public static EParenthesizedExpression create(EAST east, ParenthesizedExpression original, EASTDataNode scope, EParenthesizedExpression base)
+	public static EParenthesizedExpression create(EAST east, ParenthesizedExpression original, EASTDataNode scope, EASTExecutableNode parent, EParenthesizedExpression base)
 	{
-		return new EParenthesizedExpression(east, original, scope, base);
+		return new EParenthesizedExpression(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -106,5 +106,11 @@ public class EParenthesizedExpression extends EExpression
 		paren.setExpression(this.expr.translate(out));
 		
 		return paren;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

@@ -20,27 +20,27 @@ public class EAssignment extends EExpression
 	protected final EExpression right;
 	protected final Operator operator;
 
-	public EAssignment(EAST east, Assignment original, EASTDataNode scope, EAssignment base)
+	public EAssignment(EAST east, Assignment original, EASTDataNode scope, EASTExecutableNode parent, EAssignment base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.operator = original.getOperator();
 
 		if (base == null)
 		{
-			this.left = EExpression.create(east, original.getLeftHandSide(), scope, null);
-			this.right = EExpression.create(east, original.getRightHandSide(), scope, null);
+			this.left = EExpression.create(east, original.getLeftHandSide(), scope, this, null);
+			this.right = EExpression.create(east, original.getRightHandSide(), scope, this, null);
 		} else
 		{
-			this.left = EExpression.create(east, original.getLeftHandSide(), scope, base.left);
-			this.right = EExpression.create(east, original.getRightHandSide(), scope, base.right);			
+			this.left = EExpression.create(east, original.getLeftHandSide(), scope, this, base.left);
+			this.right = EExpression.create(east, original.getRightHandSide(), scope, this, base.right);			
 		}
 	}
 
 	/* factory */
-	public static EAssignment create(EAST east, Assignment original, EASTDataNode scope, EAssignment base)
+	public static EAssignment create(EAST east, Assignment original, EASTDataNode scope, EASTExecutableNode parent, EAssignment base)
 	{
-		return new EAssignment(east, original, scope, base);
+		return new EAssignment(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -130,5 +130,11 @@ public class EAssignment extends EExpression
 		assign.setRightHandSide(this.right.translate(out));
 		
 		return assign;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

@@ -32,9 +32,9 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	protected final ESimpleNameDeclaration name;
 	protected final EExpression expr;
 	
-	public EVariableDeclarationFragment(EAST east, VariableDeclarationFragment original, EASTDataNode scope, Type dataType, EVariableDeclarationFragment base)
+	public EVariableDeclarationFragment(EAST east, VariableDeclarationFragment original, EASTDataNode scope, Type dataType, EASTExecutableNode parent, EVariableDeclarationFragment base)
 	{
-		super(east, original, base);
+		super(east, original, parent, base);
 
 		this.scope = scope;
 		this.datagroup = scope.getDataGroup();
@@ -45,10 +45,10 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		else
 			this.dataType = ast.newArrayType((Type) ASTNode.copySubtree(ast, dataType), original.getExtraDimensions());
 			
-		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, base == null ? null : base.name);
+		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, this, base == null ? null : base.name);
 		
 		if (original.getInitializer() != null)
-			this.expr = EExpression.create(this.east, original.getInitializer(), this.scope, base == null ? null : base.expr);
+			this.expr = EExpression.create(this.east, original.getInitializer(), this.scope, this, base == null ? null : base.expr);
 		else
 			this.expr = null;
 	}
@@ -59,9 +59,9 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		return (VariableDeclarationFragment) this.original;
 	}
 
-	public static EVariableDeclarationFragment create(EAST east, VariableDeclarationFragment frag, EASTDataNode scope, Type dataType, EVariableDeclarationFragment base)
+	public static EVariableDeclarationFragment create(EAST east, VariableDeclarationFragment frag, EASTDataNode scope, Type dataType, EASTExecutableNode parent, EVariableDeclarationFragment base)
 	{
-		return new EVariableDeclarationFragment(east, frag, scope, dataType, base);
+		return new EVariableDeclarationFragment(east, frag, scope, dataType, parent, base);
 	}
 
 	@Override
@@ -188,5 +188,11 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 	public EASTDataNode getScope()
 	{
 		return this.scope;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

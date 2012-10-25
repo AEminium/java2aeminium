@@ -22,9 +22,9 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	
 	protected final DataGroup datagroup;
 	
-	public EVariableDeclarationStatement(EAST east, VariableDeclarationStatement original, EASTDataNode scope, EMethodDeclaration method, EVariableDeclarationStatement base)
+	public EVariableDeclarationStatement(EAST east, VariableDeclarationStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EVariableDeclarationStatement base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 
 		this.datagroup = scope.getDataGroup();
 		this.dataType = original.getType();
@@ -41,6 +41,7 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 					(VariableDeclarationFragment) original.fragments().get(i),
 					scope,
 					this.dataType,
+					this,
 					base == null ? null : base.fragments.get(i)
 				)
 			);
@@ -48,9 +49,9 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	}
 	
 	/* factory */
-	public static EVariableDeclarationStatement create(EAST east, VariableDeclarationStatement stmt, EASTDataNode scope, EMethodDeclaration method, EVariableDeclarationStatement base)
+	public static EVariableDeclarationStatement create(EAST east, VariableDeclarationStatement stmt, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EVariableDeclarationStatement base)
 	{
-		return new EVariableDeclarationStatement(east, stmt, scope, method, base);
+		return new EVariableDeclarationStatement(east, stmt, scope, method, parent, base);
 	}
 	
 	@Override
@@ -145,5 +146,11 @@ public class EVariableDeclarationStatement extends EStatement implements EASTDat
 	public EASTDataNode getScope()
 	{
 		return this.scope;
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

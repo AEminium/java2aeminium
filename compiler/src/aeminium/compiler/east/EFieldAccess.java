@@ -16,17 +16,17 @@ public class EFieldAccess extends EExpression
 	protected final EExpression expr;
 	protected final ESimpleNameExpression name;
 	
-	public EFieldAccess(EAST east, FieldAccess original, EASTDataNode scope, EFieldAccess base)
+	public EFieldAccess(EAST east, FieldAccess original, EASTDataNode scope, EASTExecutableNode parent, EFieldAccess base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
-		this.expr = EExpression.create(east, original.getExpression(), scope, base == null ? null : base.expr);
-		this.name = ESimpleNameExpression.create(east, original.getName(), scope, base == null ? null : base.name);
+		this.expr = EExpression.create(east, original.getExpression(), scope, this, base == null ? null : base.expr);
+		this.name = ESimpleNameExpression.create(east, original.getName(), scope, this, base == null ? null : base.name);
 	}
 
-	public static EFieldAccess create(EAST east, FieldAccess original, EASTDataNode scope, EFieldAccess base)
+	public static EFieldAccess create(EAST east, FieldAccess original, EASTDataNode scope, EASTExecutableNode parent, EFieldAccess base)
 	{
-		return new EFieldAccess(east, original, scope, base);
+		return new EFieldAccess(east, original, scope, parent, base);
 	}
 	
 	@Override
@@ -117,7 +117,7 @@ public class EFieldAccess extends EExpression
 	@Override
 	public boolean isSimpleTask()
 	{
-		return true;
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 
 }

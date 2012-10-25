@@ -19,23 +19,23 @@ public class EWhileStatement extends EStatement
 
 	protected final EWhileStatement loop;
 	
-	public EWhileStatement(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EWhileStatement base)
+	public EWhileStatement(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EWhileStatement base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 		
-		this.expr = EExpression.create(east, original.getExpression(), scope, base == null ? null : base.expr);
-		this.body = EStatement.create(east, original.getBody(), scope, method, base == null ?  null : base.body);
+		this.expr = EExpression.create(east, original.getExpression(), scope, this, base == null ? null : base.expr);
+		this.body = EStatement.create(east, original.getBody(), scope, method, this, base == null ?  null : base.body);
 		
 		if (base == null)
-			this.loop = EWhileStatement.create(east, original, scope, method, this);
+			this.loop = EWhileStatement.create(east, original, scope, method, parent, this);
 		else
 			this.loop = null;
 	}
 
 	/* factory */
-	public static EWhileStatement create(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EWhileStatement base)
+	public static EWhileStatement create(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EWhileStatement base)
 	{
-		return new EWhileStatement(east, original, scope, method, base);
+		return new EWhileStatement(east, original, scope, method, parent, base);
 	}
 	
 	@Override

@@ -23,16 +23,16 @@ public class EMethodInvocation extends EDeferredExpression
 	protected final EExpression expr;
 	protected final ArrayList<EExpression> arguments;
 	
-	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope, EMethodInvocation base)
+	public EMethodInvocation(EAST east, MethodInvocation original, EASTDataNode scope, EASTExecutableNode parent, EMethodInvocation base)
 	{
-		super(east, original, scope, original.resolveMethodBinding(), base);
+		super(east, original, scope, original.resolveMethodBinding(), parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("invoke " + original.getName().toString()));
 		
 		if (original.getExpression() == null)
 			this.expr = null;
 		else
-			this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
+			this.expr = EExpression.create(this.east, original.getExpression(), scope, this, base == null ? null : base.expr);
 		
 		this.arguments = new ArrayList<EExpression>();
 		
@@ -45,6 +45,7 @@ public class EMethodInvocation extends EDeferredExpression
 					this.east,
 					(Expression) original.arguments().get(i),
 					scope,
+					this,
 					base == null ? null : base.arguments.get(i)
 				)
 			);
@@ -52,9 +53,9 @@ public class EMethodInvocation extends EDeferredExpression
 	}
 
 	/* factory */
-	public static EMethodInvocation create(EAST east, MethodInvocation invoke, EASTDataNode scope, EMethodInvocation base)
+	public static EMethodInvocation create(EAST east, MethodInvocation invoke, EASTDataNode scope, EASTExecutableNode parent, EMethodInvocation base)
 	{
-		return new EMethodInvocation(east, invoke, scope, base);
+		return new EMethodInvocation(east, invoke, scope, parent, base);
 	}
 		
 	@Override
@@ -159,8 +160,12 @@ public class EMethodInvocation extends EDeferredExpression
 	@Override
 	public int inline(EASTExecutableNode inlineTo)
 	{
+		if (!this.isAeminium())
+			return super.inline(inlineTo);
+		
 		// TODO inline ClassInstanceCreation
 		System.err.println("TODO: EMethodInvocation.inline()");
+
 		return 0;
 	}
 	

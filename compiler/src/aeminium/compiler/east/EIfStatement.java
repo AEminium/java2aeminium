@@ -21,23 +21,23 @@ public class EIfStatement extends EStatement
 	protected final EStatement thenStmt;
 	protected final EStatement elseStmt;
 	
-	public EIfStatement(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EIfStatement base)
+	public EIfStatement(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EIfStatement base)
 	{
-		super(east, original, scope, method, base);
+		super(east, original, scope, method, parent, base);
 
-		this.expr = EExpression.create(this.east, original.getExpression(), scope, base == null ? null : base.expr);
-		this.thenStmt = EStatement.create(this.east, original.getThenStatement(), scope, method, base == null ? null : base.thenStmt);
+		this.expr = EExpression.create(this.east, original.getExpression(), scope, this, base == null ? null : base.expr);
+		this.thenStmt = EStatement.create(this.east, original.getThenStatement(), scope, method, this, base == null ? null : base.thenStmt);
 		
 		if (original.getElseStatement() == null)
 			this.elseStmt = null;
 		else
-			this.elseStmt = EStatement.create(this.east, original.getElseStatement(), scope, method, base == null ? null : base.elseStmt);
+			this.elseStmt = EStatement.create(this.east, original.getElseStatement(), scope, method, this, base == null ? null : base.elseStmt);
 	}
 
 	/* factory */
-	public static EIfStatement create(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EIfStatement base)
+	public static EIfStatement create(EAST east, IfStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EIfStatement base)
 	{
-		return new EIfStatement(east, original, scope, method, base);
+		return new EIfStatement(east, original, scope, method, parent, base);
 	}
 
 	@Override
@@ -113,8 +113,16 @@ public class EIfStatement extends EStatement
 		sum += this.expr.optimize();
 		sum += this.thenStmt.optimize();
 		
+		if (this.thenStmt.isSequential())
+			sum += this.thenStmt.inline(this);
+		
 		if (this.elseStmt != null)
+		{
 			sum += this.elseStmt.optimize();
+			
+			if (this.elseStmt.isSequential())
+				sum += this.elseStmt.inline(this);
+		}
 		
 		sum += super.optimize();
 		
@@ -158,5 +166,23 @@ public class EIfStatement extends EStatement
 		}
 
 		return Arrays.asList((Statement)ifstmt);
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		if (!this.expr.inlineTask || ! this.thenStmt.inlineTask)
+			return false;
+		
+		if (this.elseStmt != null && !this.elseStmt.inlineTask)
+			return false;
+		
+		return EASTExecutableNode.HARD_AGGREGATION;
+	}
+	
+	@Override
+	public boolean isSafeInline(EASTExecutableNode node)
+	{
+		return false;
 	}
 }

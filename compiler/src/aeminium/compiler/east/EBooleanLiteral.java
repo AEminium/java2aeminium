@@ -18,17 +18,17 @@ public class EBooleanLiteral extends EExpression
 {
 	protected final DataGroup datagroup;
 	
-	public EBooleanLiteral(EAST east, BooleanLiteral original, EASTDataNode scope, EBooleanLiteral base)
+	public EBooleanLiteral(EAST east, BooleanLiteral original, EASTDataNode scope, EASTExecutableNode parent, EBooleanLiteral base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
 	/* factory */
-	public static EBooleanLiteral create(EAST east, BooleanLiteral original, EASTDataNode scope, EBooleanLiteral base)
+	public static EBooleanLiteral create(EAST east, BooleanLiteral original, EASTDataNode scope, EASTExecutableNode parent, EBooleanLiteral base)
 	{
-		return new EBooleanLiteral(east, original, scope, base);
+		return new EBooleanLiteral(east, original, scope, parent, base);
 	}
 	
 	@Override

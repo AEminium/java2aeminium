@@ -18,9 +18,9 @@ public class EClassInstanceCreation extends EDeferredExpression
 	
 	protected final ArrayList<EExpression> arguments;
 	
-	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope, EClassInstanceCreation base)
+	public EClassInstanceCreation(EAST east, ClassInstanceCreation original, EASTDataNode scope, EASTExecutableNode parent, EClassInstanceCreation base)
 	{
-		super(east, original, scope, original.resolveConstructorBinding(), base);
+		super(east, original, scope, original.resolveConstructorBinding(), parent, base);
 		
 		this.type = original.getType();
 		
@@ -37,6 +37,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 					east,
 					(Expression) original.arguments().get(i),
 					this,
+					this,
 					base == null ? null : base.arguments.get(i)
 				)
 			);
@@ -44,9 +45,9 @@ public class EClassInstanceCreation extends EDeferredExpression
 	}
 
 	/* factory */
-	public static EClassInstanceCreation create(EAST east, ClassInstanceCreation original, EASTDataNode scope, EClassInstanceCreation base)
+	public static EClassInstanceCreation create(EAST east, ClassInstanceCreation original, EASTDataNode scope, EASTExecutableNode parent, EClassInstanceCreation base)
 	{
-		return new EClassInstanceCreation(east, original, scope, base);
+		return new EClassInstanceCreation(east, original, scope, parent, base);
 	}
 	
 	@Override

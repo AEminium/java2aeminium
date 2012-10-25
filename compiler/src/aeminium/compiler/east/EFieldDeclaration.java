@@ -21,9 +21,9 @@ public class EFieldDeclaration extends EBodyDeclaration
 	protected final Type dataType;
 	protected final ArrayList<EVariableDeclarationFragment> fragments;
 	
-	public EFieldDeclaration(EAST east, FieldDeclaration original, ETypeDeclaration type, EFieldDeclaration base)
+	public EFieldDeclaration(EAST east, FieldDeclaration original, ETypeDeclaration type, EASTExecutableNode parent, EFieldDeclaration base)
 	{
-		super(east, original, type, base);
+		super(east, original, type, parent, base);
 
 		this.type = type;
 		this.dataType = original.getType();
@@ -40,6 +40,7 @@ public class EFieldDeclaration extends EBodyDeclaration
 					(VariableDeclarationFragment) original.fragments().get(i),
 					this,
 					this.dataType,
+					this,
 					base == null ? null: base.fragments.get(i)
 				)
 			);
@@ -47,9 +48,9 @@ public class EFieldDeclaration extends EBodyDeclaration
 	}
 
 	/* Factory */
-	public static EFieldDeclaration create(EAST east, FieldDeclaration original, ETypeDeclaration type, EFieldDeclaration base)
+	public static EFieldDeclaration create(EAST east, FieldDeclaration original, ETypeDeclaration type, EASTExecutableNode parent, EFieldDeclaration base)
 	{
-		return new EFieldDeclaration(east, original, type, base);
+		return new EFieldDeclaration(east, original, type, parent, base);
 	}
 	
 	@Override

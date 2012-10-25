@@ -11,15 +11,15 @@ import aeminium.compiler.task.Task;
 
 public class EThisExpression extends EExpression
 {
-	public EThisExpression(EAST east, ThisExpression original, EASTDataNode scope, EThisExpression base)
+	public EThisExpression(EAST east, ThisExpression original, EASTDataNode scope, EASTExecutableNode parent, EThisExpression base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 	}
 	
 	/* factory */
-	public static EThisExpression create(EAST east, ThisExpression original, EASTDataNode scope, EThisExpression base)
+	public static EThisExpression create(EAST east, ThisExpression original, EASTDataNode scope, EASTExecutableNode parent, EThisExpression base)
 	{
-		return new EThisExpression(east, original, scope, base);
+		return new EThisExpression(east, original, scope, parent, base);
 	}
 	
 	@Override

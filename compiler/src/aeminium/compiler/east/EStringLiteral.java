@@ -18,17 +18,17 @@ public class EStringLiteral extends EExpression
 {
 	protected final DataGroup datagroup;
 	
-	public EStringLiteral(EAST east, StringLiteral original, EASTDataNode scope, EStringLiteral base)
+	public EStringLiteral(EAST east, StringLiteral original, EASTDataNode scope, EASTExecutableNode parent, EStringLiteral base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
 	/* factory */
-	public static EStringLiteral create(EAST east, StringLiteral original, EASTDataNode scope, EStringLiteral base)
+	public static EStringLiteral create(EAST east, StringLiteral original, EASTDataNode scope, EASTExecutableNode parent, EStringLiteral base)
 	{
-		return new EStringLiteral(east, original, scope, base);
+		return new EStringLiteral(east, original, scope, parent, base);
 	}
 	
 	@Override

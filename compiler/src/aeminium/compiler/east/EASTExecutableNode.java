@@ -13,6 +13,8 @@ import aeminium.compiler.task.Task;
 
 public abstract class EASTExecutableNode extends EASTNode
 {
+	public final static boolean HARD_AGGREGATION = true;
+	
 	protected final Signature signature;
 	
 	/* here order matters so we can't use a set */
@@ -31,11 +33,12 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	private EASTExecutableNode inlinedTo;
 	
+	protected final EASTExecutableNode parent;
 	protected final EASTExecutableNode base;
 
 	private HashSet<EASTExecutableNode> inlined;
 	
-	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode base)
+	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode parent, EASTExecutableNode base)
 	{
 		super(east, original);
 
@@ -48,6 +51,7 @@ public abstract class EASTExecutableNode extends EASTNode
 		this.inlined = new HashSet<EASTExecutableNode>();
 		
 		this.inlineTask = false;
+		this.parent = parent;
 		this.base = base;
 	}
 
@@ -92,8 +96,10 @@ public abstract class EASTExecutableNode extends EASTNode
 				sum += node.inline(this);
 		
 		for (EASTExecutableNode node : nodes)
-			if (node.isSimpleTask())
+		{
+			if (node.isSimpleTask() && node.parent.isSafeInline(node))
 				sum += node.inline(this);
+		}
 		
 		for (EASTExecutableNode node : nodes)
 		{
@@ -104,11 +110,26 @@ public abstract class EASTExecutableNode extends EASTNode
 		return sum;
 	}
 	
+	public boolean isSafeInline(EASTExecutableNode node)
+	{
+		/* default behaviour, not safe everywere: overrided by EBlock because of control statements */
+		return true;
+	}
+
 	public boolean isSimpleTask()
 	{
 		return false;
 	}
 
+	public boolean isSequential()
+	{
+		for (EASTExecutableNode node : this.strongDependencies)
+			if (!node.inlineTask || !node.isSequential())
+				return false;
+		
+		return true;
+	}
+	
 	public int inline(EASTExecutableNode inlineTo)
 	{
 		if (this.inlineTask)
@@ -193,7 +214,6 @@ public abstract class EASTExecutableNode extends EASTNode
 
 		for (EASTExecutableNode dep : this.children)
 			nodes.addAll(dep.getSubTree());
-
 		
 		return nodes;
 	}

@@ -16,21 +16,21 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	protected final ESimpleNameDeclaration name;
 	protected final EExpression expr;
 	
-	public ESingleVariableDeclaration(EAST east, SingleVariableDeclaration original, EASTDataNode scope, ESingleVariableDeclaration base)
+	public ESingleVariableDeclaration(EAST east, SingleVariableDeclaration original, EASTDataNode scope, EASTExecutableNode parent, ESingleVariableDeclaration base)
 	{
-		super(east, original, base);
+		super(east, original, parent, base);
 
 		this.scope = scope;
 		
 		/* FIXME: maybe this should append something to the datagroup */
 		this.datagroup = scope.getDataGroup();
 		
-		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, base == null ? null : base.name);
+		this.name = ESimpleNameDeclaration.create(this.east, original.getName(), this, this, base == null ? null : base.name);
 		
 		if (original.getInitializer() == null)
 			this.expr = null;
 		else
-			this.expr = EExpression.create(this.east, original.getInitializer(), this, base == null ? null : base.expr);
+			this.expr = EExpression.create(this.east, original.getInitializer(), this, this, base == null ? null : base.expr);
 	}
 
 	@Override
@@ -51,9 +51,9 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 		return (SingleVariableDeclaration) this.original;
 	}
 
-	public static ESingleVariableDeclaration create(EAST east, SingleVariableDeclaration param, EASTDataNode scope, ESingleVariableDeclaration base)
+	public static ESingleVariableDeclaration create(EAST east, SingleVariableDeclaration param, EASTDataNode scope, EASTExecutableNode parent, ESingleVariableDeclaration base)
 	{
-		return new ESingleVariableDeclaration(east, param, scope, base);
+		return new ESingleVariableDeclaration(east, param, scope, parent, base);
 	}
 
 	@Override
@@ -126,5 +126,11 @@ public class ESingleVariableDeclaration extends EASTExecutableNode implements EA
 	public EASTDataNode getScope()
 	{
 		return this.getScope();
+	}
+	
+	@Override
+	public boolean isSimpleTask()
+	{
+		return EASTExecutableNode.HARD_AGGREGATION;
 	}
 }

@@ -47,11 +47,11 @@ public class ETypeDeclaration extends EASTNode implements EASTDataNode
 		
 		this.fields = new ArrayList<EFieldDeclaration>();
 		for (Object field : original.getFields())
-			this.fields.add(EFieldDeclaration.create(this.east, (FieldDeclaration) field, this, null));
+			this.fields.add(EFieldDeclaration.create(this.east, (FieldDeclaration) field, this, null, null));
 
 		this.methods = new ArrayList<EMethodDeclaration>();
 		for (Object method : original.getMethods())
-			this.methods.add(EMethodDeclaration.create(this.east, (MethodDeclaration) method, this, null));
+			this.methods.add(EMethodDeclaration.create(this.east, (MethodDeclaration) method, this, null, null));
 
 	}
 

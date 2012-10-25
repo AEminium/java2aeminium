@@ -36,9 +36,9 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 
 	private boolean controled = false;
 	
-	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type, EMethodDeclaration base)
+	public EMethodDeclaration(EAST east, MethodDeclaration original, ETypeDeclaration type, EASTExecutableNode parent, EMethodDeclaration base)
 	{
-		super(east, original, type, base);
+		super(east, original, type, parent, base);
 		
 		this.returnDataGroup = this.getDataGroup().append(new SimpleDataGroup("ret " + original.getName().toString()));
 
@@ -56,18 +56,19 @@ public class EMethodDeclaration extends EBodyDeclaration implements EASTDeclarin
 					this.east,
 					(SingleVariableDeclaration) original.parameters().get(i),
 					this,
+					this,
 					base == null ? null : base.parameters.get(i)
 				)
 			);
 		}
 		
-		this.body = EBlock.create(this.east, (Block) original.getBody(), this, this, base == null ? null : base.body);
+		this.body = EBlock.create(this.east, (Block) original.getBody(), this, this, this, base == null ? null : base.body);
 	}
 
 	/* factory */
-	public static EMethodDeclaration create(EAST east, MethodDeclaration method, ETypeDeclaration type, EMethodDeclaration base)
+	public static EMethodDeclaration create(EAST east, MethodDeclaration method, ETypeDeclaration type, EASTExecutableNode parent, EMethodDeclaration base)
 	{
-		return new EMethodDeclaration(east, method, type, base);
+		return new EMethodDeclaration(east, method, type, parent, base);
 	}
 
 	@Override

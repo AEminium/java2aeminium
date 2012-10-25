@@ -11,9 +11,9 @@ public abstract class EBodyDeclaration extends EASTExecutableNode implements EAS
 	protected final ETypeDeclaration type;
 	protected final DataGroup datagroup;
 	
-	public EBodyDeclaration(EAST east, BodyDeclaration original, ETypeDeclaration type, EBodyDeclaration base)
+	public EBodyDeclaration(EAST east, BodyDeclaration original, ETypeDeclaration type, EASTExecutableNode parent, EBodyDeclaration base)
 	{
-		super(east, original, base);
+		super(east, original, parent, base);
 		
 		this.type = type;
 		this.datagroup = this.isStatic() ? this.type.staticDataGroup : this.type.thisDataGroup;

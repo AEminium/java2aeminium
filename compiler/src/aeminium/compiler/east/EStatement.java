@@ -10,33 +10,33 @@ public abstract class EStatement extends EASTExecutableNode
 	protected final EASTDataNode scope;
 	protected final EMethodDeclaration method;
 	
-	public EStatement(EAST east, Statement original, EASTDataNode scope, EMethodDeclaration method, EStatement base)
+	public EStatement(EAST east, Statement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EStatement base)
 	{
-		super(east, original, base);
+		super(east, original, parent, base);
 
 		this.scope = scope;
 		this.method = method;
 	}
 
-	public static EStatement create(EAST east, Statement stmt, EASTDataNode scope, EMethodDeclaration method, EStatement base)
+	public static EStatement create(EAST east, Statement stmt, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EStatement base)
 	{
 		if (stmt instanceof Block)
-			return EBlock.create(east, (Block) stmt, scope, method, (EBlock) base);
+			return EBlock.create(east, (Block) stmt, scope, method, parent, (EBlock) base);
 		
 		if (stmt instanceof VariableDeclarationStatement)
-			return EVariableDeclarationStatement.create(east, (VariableDeclarationStatement) stmt, scope, method, (EVariableDeclarationStatement) base);
+			return EVariableDeclarationStatement.create(east, (VariableDeclarationStatement) stmt, scope, method, parent, (EVariableDeclarationStatement) base);
 		
 		if (stmt instanceof ReturnStatement)
-			return EReturnStatement.create(east, (ReturnStatement) stmt, scope, method, (EReturnStatement) base);
+			return EReturnStatement.create(east, (ReturnStatement) stmt, scope, method, parent, (EReturnStatement) base);
 		
 		if (stmt instanceof IfStatement)
-			return EIfStatement.create(east, (IfStatement) stmt, scope, method, (EIfStatement) base);
+			return EIfStatement.create(east, (IfStatement) stmt, scope, method, parent, (EIfStatement) base);
 
 		if (stmt instanceof ExpressionStatement)
-			return EExpressionStatement.create(east, (ExpressionStatement) stmt, scope, method, (EExpressionStatement) base);
+			return EExpressionStatement.create(east, (ExpressionStatement) stmt, scope, method, parent, (EExpressionStatement) base);
 		
 		if (stmt instanceof WhileStatement)
-			return EWhileStatement.create(east, (WhileStatement) stmt, scope, method, (EWhileStatement) base);
+			return EWhileStatement.create(east, (WhileStatement) stmt, scope, method, parent, (EWhileStatement) base);
 		
 		System.err.println("Not implemented error: " + stmt.getClass().getName());
 

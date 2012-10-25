@@ -18,17 +18,17 @@ public class ENumberLiteral extends EExpression
 {
 	protected final DataGroup datagroup;
 	
-	public ENumberLiteral(EAST east, NumberLiteral original, EASTDataNode scope, ENumberLiteral base)
+	public ENumberLiteral(EAST east, NumberLiteral original, EASTDataNode scope, EASTExecutableNode parent, ENumberLiteral base)
 	{
-		super(east, original, scope, base);
+		super(east, original, scope, parent, base);
 		
 		this.datagroup = scope.getDataGroup().append(new SimpleDataGroup("literal"));
 	}
 
 	/* factory */
-	public static ENumberLiteral create(EAST east, NumberLiteral original, EASTDataNode scope, ENumberLiteral base)
+	public static ENumberLiteral create(EAST east, NumberLiteral original, EASTDataNode scope, EASTExecutableNode parent, ENumberLiteral base)
 	{
-		return new ENumberLiteral(east, original, scope, base);
+		return new ENumberLiteral(east, original, scope, parent, base);
 	}
 	
 	@Override
