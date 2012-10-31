@@ -157,7 +157,7 @@ public class EMethodInvocation extends EDeferredExpression
 		return sum;
 	}
 	
-	@Override
+/*	@Override
 	public int inline(EASTExecutableNode inlineTo)
 	{
 		if (!this.isAeminium())
@@ -168,7 +168,7 @@ public class EMethodInvocation extends EDeferredExpression
 
 		return 0;
 	}
-	
+*/	
 	@Override
 	public void preTranslate(Task parent)
 	{
@@ -210,7 +210,7 @@ public class EMethodInvocation extends EDeferredExpression
 	{
 		AST ast = this.getAST();
 
-		if (!this.isAeminium())
+		if (this.isSequential() || !this.isAeminium())
 			return ast.newExpressionStatement(this.build(out));
 
 		ClassInstanceCreation create = ast.newClassInstanceCreation();
@@ -262,7 +262,7 @@ public class EMethodInvocation extends EDeferredExpression
 		
 		return ifstmt;
 	}
-	
+
 	public boolean isStatic()
 	{
 		for (ModifierKeyword keyword : this.getModifiers())

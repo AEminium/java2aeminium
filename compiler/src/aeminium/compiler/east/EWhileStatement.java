@@ -19,6 +19,7 @@ public class EWhileStatement extends EStatement
 
 	protected final EWhileStatement loop;
 	
+	@SuppressWarnings("unused")
 	public EWhileStatement(EAST east, WhileStatement original, EASTDataNode scope, EMethodDeclaration method, EASTExecutableNode parent, EWhileStatement base)
 	{
 		super(east, original, scope, method, parent, base);
@@ -26,7 +27,7 @@ public class EWhileStatement extends EStatement
 		this.expr = EExpression.create(east, original.getExpression(), scope, this, base == null ? null : base.expr);
 		this.body = EStatement.create(east, original.getBody(), scope, method, this, base == null ?  null : base.body);
 		
-		if (base == null)
+		if (base == null && !EASTExecutableNode.CYCLE_AGGREGATION)
 			this.loop = EWhileStatement.create(east, original, scope, method, parent, this);
 		else
 			this.loop = null;
@@ -110,7 +111,11 @@ public class EWhileStatement extends EStatement
 		sum += this.expr.optimize();
 		sum += this.body.optimize();
 		
-		if (this.loop == null)
+		if (EASTExecutableNode.CYCLE_AGGREGATION)
+		{
+			sum += this.expr.sequentialize();
+			sum += this.body.sequentialize();
+		} else if (this.loop == null)
 		{
 			if (this.expr.base.inlineTask)
 				this.expr.inline(this);
@@ -119,12 +124,13 @@ public class EWhileStatement extends EStatement
 				this.body.inline(this);
 		} else
 			sum += this.loop.optimize();
-		
+				
 		sum += super.optimize();
 		
 		return sum;
 	}
 
+	@SuppressWarnings("unused")
 	@Override
 	public void preTranslate(Task parent)
 	{
@@ -132,10 +138,11 @@ public class EWhileStatement extends EStatement
 			this.task = parent;
 		else
 		{
-			if (this.loop != null)
+			if (this.loop != null || EASTExecutableNode.CYCLE_AGGREGATION)
 				this.task = parent.newSubTask(this, "while", this.base == null ? null : this.base.task);
 			else
 				this.task = WhileSubTask.create(this, this.base.task.getTypeName() + "loop", parent, this.base.task);
+			
 		}
 		
 		this.expr.preTranslate(this.task);
@@ -150,33 +157,46 @@ public class EWhileStatement extends EStatement
 	public List<Statement> build(List<CompilationUnit> out)
 	{
 		AST ast = this.getAST();
-
-		IfStatement stmt = ast.newIfStatement();
-		stmt.setExpression(this.expr.translate(out));
-
-		Block block = ast.newBlock();
-		block.statements().addAll(this.body.translate(out));
 		
-		if (this.loop != null)
-			block.statements().addAll(this.loop.translate(out));
-		else
+		if (!EASTExecutableNode.CYCLE_AGGREGATION)
 		{
-			/* the same thing as a normal translate here.
-			 * because doing so would create an infinite loop */
-			FieldAccess task_access = ast.newFieldAccess();
-			task_access.setExpression(ast.newThisExpression());
-			task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
+			IfStatement stmt = ast.newIfStatement();
+			stmt.setExpression(this.expr.translate(out));
+	
+			Block block = ast.newBlock();
+			block.statements().addAll(this.body.translate(out));
+			
+			if (this.loop != null)
+				block.statements().addAll(this.loop.translate(out));
+			else
+			{
+				/* the same thing as a normal translate here.
+				 * because doing so would create an infinite loop */
+				FieldAccess task_access = ast.newFieldAccess();
+				task_access.setExpression(ast.newThisExpression());
+				task_access.setName(ast.newSimpleName("ae_" + this.task.getFieldName()));
+	
+				Assignment assign = ast.newAssignment();
+				assign.setLeftHandSide(task_access);
+				assign.setRightHandSide(this.task.create());
+	
+				block.statements().add(ast.newExpressionStatement(assign));	
+			}
+	
+			stmt.setThenStatement(block);
+			return Arrays.asList((Statement) stmt);
+		} else
+		{
+			WhileStatement stmt = ast.newWhileStatement();
+			
+			Block body = ast.newBlock();
+			body.statements().addAll(this.body.translate(out));
 
-			Assignment assign = ast.newAssignment();
-			assign.setLeftHandSide(task_access);
-			assign.setRightHandSide(this.task.create());
+			stmt.setExpression(this.expr.translate(out));
+			stmt.setBody(body);
 
-			block.statements().add(ast.newExpressionStatement(assign));	
+			return Arrays.asList((Statement) stmt);
 		}
-
-		stmt.setThenStatement(block);
-		
-		return Arrays.asList((Statement) stmt);
 	}
 
 	/*

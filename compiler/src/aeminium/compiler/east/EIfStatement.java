@@ -113,14 +113,14 @@ public class EIfStatement extends EStatement
 		sum += this.expr.optimize();
 		sum += this.thenStmt.optimize();
 		
-		if (this.thenStmt.isSequential())
+		if (this.thenStmt.isSingleTask())
 			sum += this.thenStmt.inline(this);
 		
 		if (this.elseStmt != null)
 		{
 			sum += this.elseStmt.optimize();
 			
-			if (this.elseStmt.isSequential())
+			if (this.elseStmt.isSingleTask())
 				sum += this.elseStmt.inline(this);
 		}
 		

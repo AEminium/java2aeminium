@@ -112,12 +112,12 @@ public class EBlock extends EStatement implements EASTDataNode
 
 		if (this.stmts.size() > 0)
 		{
-			boolean inline = this.stmts.get(0).isSequential();
+			boolean inline = this.stmts.get(0).isSingleTask();
 			
-			for (int i = 1; i < this.stmts.size(); i++)
+			for (int i = 1; i < this.stmts.size() && inline; i++)
 			{
 				EStatement stmt = this.stmts.get(i); 
-				if (!stmt.isSequential() || !stmt.weakDependencies.contains(this.stmts.get(i-1)))
+				if (!stmt.isSingleTask() || !stmt.weakDependencies.contains(this.stmts.get(i-1)))
 					inline = false;
 
 			}

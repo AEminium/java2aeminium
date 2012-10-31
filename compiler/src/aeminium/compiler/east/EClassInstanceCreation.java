@@ -150,15 +150,7 @@ public class EClassInstanceCreation extends EDeferredExpression
 		
 		return sum;
 	}
-	
-	@Override
-	public int inline(EASTExecutableNode inlineTo)
-	{
-		// TODO inline ClassInstanceCreation
-		System.err.println("TODO: EClassInstanceCreation.inline()");
-		return 0;
-	}
-	
+
 	@Override
 	public void preTranslate(Task parent)
 	{
@@ -177,33 +169,29 @@ public class EClassInstanceCreation extends EDeferredExpression
 	{
 		AST ast = this.getAST();
 
-		System.err.println("TODO: Paralell ClassInstanceCreation");
-		
-		/*
-		if (this.isAeminium())
+		if (this.isSequential() || !this.isAeminium())
 		{
 			ClassInstanceCreation create = ast.newClassInstanceCreation();
-			create.setType(ast.newSimpleType(ast.newSimpleName(this.getMethod().getTask().getName())));	
-			
-			create.arguments().add(ast.newThisExpression());
-	
-			if (!this.isStatic())
-				create.arguments().add(this.expr.translate(out));
-	
+			create.setType(ast.newSimpleType(ast.newSimpleName(this.binding.getName())));
+
 			for (EExpression arg : this.arguments)
 				create.arguments().add(arg.translate(out));
 
 			return create;
-		
 		}
-		*/
 		
+		System.err.println("TODO: Paralell ClassInstanceCreation");
+
+		/* same thing for now */
 		ClassInstanceCreation create = ast.newClassInstanceCreation();
 		create.setType(ast.newSimpleType(ast.newSimpleName(this.binding.getName())));
 
 		for (EExpression arg : this.arguments)
 			create.arguments().add(arg.translate(out));
 
+		if (this.inlineTask)
+			return create;
+		
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
 		access.setName(ast.newSimpleName("ae_ret"));

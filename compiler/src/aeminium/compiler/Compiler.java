@@ -50,6 +50,9 @@ public class Compiler
 
 		for (String path : files)
 		{
+			if (!path.endsWith(".java"))
+				continue;
+			
 			String shortPath = path.replace(this.source + "/", "");
 			String content = readFile(path);
 
@@ -119,7 +122,7 @@ public class Compiler
 	{
 		BufferedWriter writer = null;
 		String path = this.getCUPath(unit);
-
+		
 		/* build directory tree */
 		String[] dirs = path.split("/");
 		String curPath = "";
@@ -158,7 +161,7 @@ public class Compiler
 		path += "/";
 		path += ((TypeDeclaration) cu.types().get(0)).getName();
 		path += ".java";
-		
+	
 		return path;
 	}
 

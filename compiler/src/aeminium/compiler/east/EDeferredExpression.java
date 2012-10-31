@@ -37,6 +37,15 @@ public abstract class EDeferredExpression extends EExpression
 		return EModifierKeyword.fromFlags(this.binding.getModifiers());
 	}
 	
+	@Override
+	public int inline(EASTExecutableNode inlineTo)
+	{
+		if (!this.isSequential())
+			return 0;
+		
+		return super.inline(inlineTo);
+	}
+	
 	@SuppressWarnings("unchecked")
 	@Override
 	public Expression translate(List<CompilationUnit> out)

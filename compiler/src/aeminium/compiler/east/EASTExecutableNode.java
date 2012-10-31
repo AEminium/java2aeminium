@@ -14,6 +14,7 @@ import aeminium.compiler.task.Task;
 public abstract class EASTExecutableNode extends EASTNode
 {
 	public final static boolean HARD_AGGREGATION = true;
+	public static final boolean CYCLE_AGGREGATION = true;
 	
 	protected final Signature signature;
 	
@@ -37,6 +38,7 @@ public abstract class EASTExecutableNode extends EASTNode
 	protected final EASTExecutableNode base;
 
 	private HashSet<EASTExecutableNode> inlined;
+	private boolean sequential = false;
 	
 	public EASTExecutableNode(EAST east, ASTNode original, EASTExecutableNode parent, EASTExecutableNode base)
 	{
@@ -121,13 +123,37 @@ public abstract class EASTExecutableNode extends EASTNode
 		return false;
 	}
 
-	public boolean isSequential()
+	public boolean isSingleTask()
 	{
 		for (EASTExecutableNode node : this.strongDependencies)
-			if (!node.inlineTask || !node.isSequential())
+			if (!node.inlineTask || !node.isSingleTask())
 				return false;
 		
 		return true;
+	}
+	
+	protected boolean isSequential()
+	{
+		return this.sequential;
+	}
+	
+	public int sequentialize()
+	{
+		int sum = 0;
+		
+		this.sequential  = true;
+		
+		ArrayList<EASTExecutableNode> nodes = new ArrayList<EASTExecutableNode>();
+		nodes.addAll(this.strongDependencies);
+		nodes.addAll(this.children);
+		
+		for (EASTExecutableNode node : nodes)
+			sum += node.sequentialize();
+
+		if (!this.inlineTask)
+			sum += this.inline(this.parent);
+		
+		return sum;
 	}
 	
 	public int inline(EASTExecutableNode inlineTo)
@@ -159,7 +185,6 @@ public abstract class EASTExecutableNode extends EASTNode
 		return 1;
 	}
 
-
 	public int simplifyDependencies()
 	{
 		Set<EASTExecutableNode> deps = new HashSet<EASTExecutableNode>();
@@ -184,10 +209,11 @@ public abstract class EASTExecutableNode extends EASTNode
 			Set<EASTExecutableNode> subtree = dep.getSubTree();
 			for (EASTExecutableNode weak: this.weakDependencies)
 				if (subtree.contains(weak))
-					remove.add(weak);			
+					remove.add(weak);
 		}
 		
 		this.weakDependencies.removeAll(remove);
+
 		return remove.size();
 	}
 	
@@ -253,6 +279,9 @@ public abstract class EASTExecutableNode extends EASTNode
 
 	public void addStrongDependency(EASTExecutableNode dep)
 	{
+		while (dep.inlineTask)
+			dep = dep.inlinedTo;
+		
 		if (!dep.equals(this))
 		{
 			this.strongDependencies.add(dep);
@@ -262,6 +291,9 @@ public abstract class EASTExecutableNode extends EASTNode
 	
 	public void addWeakDependency(EASTExecutableNode dep)
 	{
+		while (dep.inlineTask)
+			dep = dep.inlinedTo;
+
 		if (!this.strongDependencies.contains(dep) && !dep.equals(this))
 			this.weakDependencies.add(dep);
 	}
