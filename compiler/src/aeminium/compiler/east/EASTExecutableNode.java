@@ -14,7 +14,7 @@ import aeminium.compiler.task.Task;
 public abstract class EASTExecutableNode extends EASTNode
 {
 	public final static boolean HARD_AGGREGATION = true;
-	public static final boolean CYCLE_AGGREGATION = true;
+	public static final int NESTED_LOOP_DEPTH_AGGREGATION = 2;
 	
 	protected final Signature signature;
 	
@@ -347,5 +347,13 @@ public abstract class EASTExecutableNode extends EASTNode
 		block.statements().add(ifstmt);
 		
 		task.getExecute().setBody(block);
+	}
+	
+	protected int getLoopDepth()
+	{
+		if (this.parent != null)
+			return this.parent.getLoopDepth();
+		
+		return 0;
 	}
 }
