@@ -96,7 +96,8 @@ public class EVariableDeclarationFragment extends EASTExecutableNode implements 
 		Signature sig = new Signature();
 		
 		sig.addAll(this.signature);
-		sig.addAll(this.expr.getFullSignature());
+		if(this.expr != null)
+			sig.addAll(this.expr.getFullSignature());
 		
 		return sig;
 	}
