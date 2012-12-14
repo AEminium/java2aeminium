@@ -89,6 +89,10 @@ public abstract class EExpression extends EASTExecutableNode implements
 		if (expr instanceof CastExpression)
 			return ECastExpression.create(east, (CastExpression) expr, scope,
 					parent, (ECastExpression) base);
+		
+		if (expr instanceof NullLiteral)
+			return ENullLiteral.create(east, (NullLiteral) expr, scope,
+					parent, (ENullLiteral) base);
 
 		System.err.println("Not implemented error: "
 				+ expr.getClass().getName());
