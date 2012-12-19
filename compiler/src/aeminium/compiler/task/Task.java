@@ -124,9 +124,6 @@ public abstract class Task
 		
 		AST ast = this.node.getAST();
 		
-		if(name.equals("args"))
-			type = ast.newArrayType(type);
-		
 		VariableDeclarationFragment frag = ast.newVariableDeclarationFragment();
 		frag.setName(ast.newSimpleName(name));
 
