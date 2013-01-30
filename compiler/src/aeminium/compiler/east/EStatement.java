@@ -66,6 +66,10 @@ public abstract class EStatement extends EASTExecutableNode {
 		if (stmt instanceof ConstructorInvocation)
 			return EConstructorInvocation.create(east, (ConstructorInvocation) stmt,
 					scope, method, parent, (EConstructorInvocation) base);
+		
+		if (stmt instanceof ForStatement)
+			return EForStatement.create(east, (ForStatement) stmt,
+					scope, method, parent, (EForStatement) base);
 
 		System.err.println("Not implemented error: "
 				+ stmt.getClass().getName());
