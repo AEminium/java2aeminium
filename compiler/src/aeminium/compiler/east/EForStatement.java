@@ -1,44 +1,39 @@
 package aeminium.compiler.east;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EmptyStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import aeminium.compiler.DependencyStack;
 import aeminium.compiler.signature.Signature;
 import aeminium.compiler.signature.SignatureItemRead;
-import aeminium.compiler.task.ForSubTask;
 import aeminium.compiler.task.Task;
 
 public class EForStatement extends EStatement {
 
 	protected final EStatement body;
-	protected final EStatement body2;
 	protected final EExpression expr;
 
 	private ArrayList<EExpression> initializers = new ArrayList<EExpression>();
 	private ArrayList<EExpression> updaters = new ArrayList<EExpression>();
-
-	protected final EForStatement loop;
-	protected final int depth;
+	protected boolean doall;
 
 	public EForStatement(EAST east, ForStatement original, EASTDataNode scope,
 			EMethodDeclaration method, EASTExecutableNode parent,
@@ -51,6 +46,9 @@ public class EForStatement extends EStatement {
 		this.initializers = new ArrayList<EExpression>();
 
 		for (int i = 0; i < original.initializers().size(); i++) {
+
+			System.out.println(original.initializers().get(i).getClass()
+					.getName());
 			this.initializers.add(EExpression.create(this.east,
 					(Expression) original.initializers().get(i), scope, this,
 					base == null ? null : base.initializers.get(i)));
@@ -66,19 +64,6 @@ public class EForStatement extends EStatement {
 
 		this.body = EStatement.create(east, original.getBody(), scope, method,
 				this, base == null ? null : base.body);
-
-		this.body2 = EStatement.create(east,
-				parseBlock(updaters.get(0).getOriginal() + ";", null), scope,
-				method, this, base == null ? null : base.body2);
-
-		this.depth = this.getLoopDepth();
-
-		if (base == null
-				&& this.depth < EASTExecutableNode.NESTED_LOOP_DEPTH_AGGREGATION)
-			this.loop = EForStatement.create(east, original, scope, method,
-					parent, this);
-		else
-			this.loop = null;
 
 	}
 
@@ -100,9 +85,6 @@ public class EForStatement extends EStatement {
 			stmt.checkSignatures();
 		for (EExpression stmt : this.updaters)
 			stmt.checkSignatures();
-
-		if (this.loop != null)
-			this.loop.checkSignatures();
 
 		this.signature.addItem(new SignatureItemRead(this.expr.getDataGroup()));
 
@@ -150,19 +132,10 @@ public class EForStatement extends EStatement {
 		DependencyStack copy = stack.fork();
 		this.body.checkDependencies(copy);
 
-		if (this.loop != null) {
-			DependencyStack copy2 = copy.fork();
-			this.loop.checkDependencies(copy2);
-			copy.join(copy2, this);
-		}
-
 		stack.join(copy, this);
 
 		this.addChildren(this.body);
 
-		// TODO: this is only valid for the sequential translation used bellow
-		if (this.loop != null)
-			this.addChildren(this.loop);
 		/*
 		 * else this.addChildren(this); /* FIXME: this will probably break
 		 * somewhere
@@ -183,17 +156,8 @@ public class EForStatement extends EStatement {
 		for (EExpression frag : this.initializers)
 			sum += frag.optimize();
 
-		if (this.depth >= EASTExecutableNode.NESTED_LOOP_DEPTH_AGGREGATION) {
-			sum += this.expr.sequentialize();
-			sum += this.body.sequentialize();
-		} else if (this.loop == null) {
-			if (this.expr.base.inlineTask)
-				this.expr.inline(this);
-
-			if (this.body.base.inlineTask)
-				this.body.inline(this);
-		} else
-			sum += this.loop.optimize();
+		sum += this.expr.sequentialize();
+		sum += this.body.sequentialize();
 
 		sum += super.optimize();
 
@@ -206,21 +170,13 @@ public class EForStatement extends EStatement {
 		if (this.inlineTask)
 			this.task = parent;
 		else {
-			if (this.loop != null
-					|| (this.depth >= EASTExecutableNode.NESTED_LOOP_DEPTH_AGGREGATION)) {
-				this.task = parent.newSubTask(this, "for",
-						this.base == null ? null : this.base.task);
-
-			} else
-				this.task = ForSubTask.create(this,
-						this.base.task.getTypeName() + "loop", parent,
-						this.base.task);
+			this.task = parent.newSubTask(this, "for", this.base == null ? null
+					: this.base.task);
 
 		}
 
 		this.expr.preTranslate(this.task);
 		this.body.preTranslate(this.task);
-		// this.body2.preTranslate(this.task);
 
 		for (int i = 0; i < this.updaters.size(); i++)
 			this.updaters.get(i).preTranslate(this.task);
@@ -228,58 +184,60 @@ public class EForStatement extends EStatement {
 		for (int i = 0; i < this.initializers.size(); i++)
 			this.initializers.get(i).preTranslate(this.task);
 
-		if (this.loop != null)
-			this.loop.preTranslate(this.task);
-
+		// checkDoAll();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<Statement> build(List<CompilationUnit> out) {
+
 		AST ast = this.getAST();
 
-		if (this.depth < EASTExecutableNode.NESTED_LOOP_DEPTH_AGGREGATION) {
+		if (checkDoAll()) {
 
-			IfStatement stmt = ast.newIfStatement();
-			stmt.setExpression(this.expr.translate(out));
+			this.task.doallDecl();
+			InfixExpression einFix = (InfixExpression) expr.translate(out);
 
-			Block block = ast.newBlock();
+			System.out.println("rrrrr = " + initializers.get(0).getOriginal());
+			EAssignment assign = (EAssignment) initializers.get(0);
+			ENumberLiteral start = (ENumberLiteral) assign.right;
 
-			block.statements().addAll(this.body.translate(out));
+			System.out.println(updaters.get(0).getClass().getName());
 
-			if (this.loop != null)
-				block.statements().addAll(this.loop.translate(out));
-			else {
-				/*
-				 * the same thing as a normal translate here. because doing so
-				 * would create an infinite loop
-				 */
-				FieldAccess task_access = ast.newFieldAccess();
-				task_access.setExpression(ast.newThisExpression());
-				task_access.setName(ast.newSimpleName("ae_"
-						+ this.task.getFieldName()));
+			EPostfixExpression ePostfix = (EPostfixExpression) updaters.get(0);
 
-				Assignment assign = ast.newAssignment();
-				assign.setLeftHandSide(task_access);
-				assign.setRightHandSide(this.task.create());
+			if (ePostfix.operator.toString().equals("++"))
+				this.task.createDoallTaskAssign(start.original.toString(),
+						einFix, "1");
+			else
+				this.task.createDoallTaskAssign(start.original.toString(),
+						einFix, "-1");
 
-				block.statements().add(ast.newExpressionStatement(assign));
-			}
+			this.task.addDoallTaskAssign(this.task.getConstructors().get(0),
+					this.task.getNode().getAST().newBlock());
 
-			stmt.setThenStatement(block);
+			return this.body.translate(out);
 
-			return Arrays.asList((Statement) stmt);
 		} else {
+
 			ForStatement stmt = ast.newForStatement();
 
 			Block body = ast.newBlock();
 			body.statements().addAll(this.body.translate(out));
 
+			for (int i = 0; i < initializers.size(); i++)
+				stmt.initializers().add(initializers.get(i).translate(out));
+
+			for (int i = 0; i < updaters.size(); i++)
+				stmt.updaters().add(updaters.get(i).translate(out));
+
 			stmt.setExpression(this.expr.translate(out));
 			stmt.setBody(body);
 
 			return Arrays.asList((Statement) stmt);
+
 		}
+
 	}
 
 	@Override
@@ -297,74 +255,176 @@ public class EForStatement extends EStatement {
 		return this.body;
 	}
 
-	// By Alcides Fonseca
-	public Block parseBlock(String expressionString, AST ast) {
-		final String wholeProgramString = "class X { public void m() { "
-				+ expressionString + " } }";
-		final ASTParser astParser = ASTParser.newParser(AST.JLS3);
-		astParser.setSource(wholeProgramString.toCharArray());
-		final CompilationUnit compiledCode = (CompilationUnit) astParser
-				.createAST(null);
-		final TypeDeclaration typeDeclaration = (TypeDeclaration) compiledCode
-				.types().get(0);
-		final MethodDeclaration methodDeclaration = (MethodDeclaration) typeDeclaration
-				.bodyDeclarations().get(0);
-		final Block expression = methodDeclaration.getBody();
-		morphExpression(expression, ast);
-		return expression;
+	// verifica se e ciclo doall
+	private boolean checkDoAll() {
+
+		EBlock bodyBlock = (EBlock) body;
+
+		body.getStrongDependencies();
+
+		if (checkForBodyDeps(bodyBlock) != true)
+			if (checkDoallFor(bodyBlock.getOriginal())) {
+				this.doall = true;
+				this.task.doallFor();
+				return true;
+			}
+		return false;
+
 	}
 
-	public Expression parseExpression(String expressionString, AST ast) {
-		final String wholeProgramString = "class X {int a = "
-				+ expressionString + ";}";
-		final ASTParser astParser = ASTParser.newParser(AST.JLS3);
-		astParser.setSource(wholeProgramString.toCharArray());
-		final CompilationUnit compiledCode = (CompilationUnit) astParser
-				.createAST(null);
-		final TypeDeclaration typeDeclaration = (TypeDeclaration) compiledCode
-				.types().get(0);
-		final FieldDeclaration fieldDeclaration = (FieldDeclaration) typeDeclaration
-				.bodyDeclarations().get(0);
-		final VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDeclaration
-				.fragments().get(0);
-		final Expression expression = fragment.getInitializer();
-		morphExpression(expression, ast);
-		return expression;
-	}
+	
+	// verifica se existem dependencias entre os statements do ciclo, dependencias directas
+	private boolean checkForBodyDeps(EBlock body) {
 
-	private void morphExpression(ASTNode exp, AST ast) {
-		setAst(exp, ast);
-		clearParent(exp);
-	}
+		boolean check = false;
+		for (EStatement stmt : body.stmts) {
 
-	private void clearParent(ASTNode exp) {
-		try {
-			final Field field = ASTNode.class.getDeclaredField("parent");
-			field.setAccessible(true);
-			field.set(exp, null);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+			ArrayList<Task> deps = stmt.task.getDeps();
+			deps.remove(stmt.getTask());
+
+			for (Task task : deps) {
+				if (task.getFieldName().contains(this.getTask().getFieldName())) {
+					// existe uma dependencia entre os statements do ciclo
+					check = true;
+					break;
+				}
+			}
+
+			if (check)
+				break;
 		}
+		return check;
 	}
 
-	private void setAst(ASTNode exp, AST ast) {
-		// AST should never be null
-		if (ast == null) {
-			return;
+	//verifica se nao existem loop-carried dependencies entre os statements do ciclo
+	//detecta grande parte dos casos onde se pode aplicar o doall, nao sendo garantido que detecta todas as possibilidades de aplicacao
+	//TODO acrescentar verificacoes que possam permiter englobar mais casos ainda nao verificados
+	private boolean checkDoallFor(Block body) {
+
+		//percorre todos os statemens do ciclo
+		for (Object tmp : body.statements()) {
+
+			Statement obj = (Statement) tmp;
+
+			if (obj instanceof ExpressionStatement) {
+
+				ExpressionStatement exprStmt = (ExpressionStatement) obj;
+
+				if (checkExpressionStmt(exprStmt) != true)
+					return false;
+
+			} else if (obj instanceof EmptyStatement) {
+				// nao necessita de nenhuma verificação
+			} else if (obj instanceof IfStatement) {
+
+				System.err.println("Statement Not Implemented yet: "
+						+ obj.getClass().getName());
+				return false;
+			}
+
+			else {
+				System.err.println("Statement Not Implemented yet: "
+						+ obj.getClass().getName());
+				return false;
+			}
 		}
-		try {
-			final Field field = ASTNode.class.getDeclaredField("ast");
-			field.setAccessible(true);
-			field.set(exp, ast);
-		} catch (SecurityException e) {
-			throw new RuntimeException(e);
-		} catch (NoSuchFieldException e) {
-			throw new RuntimeException(e);
-		} catch (IllegalArgumentException e) {
-			throw new RuntimeException(e);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		}
+
+		return true;
+
 	}
 
+	private boolean checkExpressionStmt(ExpressionStatement exprStmt) {
+
+		if (exprStmt.getExpression() instanceof MethodInvocation)
+			return false;
+
+		if (exprStmt.getExpression() instanceof Assignment) {
+
+			Assignment asgnExpr = (Assignment) exprStmt.getExpression();
+
+			if (checkAssignExpression(asgnExpr) != true)
+				return false;
+		}
+
+		return true;
+	}
+
+	private boolean checkAssignExpression(Assignment asgnExpr) {
+
+		if (asgnExpr.getLeftHandSide() instanceof Name
+				|| asgnExpr.getRightHandSide() instanceof MethodInvocation)
+			return false;
+
+		if (asgnExpr.getLeftHandSide() instanceof ArrayAccess) {
+
+			ArrayAccess arrayAccess = (ArrayAccess) asgnExpr.getLeftHandSide();
+
+			if (checkArrayAccessExpr(arrayAccess, asgnExpr) != true)
+				return false;
+		}
+
+		if (asgnExpr.getRightHandSide() instanceof InfixExpression) {
+
+			InfixExpression binary = (InfixExpression) asgnExpr
+					.getRightHandSide();
+
+			if (binary.getRightOperand() instanceof MethodInvocation
+					|| binary.getLeftOperand() instanceof MethodInvocation)
+				return false;
+		}
+
+		return true;
+	}
+
+	private boolean checkArrayAccessExpr(ArrayAccess arrayAccess,
+			Assignment asgnExpr) {
+
+		if (arrayAccess.getIndex() instanceof NumberLiteral)
+			return false;
+
+		if (asgnExpr.getRightHandSide() instanceof InfixExpression) {
+			InfixExpression binary = (InfixExpression) asgnExpr
+					.getRightHandSide();
+
+			if (binary.getRightOperand() instanceof NumberLiteral
+					&& binary.getLeftOperand() instanceof NumberLiteral) {
+				return true;
+			}
+
+			if (binary.getRightOperand() instanceof Name
+					&& binary.getLeftOperand() instanceof Name) {
+				return true;
+			}
+
+			if (binary.getRightOperand() instanceof NumberLiteral
+					&& binary.getLeftOperand() instanceof Name) {
+				return true;
+			}
+
+			if (binary.getRightOperand() instanceof Name
+					&& binary.getLeftOperand() instanceof NumberLiteral) {
+				return true;
+			}
+		}
+
+		if (arrayAccess.getIndex() instanceof InfixExpression) {
+
+			if (asgnExpr.getRightHandSide() instanceof NumberLiteral)
+				return true;
+
+			if (asgnExpr.getRightHandSide() instanceof InfixExpression) {
+
+				InfixExpression binary = (InfixExpression) asgnExpr
+						.getRightHandSide();
+
+				if (binary.getRightOperand() instanceof NumberLiteral
+						&& binary.getLeftOperand() instanceof NumberLiteral) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		return true;
+	}
 }
