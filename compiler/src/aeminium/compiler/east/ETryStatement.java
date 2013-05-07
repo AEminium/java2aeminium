@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TryStatement;
@@ -19,7 +18,6 @@ public class ETryStatement extends EStatement {
 
 	protected final EStatement body;
 	protected final EStatement finaly;
-	protected final List<Statement> catchclauses;
 
 	public ETryStatement(EAST east, TryStatement original, EASTDataNode scope,
 			EMethodDeclaration method, EASTExecutableNode parent,
@@ -31,8 +29,6 @@ public class ETryStatement extends EStatement {
 
 		this.finaly = EStatement.create(east, original.getFinally(), scope,
 				method, this, base == null ? null : base.finaly);
-
-		this.catchclauses = original.catchClauses();
 
 	}
 
@@ -53,16 +49,10 @@ public class ETryStatement extends EStatement {
 		Block body = ast.newBlock();
 		Block finaly = ast.newBlock();
 
-		for (Statement stat : catchclauses) {
-
-			System.out.println(stat.toString());
-
-		}
-
 		body.statements().addAll(this.body.translate(out));
-		finaly.statements().addAll(this.finaly.translate(out));
-
 		trystmt.setBody(body);
+
+		finaly.statements().addAll(this.finaly.translate(out));
 		trystmt.setFinally(finaly);
 
 		return Arrays.asList((Statement) trystmt);
@@ -71,7 +61,6 @@ public class ETryStatement extends EStatement {
 	@Override
 	public void checkSignatures() {
 
-		this.body.checkSignatures();
 		this.body.checkSignatures();
 
 	}
@@ -84,11 +73,6 @@ public class ETryStatement extends EStatement {
 		sig.addAll(this.signature);
 		sig.addAll(this.body.getFullSignature());
 		sig.addAll(this.finaly.getFullSignature());
-
-		/*
-		 * FIXME: add expr_loop/body_loop signatures? probably not because they
-		 * don't add anything new
-		 */
 
 		return sig;
 	}
@@ -103,9 +87,13 @@ public class ETryStatement extends EStatement {
 
 		DependencyStack copy = stack.fork();
 		this.body.checkDependencies(copy);
-		this.finaly.checkDependencies(copy);
 
 		stack.join(copy, this);
+
+		DependencyStack copy2 = stack.fork();
+		this.finaly.checkDependencies(copy2);
+
+		stack.join(copy2, this);
 
 		this.addChildren(this.body);
 		this.addChildren(this.finaly);
@@ -119,6 +107,9 @@ public class ETryStatement extends EStatement {
 		sum += super.optimize();
 		sum += this.body.optimize();
 		sum += this.finaly.optimize();
+
+		sum += this.body.sequentialize();
+		sum += this.finaly.sequentialize();
 
 		return sum;
 	}
