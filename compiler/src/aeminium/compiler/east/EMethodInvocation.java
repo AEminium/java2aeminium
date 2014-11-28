@@ -232,6 +232,7 @@ public class EMethodInvocation extends EDeferredExpression
 		MethodInvocation parallelize = ast.newMethodInvocation();
 		parallelize.setExpression(ast.newSimpleName("rt"));
 		parallelize.setName(ast.newSimpleName("parallelize"));
+		parallelize.arguments().add(ast.newSimpleName("task"));
 				
 		FieldAccess access = ast.newFieldAccess();
 		access.setExpression(ast.newThisExpression());
