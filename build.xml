@@ -17,8 +17,9 @@
 	<property name="tests.target.dir" value="tests/target" />
 	<property name="tests.build.dir" value="tests/build" />
 	<property name="tests.lib.dir" value="tests/lib" />
-	<property name="tests.class" value="aeminium.compiler.tests.FFT" />
+	<property name="tests.class" value="aeminium.compiler.tests.Integrate" />
 	<property name="tests.jar" value="tests/test.jar" />
+	<property name="tests.seq.jar" value="tests/test_seq.jar" />
 
 	<!-- aeminium.tests -->
 	<property name="profile.agentpath" value="/home/Tools/jprofiler7/bin/linux-x64/libjprofilerti.so=port=8849" />
@@ -107,10 +108,28 @@
             <fileset dir="${tests.build.dir}"/>
         </jar>
 	</target>
+	
+	<target name="compile.tests.seq">
+		<delete dir="${tests.build.dir}" />
+		<mkdir dir="${tests.build.dir}" />
+		<javac srcdir="${tests.src.dir}" destdir="${tests.build.dir}" classpathref="tests.classpath" includeantruntime="false"  debug="true"/>
+		<jar destfile="${tests.seq.jar}">
+            <manifest>
+                <attribute name="Main-Class" value="${tests.class}"/>
+            </manifest>
+            <fileset dir="${tests.build.dir}"/>
+        </jar>
+	</target>
 
 	<target name="run" depends="compile.tests">
 		<java jar="${tests.jar}" fork="true">
-			<jvmarg value="-Xms32m"/>
+			<jvmarg value="-Xms512m"/>
+		</java>
+	</target>
+	
+	<target name="run.seq" depends="compile.tests.seq">
+		<java jar="${tests.seq.jar}" fork="true">
+			<jvmarg value="-Xms512m"/>
 		</java>
 	</target>
 
