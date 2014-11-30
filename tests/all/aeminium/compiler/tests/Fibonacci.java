@@ -11,6 +11,9 @@ public class Fibonacci
 
 	public static void main(String[] args)
 	{
+		double time = System.nanoTime();
 		System.out.println(f(50));
+		time = (System.nanoTime() - time) / 1000000000.0;
+		System.out.println(time);
 	}
 }

@@ -64,14 +64,17 @@ public class FFT
 
 	public static void main(String [] args)
 	{
-		Complex[] input = createRandomComplexArray(1024, 524288);
+		Complex[] input = createRandomComplexArray(4194304, 524288);
+		double time = System.nanoTime();
 		Complex[] output = FFT(input);
-
+		time = (System.nanoTime() - time) / 1000000000.0;
+		System.out.println(time);
+		/*
 		int i = 0;
 		while (i < (output).length)
 		{
 	        System.out.println(output[i]);
 			++i;
-		}
+		}*/
 	}
 }

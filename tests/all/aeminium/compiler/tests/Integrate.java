@@ -9,7 +9,10 @@ public final class Integrate
 
     public static void main(String[] args)
 	{
-		System.out.println(compute(-2101.0, 200.0));
+		double time = System.nanoTime();
+		System.out.println(compute(-2101.0, 1036.0));
+		time = (System.nanoTime() - time) / 1000000000.0;
+		System.out.println(time);
     }
 
 	public static double compute(double l, double r)
@@ -27,7 +30,7 @@ public final class Integrate
         double ar = (fr + fc) * hh;
         double alr = al + ar;
 
-        if (Math.abs(alr - a) <= 1.0e-6)
+        if (Math.abs(alr - a) <= 1.0e-14)
             return alr;
         else
             return computeRec(c, r, fc, fr, ar) + computeRec(l, c, fl, fc, al);
